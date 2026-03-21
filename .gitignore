@@ -1,0 +1,121 @@
+# =========================
+# General
+# =========================
+*.log
+*.tmp
+*.swp
+*.swo
+*.class
+.DS_Store
+Thumbs.db
+
+# =========================
+# Dart / Flutter
+# =========================
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# Build outputs
+build/
+coverage/
+
+# Generated files
+**/doc/api/
+
+# =========================
+# IDEs / Editors
+# =========================
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code (optional – include if team doesn't share settings)
+.vscode/
+
+# Atom
+.atom/
+
+# =========================
+# Android
+# =========================
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# Keystore files (IMPORTANT: never commit)
+*.jks
+*.keystore
+
+# =========================
+# iOS / macOS
+# =========================
+ios/Flutter/.last_build_id
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/App.framework
+
+# CocoaPods
+Podfile.lock
+
+# Xcode
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/project.xcworkspace/
+xcuserdata/
+*.xcuserstate
+
+# macOS
+macos/Pods/
+macos/Flutter/ephemeral/
+
+# =========================
+# Linux / Windows
+# =========================
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# =========================
+# Web
+# =========================
+web/.dart_tool/
+
+# =========================
+# Misc / Versioning tools
+# =========================
+.svn/
+.history/
+migrate_working_dir/
+
+# =========================
+# Symbolication / Obfuscation
+# =========================
+app.*.symbols
+app.*.map.json
+# Environment files
+.env
+.env.*
+
+# Lock files (keep pubspec.lock)
+*.lock
+!.pubspec.lock
+
+# Coverage details
+coverage/lcov.info
+
+# Local configs
+config/*.local.json
+
+# OS extras
+.fseventsd
