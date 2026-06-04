@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/task.dart';
 
+
 class TaskTile extends StatelessWidget {
   final Task task;
   final VoidCallback onChanged;
