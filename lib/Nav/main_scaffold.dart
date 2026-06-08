@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/features/AI_Tools/tools_page.dart';
 import '../features/dashboard/dashboard_page.dart';
 import '../features/Coach_chat/ai_coach_chat_page.dart';
 import '../features/profile/profile_page.dart';
+import '../features/wardrobe/wardrobe_page.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -16,7 +16,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final List<Widget> _pages = const [
     DashboardPage(),
-    AiToolsPage(),
+    WardrobePage(),
     AiCoachChatPage(),
     ProfilePage(),
   ];
@@ -37,9 +37,9 @@ class _MainScaffoldState extends State<MainScaffold> {
             label: 'Plan',
           ),
           NavigationDestination(
-            icon: Icon(Icons.qr_code_scanner, color: Colors.white38),
-            selectedIcon: Icon(Icons.qr_code_scanner, color: Colors.white),
-            label: 'AI Scan',
+            icon: Icon(Icons.checkroom_outlined, color: Colors.white38),
+            selectedIcon: Icon(Icons.checkroom, color: Colors.white),
+            label: 'Wardrobe',
           ),
           NavigationDestination(
             icon: Icon(Icons.chat_bubble_outline, color: Colors.white38),
