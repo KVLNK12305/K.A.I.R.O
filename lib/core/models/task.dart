@@ -10,6 +10,7 @@ class Task {
   String title;
   String category;
   bool isCompleted;
+  DateTime createdAt = DateTime.now();
 
   Task(this.title, this.category, {this.isCompleted = false});
 }
