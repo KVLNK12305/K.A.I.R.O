@@ -1,88 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:isar/isar.dart';
-import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'dart:io';
 
-import '../../core/models/task.dart';
+import 'providers/task_provider.dart';
+import '../wardrobe/providers/wardrobe_provider.dart';
 import 'widgets/task.dart';
 import 'widgets/coach_tips.dart';
-// Import your main.dart file here to access your global 'isar' instance
-import '../../main.dart'; 
 
-class DashboardPage extends StatefulWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(taskProvider);
+    final wardrobe = ref.watch(wardrobeProvider);
+    final now = DateTime.now();
+    final currentDayIndex = now.weekday - 1; // 0 = Mon, 6 = Sun
+    final weekStart = now.subtract(Duration(days: currentDayIndex));
 
-class _DashboardPageState extends State<DashboardPage> {
-  late StreamSubscription<List<SharedMediaFile>> _intentDataStreamSubscription;
-
-  // Changed to a non-final list that starts empty and populates from Isar
-  List<Task> _tasks = [];
-
-  @override
-  void initState() {
-    super.initState();
-
-    // 1. Load saved tasks from the database immediately when the page opens
-    _loadTasks();
-
-    // 2. Listen for shared data while the app is running in the background
-    _intentDataStreamSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
-      if (value.isNotEmpty && value.first.type == SharedMediaType.text) {
-        _handleSharedText(value.first.path);
-      }
-    });
-
-    // 3. Catch shared data if the app was completely closed
-    ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
-      if (value.isNotEmpty && value.first.type == SharedMediaType.text) {
-        _handleSharedText(value.first.path);
-        
-        // Clear the intent so it doesn't duplicate the task if you hot restart
-        ReceiveSharingIntent.instance.reset(); 
-      }
-    });
-  }
-
-  // Reads all tasks stored in the Isar database
-  Future<void> _loadTasks() async {
-    final tasksFromDB = await isar.tasks.where().findAll();
-    setState(() {
-      _tasks = tasksFromDB;
-    });
-  }
-
-  // Catches the text, writes it to Isar, and updates the view
-  void _handleSharedText(String text) async {
-    final newTask = Task(text, "AI Suggestion");
-
-    // All Isar writes must happen inside a write transaction
-    await isar.writeTxn(() async {
-      await isar.tasks.put(newTask);
-    });
-
-    // Refresh our local state list from the database
-    _loadTasks();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Blueprint updated from Share!'),
-        backgroundColor: Colors.white24,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _intentDataStreamSubscription.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -92,13 +28,13 @@ class _DashboardPageState extends State<DashboardPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text("WEEK 12: CONFIDENCE BUILDER", style: TextStyle(color: Colors.white54, fontSize: 10)),
+          Text("WEEK OF ${DateFormat('MMMM d').format(weekStart)}".toUpperCase(), style: const TextStyle(color: Colors.white54, fontSize: 10)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (i) {
-              final active = i == 3;
-              final done = i < 3;
+              final active = i == currentDayIndex;
+              final done = i < currentDayIndex;
               return Container(
                 width: 40,
                 height: 60,
@@ -119,12 +55,41 @@ class _DashboardPageState extends State<DashboardPage> {
               );
             }),
           ),
+          // Google Events Timeline
+          if (state.googleEvents.isNotEmpty) ...[
+            const SizedBox(height: 30),
+            const Text("TODAY'S SCHEDULE", style: TextStyle(color: Colors.white54, letterSpacing: 1)),
+            const SizedBox(height: 10),
+            ...state.googleEvents.map((e) {
+              final start = e.start?.dateTime?.toLocal() ?? DateTime.now();
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withAlpha(20),
+                  border: Border.all(color: Colors.blue.withAlpha(40)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Text(DateFormat('h:mm a').format(start), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(width: 16),
+                    Expanded(child: Text(e.summary ?? "Busy", style: const TextStyle(color: Colors.white))),
+                  ],
+                ),
+              );
+            }),
+          ],
+
           const SizedBox(height: 30),
           const Text("DAILY OBJECTIVES", style: TextStyle(color: Colors.white54, letterSpacing: 1)),
           const SizedBox(height: 10),
           
+          if (state.isLoading)
+            const Center(child: CircularProgressIndicator(color: Colors.white24)),
+
           // Render nothing or a placeholder message if database is empty
-          if (_tasks.isEmpty)
+          if (!state.isLoading && state.isarTasks.isEmpty && state.googleTasks.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Text(
@@ -133,21 +98,62 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
 
+          // Google Tasks
+          ...state.googleTasks.map((t) => ListTile(
+            leading: const Icon(Icons.check_box_outline_blank, color: Colors.white38),
+            title: Text(t.title ?? "Task", style: const TextStyle(color: Colors.white)),
+            subtitle: const Text("Google Tasks", style: TextStyle(color: Colors.white30, fontSize: 10)),
+            contentPadding: EdgeInsets.zero,
+          )),
+
           // Maps over persistent tasks from database
-          ..._tasks.map((t) => TaskTile(
+          ...state.isarTasks.map((t) => TaskTile(
                 task: t, 
-                onChanged: () async {
-                  // Save the checkbox state modification directly to Isar
-                  await isar.writeTxn(() async {
-                    await isar.tasks.put(t);
-                  });
-                  // Trigger UI refresh to show checked/line-through styling
-                  setState(() {});
+                onChanged: () {
+                  ref.read(taskProvider.notifier).updateTask(t);
                 },
               )),
+
+          if (wardrobe.outfitOfTheDay != null) ...[
+            const SizedBox(height: 30),
+            const Text("OUTFIT OF THE DAY", style: TextStyle(color: Colors.white54, letterSpacing: 1)),
+            const SizedBox(height: 10),
+            Container(
+              height: 120,
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Row(
+                children: [
+                  _buildOutfitImage(wardrobe.outfitOfTheDay!.top.localImagePath),
+                  _buildOutfitImage(wardrobe.outfitOfTheDay!.bottom.localImagePath),
+                  if (wardrobe.outfitOfTheDay!.shoes != null)
+                    _buildOutfitImage(wardrobe.outfitOfTheDay!.shoes!.localImagePath),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 30),
           const CoachTip(),
         ]),
+      ),
+    );
+  }
+
+  Widget _buildOutfitImage(String path) {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          border: const Border(right: BorderSide(color: Colors.black)),
+          image: DecorationImage(
+            image: FileImage(File(path)),
+            fit: BoxFit.cover,
+          ),
+        ),
       ),
     );
   }
