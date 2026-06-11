@@ -49,6 +49,8 @@ dependencies:
   extension_google_sign_in_as_googleapis_auth: ^2.0.12
   image_picker: ^1.1.2
   uuid: ^4.4.0
+  oauth2: ^2.0.5
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
