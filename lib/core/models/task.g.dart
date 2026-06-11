@@ -27,13 +27,30 @@ const TaskSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'isCompleted': PropertySchema(
+    r'energySlot': PropertySchema(
       id: 2,
+      name: r'energySlot',
+      type: IsarType.byte,
+      enumMap: _TaskenergySlotEnumValueMap,
+    ),
+    r'failureEtiology': PropertySchema(
+      id: 3,
+      name: r'failureEtiology',
+      type: IsarType.byte,
+      enumMap: _TaskfailureEtiologyEnumValueMap,
+    ),
+    r'isCompleted': PropertySchema(
+      id: 4,
       name: r'isCompleted',
       type: IsarType.bool,
     ),
+    r'isFailed': PropertySchema(
+      id: 5,
+      name: r'isFailed',
+      type: IsarType.bool,
+    ),
     r'title': PropertySchema(
-      id: 3,
+      id: 6,
       name: r'title',
       type: IsarType.string,
     )
@@ -71,8 +88,11 @@ void _taskSerialize(
 ) {
   writer.writeString(offsets[0], object.category);
   writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeBool(offsets[2], object.isCompleted);
-  writer.writeString(offsets[3], object.title);
+  writer.writeByte(offsets[2], object.energySlot.index);
+  writer.writeByte(offsets[3], object.failureEtiology.index);
+  writer.writeBool(offsets[4], object.isCompleted);
+  writer.writeBool(offsets[5], object.isFailed);
+  writer.writeString(offsets[6], object.title);
 }
 
 Task _taskDeserialize(
@@ -82,12 +102,19 @@ Task _taskDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Task(
-    reader.readString(offsets[3]),
+    reader.readString(offsets[6]),
     reader.readString(offsets[0]),
-    isCompleted: reader.readBoolOrNull(offsets[2]) ?? false,
+    isCompleted: reader.readBoolOrNull(offsets[4]) ?? false,
   );
   object.createdAt = reader.readDateTime(offsets[1]);
+  object.energySlot =
+      _TaskenergySlotValueEnumMap[reader.readByteOrNull(offsets[2])] ??
+          EnergySlot.peak1;
+  object.failureEtiology =
+      _TaskfailureEtiologyValueEnumMap[reader.readByteOrNull(offsets[3])] ??
+          FailureEtiology.none;
   object.id = id;
+  object.isFailed = reader.readBool(offsets[5]);
   return object;
 }
 
@@ -103,13 +130,50 @@ P _taskDeserializeProp<P>(
     case 1:
       return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (_TaskenergySlotValueEnumMap[reader.readByteOrNull(offset)] ??
+          EnergySlot.peak1) as P;
     case 3:
+      return (_TaskfailureEtiologyValueEnumMap[reader.readByteOrNull(offset)] ??
+          FailureEtiology.none) as P;
+    case 4:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 5:
+      return (reader.readBool(offset)) as P;
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _TaskenergySlotEnumValueMap = {
+  'peak1': 0,
+  'peak2': 1,
+  'recovery': 2,
+  'unassigned': 3,
+};
+const _TaskenergySlotValueEnumMap = {
+  0: EnergySlot.peak1,
+  1: EnergySlot.peak2,
+  2: EnergySlot.recovery,
+  3: EnergySlot.unassigned,
+};
+const _TaskfailureEtiologyEnumValueMap = {
+  'none': 0,
+  'miscalibratedEnergy': 1,
+  'taskAversive': 2,
+  'scopeTooLarge': 3,
+  'protectedTimeStolen': 4,
+  'didntWantItEnough': 5,
+};
+const _TaskfailureEtiologyValueEnumMap = {
+  0: FailureEtiology.none,
+  1: FailureEtiology.miscalibratedEnergy,
+  2: FailureEtiology.taskAversive,
+  3: FailureEtiology.scopeTooLarge,
+  4: FailureEtiology.protectedTimeStolen,
+  5: FailureEtiology.didntWantItEnough,
+};
 
 Id _taskGetId(Task object) {
   return object.id;
@@ -381,6 +445,112 @@ extension TaskQueryFilter on QueryBuilder<Task, Task, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Task, Task, QAfterFilterCondition> energySlotEqualTo(
+      EnergySlot value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'energySlot',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> energySlotGreaterThan(
+    EnergySlot value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'energySlot',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> energySlotLessThan(
+    EnergySlot value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'energySlot',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> energySlotBetween(
+    EnergySlot lower,
+    EnergySlot upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'energySlot',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> failureEtiologyEqualTo(
+      FailureEtiology value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'failureEtiology',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> failureEtiologyGreaterThan(
+    FailureEtiology value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'failureEtiology',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> failureEtiologyLessThan(
+    FailureEtiology value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'failureEtiology',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> failureEtiologyBetween(
+    FailureEtiology lower,
+    FailureEtiology upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'failureEtiology',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterFilterCondition> idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -438,6 +608,15 @@ extension TaskQueryFilter on QueryBuilder<Task, Task, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isCompleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> isFailedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isFailed',
         value: value,
       ));
     });
@@ -601,6 +780,30 @@ extension TaskQuerySortBy on QueryBuilder<Task, Task, QSortBy> {
     });
   }
 
+  QueryBuilder<Task, Task, QAfterSortBy> sortByEnergySlot() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'energySlot', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> sortByEnergySlotDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'energySlot', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> sortByFailureEtiology() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'failureEtiology', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> sortByFailureEtiologyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'failureEtiology', Sort.desc);
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterSortBy> sortByIsCompleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isCompleted', Sort.asc);
@@ -610,6 +813,18 @@ extension TaskQuerySortBy on QueryBuilder<Task, Task, QSortBy> {
   QueryBuilder<Task, Task, QAfterSortBy> sortByIsCompletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isCompleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> sortByIsFailed() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFailed', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> sortByIsFailedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFailed', Sort.desc);
     });
   }
 
@@ -651,6 +866,30 @@ extension TaskQuerySortThenBy on QueryBuilder<Task, Task, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Task, Task, QAfterSortBy> thenByEnergySlot() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'energySlot', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> thenByEnergySlotDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'energySlot', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> thenByFailureEtiology() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'failureEtiology', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> thenByFailureEtiologyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'failureEtiology', Sort.desc);
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -672,6 +911,18 @@ extension TaskQuerySortThenBy on QueryBuilder<Task, Task, QSortThenBy> {
   QueryBuilder<Task, Task, QAfterSortBy> thenByIsCompletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isCompleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> thenByIsFailed() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFailed', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> thenByIsFailedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFailed', Sort.desc);
     });
   }
 
@@ -702,9 +953,27 @@ extension TaskQueryWhereDistinct on QueryBuilder<Task, Task, QDistinct> {
     });
   }
 
+  QueryBuilder<Task, Task, QDistinct> distinctByEnergySlot() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'energySlot');
+    });
+  }
+
+  QueryBuilder<Task, Task, QDistinct> distinctByFailureEtiology() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'failureEtiology');
+    });
+  }
+
   QueryBuilder<Task, Task, QDistinct> distinctByIsCompleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isCompleted');
+    });
+  }
+
+  QueryBuilder<Task, Task, QDistinct> distinctByIsFailed() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isFailed');
     });
   }
 
@@ -735,9 +1004,28 @@ extension TaskQueryProperty on QueryBuilder<Task, Task, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Task, EnergySlot, QQueryOperations> energySlotProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'energySlot');
+    });
+  }
+
+  QueryBuilder<Task, FailureEtiology, QQueryOperations>
+      failureEtiologyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'failureEtiology');
+    });
+  }
+
   QueryBuilder<Task, bool, QQueryOperations> isCompletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isCompleted');
+    });
+  }
+
+  QueryBuilder<Task, bool, QQueryOperations> isFailedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isFailed');
     });
   }
 
