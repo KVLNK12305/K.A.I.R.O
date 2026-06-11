@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../features/dashboard/command_center_page.dart';
-import '../features/Coach_chat/ai_coach_chat_page.dart';
-import '../features/wardrobe/wardrobe_page.dart';
-import '../features/profile/profile_page.dart';
+import '../features/dashboard/inbox_page.dart';
+import '../features/psychosomatic/psychosomatic_page.dart';
+import '../features/liars_chart/liars_chart_page.dart';
+import 'floating_command_dock.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -16,47 +17,39 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final List<Widget> _pages = const [
     CommandCenterPage(),
-    AiCoachChatPage(),
-    WardrobePage(),
-    ProfilePage(),
+    InboxPage(),
+    PsychosomaticPage(),
+    LiarsChartPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: Colors.black,
-        indicatorColor: Colors.white24,
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Command',
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // The active page
+          Positioned.fill(
+            child: _pages[_currentIndex],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble),
-            label: 'Coach',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.checkroom_outlined),
-            selectedIcon: Icon(Icons.checkroom),
-            label: 'Wardrobe',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+          
+          // The floating command dock
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 32, // Floating above the bottom edge
+            child: Center(
+              child: FloatingCommandDock(
+                currentIndex: _currentIndex,
+                onItemSelected: (index) {
+                  setState(() => _currentIndex = index);
+                },
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 }
+
