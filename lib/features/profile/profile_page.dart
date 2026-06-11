@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
 import 'providers/auth_provider.dart';
-import 'package:intl/intl.dart';
-
+import '../dashboard/providers/github_provider.dart';
+import '../dashboard/providers/wakatime_provider.dart';
+import '../dashboard/providers/finance_provider.dart';
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
@@ -40,6 +41,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final dateString = DateFormat('EEEE, MMMM d, yyyy').format(_now);
 
     final user = ref.watch(authProvider);
+    final githubState = ref.watch(githubPRsProvider);
+    final wakatimeState = ref.watch(wakatimeProvider);
+    final financeState = ref.watch(financeMetricsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -133,12 +137,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const SizedBox(height: 30),
 
-            // Metrics Section (Placeholder for Isar data)
+            // Metrics Section
             const Text("SYSTEM METRICS (TODAY)", style: TextStyle(color: Colors.white54, letterSpacing: 1, fontSize: 12)),
             const SizedBox(height: 15),
-            _buildMetricTile(Icons.code, "Commits Pushed", "0", Colors.blue),
-            _buildMetricTile(Icons.book, "Study Hours", "0.0", Colors.purple),
-            _buildMetricTile(Icons.attach_money, "Expenses Logged", "0", Colors.green),
+            githubState.when(
+              data: (prs) => _buildMetricTile(Icons.merge_type, "Active PRs", "${prs.length}", Colors.blue),
+              loading: () => _buildMetricTile(Icons.merge_type, "Active PRs", "...", Colors.blue),
+              error: (err, stack) => _buildMetricTile(Icons.error_outline, "Active PRs", "Err", Colors.red),
+            ),
+            wakatimeState.when(
+              data: (hours) => _buildMetricTile(Icons.code, "Coding Hours", hours, Colors.purple),
+              loading: () => _buildMetricTile(Icons.code, "Coding Hours", "...", Colors.purple),
+              error: (err, stack) => _buildMetricTile(Icons.error_outline, "Coding Hours", "Err", Colors.red),
+            ),
+            financeState.when(
+              data: (metrics) => _buildMetricTile(Icons.attach_money, "Expenses Logged", "\$${metrics.todayExpense.toStringAsFixed(2)}", Colors.green),
+              loading: () => _buildMetricTile(Icons.attach_money, "Expenses Logged", "...", Colors.green),
+              error: (err, stack) => _buildMetricTile(Icons.error_outline, "Expenses Logged", "Err", Colors.red),
+            ),
           ],
         ),
       ),

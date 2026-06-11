@@ -100,8 +100,9 @@ class _AddItemFormState extends ConsumerState<_AddItemForm> {
           const SizedBox(height: 10),
           TextField(controller: _colorCtrl, decoration: const InputDecoration(labelText: "Primary Color (e.g. Black)")),
           const SizedBox(height: 10),
+          // ignore: deprecated_member_use
           DropdownButtonFormField<String>(
-            value: _category,
+            initialValue: _category,
             items: ["Top", "Bottom", "Shoes", "Outerwear"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
             onChanged: (v) => setState(() => _category = v!),
             decoration: const InputDecoration(labelText: "Category"),
@@ -110,8 +111,10 @@ class _AddItemFormState extends ConsumerState<_AddItemForm> {
           Row(
             children: [
               const Text("Image Source: "),
+              // ignore: deprecated_member_use
               Radio<ImageSource>(value: ImageSource.camera, groupValue: _source, onChanged: (v) => setState(() => _source = v!)),
               const Text("Camera"),
+              // ignore: deprecated_member_use
               Radio<ImageSource>(value: ImageSource.gallery, groupValue: _source, onChanged: (v) => setState(() => _source = v!)),
               const Text("Gallery"),
             ],

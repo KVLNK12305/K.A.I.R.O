@@ -2,6 +2,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:googleapis/tasks/v1.dart' as tasks_api;
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
+import 'package:flutter/foundation.dart';
 
 class GoogleApiService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -17,7 +18,7 @@ class GoogleApiService {
     try {
       return await _googleSignIn.signIn();
     } catch (e) {
-      print("Google Sign In Error: $e");
+      debugPrint("Google Sign In Error: $e");
       return null;
     }
   }
@@ -52,7 +53,7 @@ class GoogleApiService {
       );
       return events.items ?? [];
     } catch (e) {
-      print("Error fetching events: $e");
+      debugPrint("Error fetching events: $e");
       return [];
     }
   }
@@ -69,7 +70,7 @@ class GoogleApiService {
       final tasksList = await tasksApi.tasks.list('@default', showCompleted: false);
       return tasksList.items ?? [];
     } catch (e) {
-      print("Error fetching tasks: $e");
+      debugPrint("Error fetching tasks: $e");
       return [];
     }
   }
