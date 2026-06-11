@@ -51,7 +51,7 @@ class TaskNotifier extends StateNotifier<DashboardState> {
     state = state.copyWith(isLoading: true);
     
     // Load local Isar tasks
-    final tasksFromDB = await isar.tasks.where().findAll();
+    final tasksFromDB = await isar.tasks.where().anyId().findAll();
     
     // Load Google data if authenticated
     List<tasks_api.Task> gTasks = [];

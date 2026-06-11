@@ -25,7 +25,7 @@ class WardrobeNotifier extends StateNotifier<WardrobeState> {
   }
 
   Future<void> loadWardrobe() async {
-    final items = await isar.clothingItems.where().findAll();
+    final items = await isar.clothingItems.where().anyId().findAll();
     final outfit = _engine.generateDailyOutfit(items);
     state = WardrobeState(items: items, outfitOfTheDay: outfit);
   }

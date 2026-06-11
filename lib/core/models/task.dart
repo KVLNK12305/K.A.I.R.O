@@ -1,16 +1,44 @@
 import 'package:isar/isar.dart';
 
-// This tells the generator where to put the background code
-part 'task.g.dart'; 
+part 'task.g.dart';
+
+/// Cognitive demand slot for the Energy Economy system.
+enum EnergySlot {
+  peak1,      // Morning — highest cognitive load
+  peak2,      // Late morning — second wind
+  recovery,   // Afternoon — admin, low-stakes work
+  unassigned, // Not yet placed in the energy budget
+}
+
+/// Why a task failed or was moved. Used to map the architecture of self-sabotage.
+enum FailureEtiology {
+  none,
+  miscalibratedEnergy,
+  taskAversive,
+  scopeTooLarge,
+  protectedTimeStolen,
+  didntWantItEnough,
+}
 
 @collection
 class Task {
-  Id id = Isar.autoIncrement; // Required: gives each task a unique database ID
+  Id id = Isar.autoIncrement;
 
   String title;
   String category;
   bool isCompleted;
   DateTime createdAt = DateTime.now();
+
+  /// Energy Economy: which cognitive slot this task belongs to.
+  @enumerated
+  EnergySlot energySlot = EnergySlot.unassigned;
+
+  /// Energy Economy: root cause tag when a task is failed or skipped.
+  @enumerated
+  FailureEtiology failureEtiology = FailureEtiology.none;
+
+  /// Whether this task was explicitly failed (vs just not done yet).
+  bool isFailed = false;
 
   Task(this.title, this.category, {this.isCompleted = false});
 }
