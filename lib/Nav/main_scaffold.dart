@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../features/dashboard/dashboard_page.dart';
+import '../features/dashboard/command_center_page.dart';
 import '../features/Coach_chat/ai_coach_chat_page.dart';
-import '../features/profile/profile_page.dart';
 import '../features/wardrobe/wardrobe_page.dart';
+import '../features/profile/profile_page.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -12,44 +12,48 @@ class MainScaffold extends StatefulWidget {
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
-  int _selectedIndex = 0;
+  int _currentIndex = 0;
 
   final List<Widget> _pages = const [
-    DashboardPage(),
-    WardrobePage(),
+    CommandCenterPage(),
     AiCoachChatPage(),
+    WardrobePage(),
     ProfilePage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: _pages[_currentIndex],
       bottomNavigationBar: NavigationBar(
-        backgroundColor: const Color(0xFF0A0A0A),
-        indicatorColor: Colors.white10,
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
+        backgroundColor: Colors.black,
+        indicatorColor: Colors.white24,
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined, color: Colors.white38),
-            selectedIcon: Icon(Icons.dashboard, color: Colors.white),
-            label: 'Plan',
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Command',
           ),
           NavigationDestination(
-            icon: Icon(Icons.checkroom_outlined, color: Colors.white38),
-            selectedIcon: Icon(Icons.checkroom, color: Colors.white),
-            label: 'Wardrobe',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline, color: Colors.white38),
-            selectedIcon: Icon(Icons.chat_bubble, color: Colors.white),
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
             label: 'Coach',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline, color: Colors.white38),
-            selectedIcon: Icon(Icons.person, color: Colors.white),
-            label: 'You',
+            icon: Icon(Icons.checkroom_outlined),
+            selectedIcon: Icon(Icons.checkroom),
+            label: 'Wardrobe',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),
