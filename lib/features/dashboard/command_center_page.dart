@@ -6,6 +6,9 @@ import 'providers/command_center_provider.dart';
 import 'providers/finance_provider.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
+import '../energy_economy/energy_provider.dart';
+import '../psychosomatic/psychosomatic_provider.dart';
+import '../profile/profile_page.dart';
 import 'settings_page.dart';
 
 class CommandCenterPage extends ConsumerStatefulWidget {
@@ -47,33 +50,64 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 85.0), // Clear the bottom navigation dock
+        child: FloatingActionButton(
+          backgroundColor: Colors.white10,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+          onPressed: () => _showDropOverlay(context),
+          child: const Icon(Icons.add, color: Colors.white54),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // System Status Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    today.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'K.A.I.R.O. SYSTEM ONLINE',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 10,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_outlined, color: Colors.white54, size: 20),
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
-                    },
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.settings, color: Colors.white38, size: 20),
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.person, color: Colors.white38, size: 20),
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 32),
+              
               // THE OBJECTIVE
               TextField(
                 style: const TextStyle(
@@ -257,6 +291,83 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
           Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
         ],
       ),
+    );
+  }
+
+  void _showDropOverlay(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Color(0xEE0A0A0A), // Translucent black
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'QUICK CAPTURE',
+                  style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFCC2222).withValues(alpha: 0.1),
+                      foregroundColor: const Color(0xFFCC2222),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.flash_off_rounded),
+                    label: const Text('LOG ENERGY LEAK', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                    onPressed: () {
+                      ref.read(energyEconomyProvider.notifier).logEnergyLeak();
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leak captured. Categorize tonight.'), backgroundColor: Color(0xFF2A2A2A)));
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7B5CFA).withValues(alpha: 0.1),
+                      foregroundColor: const Color(0xFF7B5CFA),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.favorite_border),
+                    label: const Text('LOG SYMPTOM (QUICK)', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                    onPressed: () {
+                      ref.read(psychosomaticProvider.notifier).saveScan(
+                        muscleTension: 80, // Default high values for quick capture
+                        headStomachDisturbance: 80,
+                        breathDepth: 20,
+                        jawClench: 80,
+                        posture: 20,
+                        energyLevel: 30,
+                        skinReaction: 50,
+                        contextLabel: 'Quick Capture',
+                      );
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Symptom captured.'), backgroundColor: Color(0xFF2A2A2A)));
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
