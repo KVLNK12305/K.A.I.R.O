@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/finance_service.dart';
+import 'providers/github_provider.dart';
+import 'providers/wakatime_provider.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   final _githubTokenCtrl = TextEditingController();
   final _wakatimeKeyCtrl = TextEditingController();
   final _azureClientIdCtrl = TextEditingController();
@@ -39,6 +42,10 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setString('wakatime_key', _wakatimeKeyCtrl.text.trim());
     await prefs.setString('azure_client_id', _azureClientIdCtrl.text.trim());
     await prefs.setString('openai_key', _openAiKeyCtrl.text.trim());
+    
+    // Invalidate the providers so they re-fetch using the new keys
+    ref.invalidate(githubPRsProvider);
+    ref.invalidate(wakatimeProvider);
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
