@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/task.dart';
 import '../dashboard/providers/ms_todo_provider.dart';
 import 'energy_provider.dart';
+import '../../core/theme/app_theme.dart';
 
 class MorningEnforcerPage extends ConsumerStatefulWidget {
   final VoidCallback onPassedGauntlet;
@@ -18,8 +19,8 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
   final _peak1Controller = TextEditingController();
   final _peak2Controller = TextEditingController();
 
-  static const Color _accent = Color(0xFFFFBB00);
-  static const Color _bloodRed = Color(0xFFCC2222);
+  static const Color _accent = AppTheme.accent;
+  static const Color _bloodRed = AppTheme.warning;
 
   @override
   void dispose() {
@@ -36,8 +37,10 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: _bloodRed,
-          content: Text('You cannot bypass this. Assign your peak energy.',
-              style: TextStyle(color: Colors.white)),
+          content: Text(
+            'You cannot bypass this. Assign your peak energy.',
+            style: TextStyle(color: Colors.white),
+          ),
         ),
       );
       return;
@@ -54,7 +57,10 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
     final state = ref.read(msTodoProvider);
     if (!state.isAuthenticated) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connect MS To Do in the Inbox tab first.'), backgroundColor: _bloodRed),
+        const SnackBar(
+          content: Text('Connect MS To Do in the Inbox tab first.'),
+          backgroundColor: _bloodRed,
+        ),
       );
       return;
     }
@@ -68,29 +74,55 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('STAGING INBOX', style: TextStyle(color: Colors.white54, letterSpacing: 2, fontSize: 10, fontWeight: FontWeight.bold)),
+              const Text(
+                'STAGING INBOX',
+                style: TextStyle(
+                  color: Colors.white54,
+                  letterSpacing: 2,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 16),
               Expanded(
-                child: state.tasks.isEmpty
-                    ? const Center(child: Text('Inbox is empty.', style: TextStyle(color: Colors.white38)))
-                    : ListView.builder(
-                        itemCount: state.tasks.length,
-                        itemBuilder: (c, i) {
-                          final task = state.tasks[i];
-                          return ListTile(
-                            leading: const Icon(Icons.circle_outlined, color: Colors.white38, size: 16),
-                            title: Text(task.title, style: const TextStyle(color: Colors.white)),
-                            onTap: () {
-                              if (_peak1Controller.text.isEmpty) {
-                                _peak1Controller.text = task.title;
-                              } else if (_peak2Controller.text.isEmpty) {
-                                _peak2Controller.text = task.title;
-                              }
-                              Navigator.pop(ctx);
-                            },
-                          );
-                        },
-                      ),
+                child: Builder(
+                  builder: (context) {
+                    final allTasks = state.lists.expand((list) => list.tasks).toList();
+                    if (allTasks.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Inbox is empty.',
+                          style: TextStyle(color: Colors.white38),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      itemCount: allTasks.length,
+                      itemBuilder: (c, i) {
+                        final task = allTasks[i];
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.circle_outlined,
+                            color: Colors.white38,
+                            size: 16,
+                          ),
+                          title: Text(
+                            task.title,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          onTap: () {
+                            if (_peak1Controller.text.isEmpty) {
+                              _peak1Controller.text = task.title;
+                            } else if (_peak2Controller.text.isEmpty) {
+                              _peak2Controller.text = task.title;
+                            }
+                            Navigator.pop(ctx);
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -102,7 +134,7 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -136,12 +168,19 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
                   const Expanded(
                     child: Text(
                       'You have two peak energy slots. If you do not assign them now, they will be stolen by distraction. Commit.',
-                      style: TextStyle(color: Colors.white38, fontSize: 14, height: 1.5),
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                   IconButton(
                     onPressed: _showTodoInbox,
-                    icon: const Icon(Icons.cloud_download_outlined, color: _accent),
+                    icon: const Icon(
+                      Icons.cloud_download_outlined,
+                      color: _accent,
+                    ),
                     tooltip: 'Pull from MS To Do',
                   ),
                 ],
@@ -188,7 +227,10 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
   }
 
   Widget _buildTaskInput(
-      String label, String hint, TextEditingController controller) {
+    String label,
+    String hint,
+    TextEditingController controller,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -213,8 +255,7 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
             style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle:
-                  const TextStyle(color: Colors.white24, fontSize: 14),
+              hintStyle: const TextStyle(color: Colors.white24, fontSize: 14),
               contentPadding: const EdgeInsets.all(16),
               border: InputBorder.none,
             ),
