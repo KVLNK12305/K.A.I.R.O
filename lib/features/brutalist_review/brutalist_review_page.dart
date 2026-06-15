@@ -5,8 +5,9 @@ import '../../core/models/brutalist_review.dart';
 import '../../core/models/task.dart';
 import '../energy_economy/energy_provider.dart';
 import '../profile/providers/profile_provider.dart';
+import '../profile/providers/profile_provider.dart';
 import 'brutalist_provider.dart';
-
+import '../../core/theme/app_theme.dart';
 class BrutalistReviewPage extends ConsumerStatefulWidget {
   const BrutalistReviewPage({super.key});
 
@@ -27,11 +28,11 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
   final Map<int, FailureEtiology> _taskEtiologies = {};
 
   static const int _ventLimit = 300;
-  static const Color _bloodRed = Color(0xFFCC2222);
-  static const Color _dimWhite = Color(0xFFCCCCCC);
-  static const Color _surface = Color(0xFF111111);
-  static const Color _border = Color(0xFF2A2A2A);
-  static const Color _restBg = Color(0xFF1E1E1E);
+  static const Color _bloodRed = AppTheme.warning;
+  static const Color _dimWhite = AppTheme.secondary;
+  static const Color _surface = AppTheme.surface;
+  static const Color _border = AppTheme.border;
+  static const Color _restBg = AppTheme.surface;
 
   @override
   void initState() {
@@ -144,9 +145,9 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
     final isLocked = _submitted;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppTheme.background,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white54, size: 18),

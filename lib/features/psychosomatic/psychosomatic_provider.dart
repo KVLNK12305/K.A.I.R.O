@@ -11,12 +11,14 @@ class PsychosomaticState {
   final List<PsychosomaticScan> history; // last 14 days
   final CorrelationAlert? activeAlert;
   final bool isLoading;
+  final String? error;
 
   const PsychosomaticState({
     this.todayScan,
     this.history = const [],
     this.activeAlert,
     this.isLoading = false,
+    this.error,
   });
 
   PsychosomaticState copyWith({
@@ -24,12 +26,14 @@ class PsychosomaticState {
     List<PsychosomaticScan>? history,
     CorrelationAlert? activeAlert,
     bool? isLoading,
+    String? error,
   }) {
     return PsychosomaticState(
       todayScan: todayScan ?? this.todayScan,
       history: history ?? this.history,
       activeAlert: activeAlert,
       isLoading: isLoading ?? this.isLoading,
+      error: error,
     );
   }
 }
@@ -79,6 +83,8 @@ class PsychosomaticNotifier extends StateNotifier<PsychosomaticState> {
       todayScan: todayScan,
       history: history,
       activeAlert: alert,
+      isLoading: false,
+      error: null,
     );
   }
 

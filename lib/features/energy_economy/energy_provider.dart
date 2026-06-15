@@ -14,6 +14,7 @@ class EnergyEconomyState {
   final bool recoveryBlocked; // triggered by Brutalist cowardice log
   final bool hasAssignedPeaksToday;
   final bool isLoading;
+  final String? error;
 
   const EnergyEconomyState({
     this.peak1Tasks = const [],
@@ -24,6 +25,7 @@ class EnergyEconomyState {
     this.recoveryBlocked = false,
     this.hasAssignedPeaksToday = false,
     this.isLoading = false,
+    this.error,
   });
 
   /// The dominant failure reason across all failed tasks.
@@ -43,6 +45,7 @@ class EnergyEconomyState {
     bool? recoveryBlocked,
     bool? hasAssignedPeaksToday,
     bool? isLoading,
+    String? error,
   }) {
     return EnergyEconomyState(
       peak1Tasks: peak1Tasks ?? this.peak1Tasks,
@@ -53,6 +56,7 @@ class EnergyEconomyState {
       recoveryBlocked: recoveryBlocked ?? this.recoveryBlocked,
       hasAssignedPeaksToday: hasAssignedPeaksToday ?? this.hasAssignedPeaksToday,
       isLoading: isLoading ?? this.isLoading,
+      error: error,
     );
   }
 }
@@ -101,6 +105,8 @@ class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
       etiologyProfile: profile,
       recoveryBlocked: blockedRecovery,
       hasAssignedPeaksToday: hasAssignedPeaks,
+      isLoading: false,
+      error: null,
     );
   }
 

@@ -8,9 +8,9 @@ class CritiqueAiApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Critique AI',
+      title: 'KAIRO',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.brutalist,
       home: const MainScaffold(),
     );
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import 'providers/command_center_provider.dart';
 import 'providers/finance_provider.dart';
@@ -39,23 +38,28 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     final githubState = ref.watch(githubPRsProvider);
     final wakatimeState = ref.watch(wakatimeProvider);
     final financeState = ref.watch(financeMetricsProvider);
-    final today = DateFormat('MMMM d, yyyy').format(DateTime.now());
 
     // Sync the controller with the loaded state once
     scratchpadState.whenData((content) {
-      if (_scratchpadController.text != content && _scratchpadController.text.isEmpty && content.isNotEmpty) {
-         _scratchpadController.text = content;
+      if (_scratchpadController.text != content &&
+          _scratchpadController.text.isEmpty &&
+          content.isNotEmpty) {
+        _scratchpadController.text = content;
       }
     });
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 85.0), // Clear the bottom navigation dock
+        padding: const EdgeInsets.only(
+          bottom: 85.0,
+        ), // Clear the bottom navigation dock
         child: FloatingActionButton(
           backgroundColor: Colors.white10,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(100),
+          ),
           onPressed: () => _showDropOverlay(context),
           child: const Icon(Icons.add, color: Colors.white54),
         ),
@@ -95,19 +99,37 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.settings, color: Colors.white38, size: 20),
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())),
+                        icon: const Icon(
+                          Icons.settings,
+                          color: Colors.white38,
+                          size: 20,
+                        ),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsPage(),
+                          ),
+                        ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.person, color: Colors.white38, size: 20),
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage())),
+                        icon: const Icon(
+                          Icons.person,
+                          color: Colors.white38,
+                          size: 20,
+                        ),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfilePage(),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 32),
-              
+
               // THE OBJECTIVE
               TextField(
                 style: const TextStyle(
@@ -128,7 +150,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 keyboardType: TextInputType.multiline,
               ),
               const SizedBox(height: 40),
-              
+
               // THE SCRATCHPAD
               const Text(
                 "SCRATCHPAD",
@@ -142,17 +164,22 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               Container(
                 constraints: const BoxConstraints(minHeight: 150),
                 child: scratchpadState.isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.white24))
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white24),
+                      )
                     : TextField(
                         controller: _scratchpadController,
                         onChanged: (val) {
-                          ref.read(commandCenterProvider.notifier).updateNotes(val);
+                          ref
+                              .read(commandCenterProvider.notifier)
+                              .updateNotes(val);
                         },
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
                           height: 1.5,
-                          fontFamily: 'monospace', // Gives it that terminal/markdown feel
+                          fontFamily:
+                              'monospace', // Gives it that terminal/markdown feel
                         ),
                         decoration: InputDecoration(
                           hintText: "Brain dump, scratchpad, notes...",
@@ -183,24 +210,36 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: _buildMetricItem(Icons.code, "Coding Today", hours),
                 ),
-                loading: () => const CircularProgressIndicator(color: Colors.white24),
-                error: (err, stack) => Text("WakaTime Error: ${err.toString().replaceAll('Exception: ', '')}", style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                loading: () =>
+                    const CircularProgressIndicator(color: Colors.white24),
+                error: (err, stack) => Text(
+                  "WakaTime Error: ${err.toString().replaceAll('Exception: ', '')}",
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
               ),
               financeState.when(
                 data: (metrics) => Column(
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
-                      child: _buildMetricItem(Icons.attach_money, "Burn Rate Today", "\$${metrics.todayExpense.toStringAsFixed(2)}"),
+                      child: _buildMetricItem(
+                        Icons.attach_money,
+                        "Burn Rate Today",
+                        "\$${metrics.todayExpense.toStringAsFixed(2)}",
+                      ),
                     ),
-                    _buildMetricItem(Icons.account_balance_wallet, "Burn Rate This Month", "\$${metrics.monthExpense.toStringAsFixed(2)}"),
+                    _buildMetricItem(
+                      Icons.account_balance_wallet,
+                      "Burn Rate This Month",
+                      "\$${metrics.monthExpense.toStringAsFixed(2)}",
+                    ),
                   ],
                 ),
                 loading: () => const SizedBox.shrink(),
                 error: (err, stack) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 32),
-              
+
               // GITHUB MOCK
               const Text(
                 "ACTIVE PULL REQUESTS",
@@ -214,21 +253,35 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               githubState.when(
                 data: (prs) {
                   if (prs.isEmpty) {
-                    return const Text("No active PRs. You're all caught up!", style: TextStyle(color: Colors.white38, fontSize: 12));
+                    return const Text(
+                      "No active PRs. You're all caught up!",
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                    );
                   }
                   return Column(
                     children: prs.map((pr) {
-                      final timeAgo = DateTime.now().difference(pr.createdAt).inDays;
-                      final timeString = timeAgo == 0 ? "today" : "$timeAgo days ago";
+                      final timeAgo = DateTime.now()
+                          .difference(pr.createdAt)
+                          .inDays;
+                      final timeString = timeAgo == 0
+                          ? "today"
+                          : "$timeAgo days ago";
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
-                        child: _buildMockGitHubItem("${pr.repoName} / ${pr.title}", "#${pr.number} • Opened $timeString"),
+                        child: _buildMockGitHubItem(
+                          "${pr.repoName} / ${pr.title}",
+                          "#${pr.number} • Opened $timeString",
+                        ),
                       );
                     }).toList(),
                   );
                 },
-                loading: () => const CircularProgressIndicator(color: Colors.white24),
-                error: (err, stack) => Text("Error loading PRs: ${err.toString().replaceAll('Exception: ', '')}", style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                loading: () =>
+                    const CircularProgressIndicator(color: Colors.white24),
+                error: (err, stack) => Text(
+                  "Error loading PRs: ${err.toString().replaceAll('Exception: ', '')}",
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
               ),
             ],
           ),
@@ -255,7 +308,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -285,10 +342,24 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
             children: [
               Icon(icon, color: Colors.purpleAccent, size: 16),
               const SizedBox(width: 12),
-              Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -311,25 +382,45 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               children: [
                 const Text(
                   'QUICK CAPTURE',
-                  style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFCC2222).withValues(alpha: 0.1),
+                      backgroundColor: const Color(
+                        0xFFCC2222,
+                      ).withValues(alpha: 0.1),
                       foregroundColor: const Color(0xFFCC2222),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     icon: const Icon(Icons.flash_off_rounded),
-                    label: const Text('LOG ENERGY LEAK', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                    label: const Text(
+                      'LOG ENERGY LEAK',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
                     onPressed: () {
                       ref.read(energyEconomyProvider.notifier).logEnergyLeak();
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leak captured. Categorize tonight.'), backgroundColor: Color(0xFF2A2A2A)));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Leak captured. Categorize tonight.'),
+                          backgroundColor: Color(0xFF2A2A2A),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -338,27 +429,45 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7B5CFA).withValues(alpha: 0.1),
+                      backgroundColor: const Color(
+                        0xFF7B5CFA,
+                      ).withValues(alpha: 0.1),
                       foregroundColor: const Color(0xFF7B5CFA),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     icon: const Icon(Icons.favorite_border),
-                    label: const Text('LOG SYMPTOM (QUICK)', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                    label: const Text(
+                      'LOG SYMPTOM (QUICK)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
                     onPressed: () {
-                      ref.read(psychosomaticProvider.notifier).saveScan(
-                        muscleTension: 80, // Default high values for quick capture
-                        headStomachDisturbance: 80,
-                        breathDepth: 20,
-                        jawClench: 80,
-                        posture: 20,
-                        energyLevel: 30,
-                        skinReaction: 50,
-                        contextLabel: 'Quick Capture',
-                      );
+                      ref
+                          .read(psychosomaticProvider.notifier)
+                          .saveScan(
+                            muscleTension:
+                                80, // Default high values for quick capture
+                            headStomachDisturbance: 80,
+                            breathDepth: 20,
+                            jawClench: 80,
+                            posture: 20,
+                            energyLevel: 30,
+                            skinReaction: 50,
+                            contextLabel: 'Quick Capture',
+                          );
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Symptom captured.'), backgroundColor: Color(0xFF2A2A2A)));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Symptom captured.'),
+                          backgroundColor: Color(0xFF2A2A2A),
+                        ),
+                      );
                     },
                   ),
                 ),

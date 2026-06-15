@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:isar/isar.dart';
-import 'Nav/main_scaffold.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'Nav/gatekeeper.dart';
 import 'core/models/task.dart';
 import 'core/models/daily_metric.dart';
@@ -16,27 +16,27 @@ import 'core/models/user_profile.dart';
 // Create a global instance of Isar so any screen can access it easily
 late Isar isar;
 
-void main() async {
+Future<void> main() async {
   // 1. Ensure Flutter engine bindings are ready before doing async native disk tasks
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
 
   // 2. Find a safe, secure folder on your phone to save the database file
   final dir = await getApplicationDocumentsDirectory();
 
   // 3. Open the database — all schemas including the new ruthless feature collections
-  isar = await Isar.open(
-    [
-      TaskSchema,
-      DailyMetricSchema,
-      ClothingItemSchema,
-      BrutalistReviewSchema,
-      PsychosomaticScanSchema,
-      LiarGoalSchema,
-      CrucibleStateSchema,
-      UserProfileSchema,
-    ],
-    directory: dir.path,
-  );
+  isar = await Isar.open([
+    TaskSchema,
+    DailyMetricSchema,
+    ClothingItemSchema,
+    BrutalistReviewSchema,
+    PsychosomaticScanSchema,
+    LiarGoalSchema,
+    CrucibleStateSchema,
+    UserProfileSchema,
+  ], directory: dir.path);
 
   runApp(const ProviderScope(child: MyApp()));
 }

@@ -8,23 +8,23 @@ import '../../core/models/liar_goal.dart';
 class LiarsChartState {
   final List<LiarGoal> goals;
   final bool isLoading;
-  final String? webhookError;
+  final String? error;
 
   const LiarsChartState({
     this.goals = const [],
     this.isLoading = false,
-    this.webhookError,
+    this.error,
   });
 
   LiarsChartState copyWith({
     List<LiarGoal>? goals,
     bool? isLoading,
-    String? webhookError,
+    String? error,
   }) {
     return LiarsChartState(
       goals: goals ?? this.goals,
       isLoading: isLoading ?? this.isLoading,
-      webhookError: webhookError,
+      error: error,
     );
   }
 }
@@ -50,7 +50,7 @@ class LiarsChartNotifier extends StateNotifier<LiarsChartState> {
         }
       }
     });
-    state = LiarsChartState(goals: goals);
+    state = LiarsChartState(goals: goals, isLoading: false, error: null);
   }
 
   Future<void> addGoal(LiarGoal goal) async {
