@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../../core/models/psychosomatic_scan.dart';
 import 'psychosomatic_provider.dart';
-
+import '../../core/theme/app_theme.dart';
 class PsychosomaticPage extends ConsumerStatefulWidget {
   const PsychosomaticPage({super.key});
 
@@ -32,10 +32,10 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
   int _standDownSecondsRemaining = 120;
   Timer? _standDownTimer;
 
-  static const Color _accent = Color(0xFF7B5CFA);
-  static const Color _stressHigh = Color(0xFFCC2222);
-  static const Color _stressMid = Color(0xFFFF8C00);
-  static const Color _stressLow = Color(0xFF44CC88);
+  static const Color _accent = AppTheme.accent;
+  static const Color _stressHigh = AppTheme.warning;
+  static const Color _stressMid = AppTheme.secondary;
+  static const Color _stressLow = AppTheme.success;
 
   @override
   void dispose() {
@@ -162,9 +162,9 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppTheme.background,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white54, size: 18),

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/liar_goal.dart';
 import 'liars_chart_provider.dart';
-
+import '../../core/theme/app_theme.dart';
 class LiarsChartPage extends ConsumerStatefulWidget {
   final bool isForced;
   const LiarsChartPage({super.key, this.isForced = false});
@@ -17,8 +17,8 @@ class _LiarsChartPageState extends ConsumerState<LiarsChartPage>
   late AnimationController _titleAnim;
   late Animation<Color?> _titleColorAnim;
 
-  static const Color _accent = Color(0xFFFFBB00);
-  static const Color _lie = Color(0xFFCC2222);
+  static const Color _accent = AppTheme.accent;
+  static const Color _lie = AppTheme.warning;
 
   @override
   void initState() {
@@ -43,9 +43,9 @@ class _LiarsChartPageState extends ConsumerState<LiarsChartPage>
     final anyLying = state.goals.any((g) => g.liarsChartActive);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppTheme.background,
         elevation: 0,
         automaticallyImplyLeading: !widget.isForced,
         leading: widget.isForced ? null : IconButton(
