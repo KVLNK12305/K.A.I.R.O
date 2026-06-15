@@ -26,9 +26,9 @@ class InboxPage extends ConsumerWidget {
           ? const Center(child: CircularProgressIndicator(color: Colors.white24))
           : !state.isAuthenticated
               ? _buildAuthPrompt(ref)
-              : state.tasks.isEmpty
+              : state.lists.every((list) => list.tasks.isEmpty)
                   ? _buildEmptyState()
-                  : _buildTaskList(state.tasks),
+                  : _buildTaskList(state.lists),
     );
   }
 
@@ -66,33 +66,53 @@ class InboxPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildTaskList(List<MsTodoTask> tasks) {
+  Widget _buildTaskList(List<MsTodoList> lists) {
     return ListView.builder(
       padding: const EdgeInsets.only(top: 16, bottom: 120),
-      itemCount: tasks.length,
+      itemCount: lists.length,
       itemBuilder: (ctx, idx) {
-        final task = tasks[idx];
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF111111),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF2A2A2A)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.circle_outlined, color: Colors.white38, size: 16),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  task.title,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+        final list = lists[idx];
+        if (list.tasks.isEmpty) return const SizedBox.shrink(); // Skip empty lists
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Text(
+                list.name.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const Icon(Icons.drag_indicator, color: Colors.white24, size: 16),
-            ],
-          ),
+            ),
+            ...list.tasks.map((task) => Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF111111),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.circle_outlined, color: Colors.white38, size: 16),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          task.title,
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ),
+                      const Icon(Icons.drag_indicator, color: Colors.white24, size: 16),
+                    ],
+                  ),
+                )),
+            const SizedBox(height: 16),
+          ],
         );
       },
     );

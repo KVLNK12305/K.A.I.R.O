@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:oauth2/oauth2.dart' as oauth2;
+import 'package:app_links/app_links.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MsTodoTask {
   final String id;
@@ -20,27 +24,35 @@ class MsTodoTask {
   }
 }
 
-class MsTodoState {
+class MsTodoList {
+  final String id;
+  final String name;
   final List<MsTodoTask> tasks;
+
+  MsTodoList({required this.id, required this.name, required this.tasks});
+}
+
+class MsTodoState {
+  final List<MsTodoList> lists;
   final bool isAuthenticated;
   final bool isLoading;
   final String? error;
 
   const MsTodoState({
-    this.tasks = const [],
+    this.lists = const [],
     this.isAuthenticated = false,
     this.isLoading = false,
     this.error,
   });
 
   MsTodoState copyWith({
-    List<MsTodoTask>? tasks,
+    List<MsTodoList>? lists,
     bool? isAuthenticated,
     bool? isLoading,
     String? error,
   }) {
     return MsTodoState(
-      tasks: tasks ?? this.tasks,
+      lists: lists ?? this.lists,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isLoading: isLoading ?? this.isLoading,
       error: error,
@@ -50,52 +62,93 @@ class MsTodoState {
 
 class MsTodoNotifier extends StateNotifier<MsTodoState> {
   // ─── CONFIGURATION ───
-  // Replace with your actual Azure Client ID
-  static const String _clientId = 'YOUR_AZURE_CLIENT_ID';
-  static const String _tenantId = 'common';
+  static String get _clientId => dotenv.env['AZURE_CLIENT_ID'] ?? 'YOUR_AZURE_CLIENT_ID';
+  static String get _tenantId => dotenv.env['AZURE_TENANT_ID'] ?? 'common';
   static const String _redirectUri = 'msauth://com.kairo.app/callback';
   // ─────────────────────
 
-  // Toggle this to test UI without real Azure App
-  static const bool _useMockData = true;
+  static const String _credentialsKey = 'ms_todo_credentials';
 
-  String? _accessToken;
+  oauth2.Client? _client;
+  oauth2.AuthorizationCodeGrant? _grant;
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
 
   MsTodoNotifier() : super(const MsTodoState()) {
+    _appLinks = AppLinks();
     _init();
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    _client?.close();
+    super.dispose();
   }
 
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
-    _accessToken = prefs.getString('ms_todo_token');
-    
-    if (_useMockData) {
-      state = state.copyWith(isAuthenticated: true);
-      await fetchTasks();
-    } else if (_accessToken != null) {
-      state = state.copyWith(isAuthenticated: true);
-      await fetchTasks();
+    final credsJson = prefs.getString(_credentialsKey);
+
+    if (credsJson != null) {
+      try {
+        final credentials = oauth2.Credentials.fromJson(credsJson);
+        _client = oauth2.Client(
+          credentials,
+          identifier: _clientId,
+          onCredentialsRefreshed: _saveCredentials,
+        );
+        state = state.copyWith(isAuthenticated: true);
+        await fetchTasks();
+      } catch (e) {
+        // Token might be revoked or invalid JSON
+        prefs.remove(_credentialsKey);
+        state = state.copyWith(isAuthenticated: false, error: 'Session expired. Please log in again.');
+      }
     }
   }
 
-  Future<void> login() async {
-    if (_useMockData) {
-      state = state.copyWith(isAuthenticated: true);
-      await fetchTasks();
-      return;
-    }
+  void _saveCredentials(oauth2.Credentials credentials) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_credentialsKey, credentials.toJson());
+  }
 
+  Future<void> login() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final authUrl = Uri.parse(
-          'https://login.microsoftonline.com/$_tenantId/oauth2/v2.0/authorize?'
-          'client_id=$_clientId&response_type=token&redirect_uri=$_redirectUri&'
-          'scope=Tasks.ReadWrite User.Read');
-          
+      final authorizationEndpoint = Uri.parse('https://login.microsoftonline.com/$_tenantId/oauth2/v2.0/authorize');
+      final tokenEndpoint = Uri.parse('https://login.microsoftonline.com/$_tenantId/oauth2/v2.0/token');
+
+      // Create an authorization code grant
+      _grant = oauth2.AuthorizationCodeGrant(
+        _clientId,
+        authorizationEndpoint,
+        tokenEndpoint,
+      );
+
+      var authUrl = _grant!.getAuthorizationUrl(
+        Uri.parse(_redirectUri),
+        scopes: ['Tasks.ReadWrite', 'User.Read', 'offline_access'],
+      );
+
+      // Force Microsoft to show the account picker instead of auto-logging in
+      authUrl = authUrl.replace(
+        queryParameters: {
+          ...authUrl.queryParameters,
+          'prompt': 'select_account',
+        },
+      );
+
+      // Listen for incoming deep links for the redirect
+      _linkSubscription?.cancel();
+      _linkSubscription = _appLinks.uriLinkStream.listen((Uri uri) async {
+        if (uri.toString().startsWith(_redirectUri)) {
+          await _handleAuthCallback(uri);
+        }
+      });
+
       if (await canLaunchUrl(authUrl)) {
         await launchUrl(authUrl, mode: LaunchMode.externalApplication);
-        // Note: Real OAuth flow requires intercepting the redirect URI.
-        // For production, use flutter_appauth or intercept uni_links.
       } else {
         throw Exception('Could not launch Microsoft login.');
       }
@@ -104,57 +157,82 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
     }
   }
 
-  Future<void> setMockToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('ms_todo_token', token);
-    _accessToken = token;
-    state = state.copyWith(isAuthenticated: true);
-    await fetchTasks();
+  Future<void> _handleAuthCallback(Uri uri) async {
+    try {
+      if (_grant == null) throw Exception('Authorization grant missing');
+      
+      _client = await _grant!.handleAuthorizationResponse(uri.queryParameters);
+      _saveCredentials(_client!.credentials);
+      
+      _linkSubscription?.cancel();
+      _grant = null;
+
+      state = state.copyWith(isAuthenticated: true, isLoading: false, error: null);
+      await fetchTasks();
+    } catch (e) {
+      state = state.copyWith(isAuthenticated: false, isLoading: false, error: 'Login failed: ${e.toString()}');
+    }
   }
 
   Future<void> fetchTasks() async {
+    if (_client == null || !state.isAuthenticated) return;
+    
     state = state.copyWith(isLoading: true, error: null);
 
-    if (_useMockData) {
-      await Future.delayed(const Duration(seconds: 1)); // simulate network
-      final mockTasks = [
-        MsTodoTask(id: '1', title: 'Write architecture document', isCompleted: false),
-        MsTodoTask(id: '2', title: 'Email investors', isCompleted: false),
-        MsTodoTask(id: '3', title: 'Review Q3 metrics', isCompleted: false),
-        MsTodoTask(id: '4', title: 'Schedule offsite', isCompleted: false),
-      ];
-      state = state.copyWith(tasks: mockTasks, isLoading: false);
-      return;
-    }
-
     try {
-      // 1. Get default list ID
-      final listRes = await http.get(
+      // Refresh token is handled automatically by oauth2.Client if needed before making the request.
+
+      // 1. Get ALL lists
+      final listRes = await _client!.get(
         Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists'),
-        headers: {'Authorization': 'Bearer $_accessToken'},
       );
       
-      if (listRes.statusCode != 200) throw Exception('Failed to fetch To-Do lists');
+      if (listRes.statusCode != 200) {
+        throw Exception('Failed to fetch To-Do lists: ${listRes.body}');
+      }
+      
       final listData = json.decode(listRes.body);
-      final defaultListId = listData['value'][0]['id']; // Grabs first list
+      final rawLists = listData['value'] as List;
 
-      // 2. Get tasks from list
-      final tasksRes = await http.get(
-        Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$defaultListId/tasks?\$filter=status ne \'completed\''),
-        headers: {'Authorization': 'Bearer $_accessToken'},
-      );
+      if (rawLists.isEmpty) {
+        state = state.copyWith(lists: [], isLoading: false);
+        return;
+      }
 
-      if (tasksRes.statusCode != 200) throw Exception('Failed to fetch tasks');
-      final tasksData = json.decode(tasksRes.body);
-      
-      final tasks = (tasksData['value'] as List)
-          .map((t) => MsTodoTask.fromJson(t))
-          .toList();
+      // 2. Get tasks for EACH list concurrently
+      final allLists = await Future.wait(rawLists.map((listJson) async {
+        final listId = listJson['id'];
+        final listName = listJson['displayName'];
 
-      state = state.copyWith(tasks: tasks, isLoading: false);
+        final tasksRes = await _client!.get(
+          Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks?\$filter=status ne \'completed\''),
+        );
+
+        if (tasksRes.statusCode != 200) {
+           throw Exception('Failed to fetch tasks for list $listName: ${tasksRes.body}');
+        }
+        final tasksData = json.decode(tasksRes.body);
+        
+        final tasks = (tasksData['value'] as List)
+            .map((t) => MsTodoTask.fromJson(t))
+            .toList();
+
+        return MsTodoList(id: listId, name: listName, tasks: tasks);
+      }));
+
+      state = state.copyWith(lists: allLists, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+      // Optionally handle specific revoked/expired errors here if auto-refresh fails
     }
+  }
+
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_credentialsKey);
+    _client?.close();
+    _client = null;
+    state = const MsTodoState();
   }
 }
 
