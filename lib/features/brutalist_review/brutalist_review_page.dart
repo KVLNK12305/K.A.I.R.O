@@ -5,7 +5,6 @@ import '../../core/models/brutalist_review.dart';
 import '../../core/models/task.dart';
 import '../energy_economy/energy_provider.dart';
 import '../profile/providers/profile_provider.dart';
-import '../profile/providers/profile_provider.dart';
 import 'brutalist_provider.dart';
 import '../../core/theme/app_theme.dart';
 class BrutalistReviewPage extends ConsumerStatefulWidget {
