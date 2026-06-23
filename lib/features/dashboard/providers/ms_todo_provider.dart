@@ -62,7 +62,7 @@ class MsTodoState {
 class MsTodoNotifier extends StateNotifier<MsTodoState> {
   // ─── CONFIGURATION ───
   static String get _clientId => dotenv.env['AZURE_CLIENT_ID'] ?? 'YOUR_AZURE_CLIENT_ID';
-  static String get _tenantId => dotenv.env['AZURE_TENANT_ID'] ?? 'common';
+  static String get _tenantId => 'consumers';
   static const String _redirectUri = 'msauth://com.kairo.app/callback';
   // ─────────────────────
 
@@ -130,11 +130,11 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
         scopes: ['Tasks.ReadWrite', 'User.Read', 'offline_access'],
       );
 
-      // Force Microsoft to show the account picker instead of auto-logging in
+      // Force Microsoft to show the login screen instead of auto-logging in or using cached identity
       authUrl = authUrl.replace(
         queryParameters: {
           ...authUrl.queryParameters,
-          'prompt': 'select_account',
+          'prompt': 'login',
         },
       );
 
@@ -198,8 +198,9 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
         return;
       }
 
-      // 2. Get tasks for EACH list concurrently
-      final allLists = await Future.wait(rawLists.map((listJson) async {
+      // 2. Get tasks for EACH list sequentially to avoid Microsoft Graph rate limits (activityLimitReached)
+      final allLists = <MsTodoList>[];
+      for (final listJson in rawLists) {
         final listId = listJson['id'];
         final listName = listJson['displayName'];
 
@@ -216,13 +217,104 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
             .map((t) => MsTodoTask.fromJson(t))
             .toList();
 
-        return MsTodoList(id: listId, name: listName, tasks: tasks);
-      }));
+        allLists.add(MsTodoList(id: listId, name: listName, tasks: tasks));
+      }
 
       state = state.copyWith(lists: allLists, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       // Optionally handle specific revoked/expired errors here if auto-refresh fails
+    }
+  }
+
+  Future<void> createTask(String listId, String title) async {
+    if (_client == null || !state.isAuthenticated) return;
+    
+    // Optimistic update
+    final newTask = MsTodoTask(id: 'temp_${DateTime.now().millisecondsSinceEpoch}', title: title, isCompleted: false);
+    final updatedLists = state.lists.map((l) {
+      if (l.id == listId) {
+        return MsTodoList(id: l.id, name: l.name, tasks: [newTask, ...l.tasks]);
+      }
+      return l;
+    }).toList();
+    state = state.copyWith(lists: updatedLists);
+
+    try {
+      final res = await _client!.post(
+        Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'title': title}),
+      );
+
+      if (res.statusCode != 201) {
+        throw Exception('Failed to create task: ${res.body}');
+      }
+      // Replace temp task with real task
+      final realTask = MsTodoTask.fromJson(json.decode(res.body));
+      final finalLists = state.lists.map((l) {
+        if (l.id == listId) {
+          final newTasks = l.tasks.map((t) => t.id == newTask.id ? realTask : t).toList();
+          return MsTodoList(id: l.id, name: l.name, tasks: newTasks);
+        }
+        return l;
+      }).toList();
+      state = state.copyWith(lists: finalLists);
+    } catch (e) {
+      // Revert optimistic update on failure
+      await fetchTasks();
+    }
+  }
+
+  Future<void> completeTask(String listId, String taskId) async {
+    if (_client == null || !state.isAuthenticated) return;
+
+    // Optimistic remove
+    final updatedLists = state.lists.map((l) {
+      if (l.id == listId) {
+        return MsTodoList(id: l.id, name: l.name, tasks: l.tasks.where((t) => t.id != taskId).toList());
+      }
+      return l;
+    }).toList();
+    state = state.copyWith(lists: updatedLists);
+
+    try {
+      final res = await _client!.patch(
+        Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks/$taskId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'status': 'completed'}),
+      );
+
+      if (res.statusCode != 200) {
+        throw Exception('Failed to complete task: ${res.body}');
+      }
+    } catch (e) {
+      await fetchTasks();
+    }
+  }
+
+  Future<void> deleteTask(String listId, String taskId) async {
+    if (_client == null || !state.isAuthenticated) return;
+
+    // Optimistic remove
+    final updatedLists = state.lists.map((l) {
+      if (l.id == listId) {
+        return MsTodoList(id: l.id, name: l.name, tasks: l.tasks.where((t) => t.id != taskId).toList());
+      }
+      return l;
+    }).toList();
+    state = state.copyWith(lists: updatedLists);
+
+    try {
+      final res = await _client!.delete(
+        Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks/$taskId'),
+      );
+
+      if (res.statusCode != 204) {
+        throw Exception('Failed to delete task: ${res.body}');
+      }
+    } catch (e) {
+      await fetchTasks();
     }
   }
 
