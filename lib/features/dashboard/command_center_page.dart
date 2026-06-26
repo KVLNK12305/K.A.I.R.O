@@ -9,6 +9,7 @@ import '../energy_economy/energy_provider.dart';
 import '../psychosomatic/psychosomatic_provider.dart';
 import '../profile/profile_page.dart';
 import 'settings_page.dart';
+import 'memory_graph_view.dart';
 
 class CommandCenterPage extends ConsumerStatefulWidget {
   const CommandCenterPage({super.key});
@@ -48,11 +49,14 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
       }
     });
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = screenWidth < 360 ? 16.0 : 24.0;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(
-          bottom: 85.0,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 85.0,
         ), // Clear the bottom navigation dock
         child: FloatingActionButton(
           backgroundColor: Colors.white10,
@@ -66,65 +70,95 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // System Status Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.greenAccent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'K.A.I.R.O. SYSTEM ONLINE',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 10,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.greenAccent,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.settings,
-                          color: Colors.white38,
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SettingsPage(),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'K.A.I.R.O. SYSTEM ONLINE',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.account_tree,
+                        color: Colors.white38,
+                        size: 18,
+                      ),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MemoryGraphView(
+                            initialCollection: 'Global',
+                            initialId: 0,
+                            initialTitle: 'Global Hub',
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.person,
-                          color: Colors.white38,
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ProfilePage(),
-                          ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.settings,
+                        color: Colors.white38,
+                        size: 18,
+                      ),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsPage(),
                         ),
                       ),
-                    ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.person,
+                        color: Colors.white38,
+                        size: 18,
+                      ),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProfilePage(),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -313,6 +347,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -336,22 +372,21 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.purpleAccent, size: 16),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+          Icon(icon, color: Colors.purpleAccent, size: 16),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
-            ],
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: const TextStyle(
