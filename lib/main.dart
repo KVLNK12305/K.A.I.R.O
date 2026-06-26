@@ -12,6 +12,11 @@ import 'core/models/psychosomatic_scan.dart';
 import 'core/models/liar_goal.dart';
 import 'core/models/crucible_state.dart';
 import 'core/models/user_profile.dart';
+import 'core/models/memory_edge.dart';
+import 'core/models/book.dart';
+import 'core/models/idea.dart';
+import 'core/models/project.dart';
+import 'core/models/gita_shloka.dart';
 
 // Create a global instance of Isar so any screen can access it easily
 late Isar isar;
@@ -36,6 +41,11 @@ Future<void> main() async {
     LiarGoalSchema,
     CrucibleStateSchema,
     UserProfileSchema,
+    MemoryEdgeSchema,
+    BookSchema,
+    IdeaSchema,
+    ProjectSchema,
+    GitaShlokaSchema,
   ], directory: dir.path);
 
   runApp(const ProviderScope(child: MyApp()));
