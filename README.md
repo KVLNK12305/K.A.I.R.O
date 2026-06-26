@@ -2,114 +2,83 @@
 
 Knowledge • Ascension • Introspection • Resilience • Overcoming
 
-K.A.I.R.O is a Flutter productivity and self-improvement app concept built around four core experiences:
+K.A.I.R.O is a comprehensive Flutter-based "Life OS" and productivity application. It goes beyond simple task management to provide a holistic suite of tools for self-improvement, brutal introspection, memory tracking, and daily progression.
 
-- Daily blueprint planning
-- AI-powered diagnostics simulation
-- Coach-style chat interactions
-- Personal metrics and achievements tracking
+## Core Features & Modules
 
-The app currently focuses on a strong UI foundation and feature scaffolding, with mock interactions that are ready to be connected to real backend and AI services.
+The application is heavily modularized into distinct philosophical and functional areas:
 
-## Demo Scope
+- **Dashboard / Command Center**: The main hub for daily tracking, inbox management, and a memory graph view.
+- **Psychosomatic Scan**: A tool to log and track physical and mental states over time.
+- **Brutalist Review**: Unfiltered, direct self-reviews and reflections to foster extreme accountability.
+- **Liar's Chart (Goals)**: A mechanism to confront personal deceptions and track hard goals.
+- **Crucible State**: A deep-focus or intense working mode tracker.
+- **Spirituality (Gita Service)**: Daily Bhagavad Gita shlokas with offline caching.
+- **Energy Economy**: Tracking personal energy as a resource.
+- **Wardrobe (Clothing Item)**: Managing and tracking daily wear.
+- **Coach Chat**: An AI-powered interaction layer.
+- **Integrations**: Supports GitHub PR tracking, Wakatime coding stats, Google APIs, and Finance tracking.
 
-Current implemented screens:
+## Architecture & Tech Stack
 
-- Plan: daily objectives and coach tip
-- AI Scan: diagnostic tool cards with mock scan flow
-- Coach: in-app coach conversation experience
-- You: progress metrics and achievement list
+- **Framework**: Flutter (Material 3 UI, Target Platforms: Android, iOS, Web, Windows, macOS, Linux)
+- **Language**: Dart SDK `^3.10.1`
+- **Local Database**: [Isar](https://isar.dev/) for high-performance on-device storage of all core models (Tasks, Metrics, Goals, Shlokas, Graph Nodes, etc.)
+- **State Management**: [Riverpod](https://riverpod.dev/) for predictable, reactive state.
+- **API & Networking**: standard `http` package with dedicated service classes for external integrations (GitHub, WakaTime, etc.).
 
-## Project Structure
+### Project Structure
 
 ```text
 lib/
-	main.dart                      # App entry point
-	app.dart                       # MaterialApp setup
-	Nav/
-		main_scaffold.dart           # Bottom navigation + page shell
-	core/
-		models/
-			chat_message.dart          # Chat message model
-			task.dart                  # Task model
-		theme/
-			app_theme.dart             # Global dark theme
-	features/
-		dashboard/
-			dashboard_page.dart
-			widgets/
-				task.dart                # Task UI tile
-				coach_tips.dart
-		AI_Tools/
-			tools_page.dart
-			mock_scanner.dart
-			widgets/
-				tool_card.dart
-		Coach_chat/
-			ai_coach_chat_page.dart
-			widgets/
-				chat_bubble.dart         # Reserved for reusable chat bubble
-		profile/
-			profile_page.dart
-			widgets/
-				metric_bar.dart
-				achievement_tile.dart
+  main.dart                      # App entry point & Isar initialization
+  app.dart                       # MaterialApp & routing setup
+  Nav/
+    main_scaffold.dart           # Bottom navigation shell
+  core/
+    models/                      # Isar Collections (Task, LiarGoal, GitaShloka, etc.)
+    services/                    # External and Internal services (Gita, GitHub, Graph)
+    theme/                       # App-wide theming
+  features/
+    dashboard/                   # Command Center, Inbox, Memory Graph
+    brutalist_review/            # Honest self-reflection UI
+    psychosomatic/               # Mind/body scan UI
+    liars_chart/                 # Goal tracking UI
+    spirituality/                # Gita/spiritual features
+    wardrobe/                    # Clothing tracking
+    Coach_chat/                  # AI coaching
+    profile/                     # User profile & stats
 ```
-
-## Architecture Notes
-
-- Feature-first layout for presentation code
-- Shared domain objects in core models
-- Centralized app theme in core theme
-- Bottom navigation shell in a dedicated Nav module
-
-This keeps UI responsibilities clear and prepares the codebase for state management and data-layer expansion.
-
-## Tech Stack
-
-- Flutter (Material 3)
-- Dart SDK ^3.10.1
-- Target platforms: Android, iOS, Web, Windows, macOS, Linux
 
 ## Getting Started
 
 ### 1. Prerequisites
 
-- Flutter SDK installed and configured
-- Dart SDK (included with Flutter)
-- Platform toolchains as needed (Android Studio, Xcode, etc.)
+- Flutter SDK installed and configured.
+- Dart SDK (included with Flutter).
 
-### 2. Install dependencies
+### 2. Install Dependencies
 
 ```bash
 flutter pub get
 ```
 
-### 3. Run the app
+### 3. Generate Isar Code
+
+Because the app uses Isar, you must generate the `.g.dart` files for the models anytime they change:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+### 4. Run the App
 
 ```bash
 flutter run
 ```
 
-### 4. Run static analysis
+## Development & Roadmap
 
-```bash
-flutter analyze
-```
-
-### 5. Run tests
-
-```bash
-flutter test
-```
-
-## Development Roadmap
-
-Suggested next milestones:
-
-- Replace mock scanner flow with real camera input and on-device/cloud inference
-- Add state management layer (Riverpod, Bloc, or Provider)
-- Introduce repositories and services for clean data boundaries
-- Persist tasks, metrics, and chat history locally
-- Add authentication and optional sync backend
-- Expand test coverage for widgets and business logic.
+- **Data Connectivity**: Connecting mock/UI views to the underlying Isar database collections (e.g., Memory Nodes, Tasks, Crucible State).
+- **Service Integration**: Finalizing OAuth and token flows for GitHub, WakaTime, and Google API services.
+- **AI Integration**: Replacing mock coach flows with real on-device or cloud LLM inference.
