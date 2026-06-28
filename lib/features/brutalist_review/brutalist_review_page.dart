@@ -8,7 +8,8 @@ import '../profile/providers/profile_provider.dart';
 import 'brutalist_provider.dart';
 import '../../core/theme/app_theme.dart';
 class BrutalistReviewPage extends ConsumerStatefulWidget {
-  const BrutalistReviewPage({super.key});
+  final bool showBackButton;
+  const BrutalistReviewPage({super.key, this.showBackButton = true});
 
   @override
   ConsumerState<BrutalistReviewPage> createState() =>
@@ -131,14 +132,19 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
     );
   }
 
+  bool _prefilled = false;
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(brutalistProvider, (previous, current) {
+      if (!current.isLoading && current.todayReview != null && !_prefilled) {
+        _prefill(current.todayReview!);
+        _prefilled = true;
+      }
+    });
+
     final state = ref.watch(brutalistProvider);
     final profile = ref.watch(profileProvider);
-
-    if (!state.isLoading && state.todayReview != null && !_submitted) {
-      _prefill(state.todayReview!);
-    }
 
     final today = DateFormat('MMMM d, yyyy').format(DateTime.now()).toUpperCase();
     final isLocked = _submitted;
@@ -148,10 +154,12 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
       appBar: AppBar(
         backgroundColor: AppTheme.background,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white54, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: widget.showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.white54, size: 18),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -502,8 +510,9 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: _border),
       ),
-      child: Row(
-        children: [
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Icon(Icons.timer_outlined, color: Colors.white54, size: 20),
@@ -543,7 +552,7 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
               ),
             ),
           ),
-        ],
+        ]),
       ),
     );
   }

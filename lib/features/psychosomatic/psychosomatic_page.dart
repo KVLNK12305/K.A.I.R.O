@@ -104,7 +104,7 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
 
     if (state.isLoading) {
       return const Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Color(0xFF000000),
         body: Center(child: CircularProgressIndicator(color: Colors.white24)),
       );
     }
@@ -166,10 +166,7 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
       appBar: AppBar(
         backgroundColor: AppTheme.background,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white54, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -47,11 +47,8 @@ class _LiarsChartPageState extends ConsumerState<LiarsChartPage>
       appBar: AppBar(
         backgroundColor: AppTheme.background,
         elevation: 0,
-        automaticallyImplyLeading: !widget.isForced,
-        leading: widget.isForced ? null : IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white54, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
+        leading: null,
         title: AnimatedBuilder(
           animation: _titleColorAnim,
           builder: (context, _) {

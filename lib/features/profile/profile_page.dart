@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:intl/intl.dart';
 import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
+import '../../core/theme/app_theme.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -80,7 +81,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final user = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text(
