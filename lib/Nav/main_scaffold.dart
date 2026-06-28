@@ -5,6 +5,7 @@ import '../features/psychosomatic/psychosomatic_page.dart';
 import '../features/liars_chart/liars_chart_page.dart';
 import '../features/spirituality/daily_shloka_dialog.dart';
 import '../core/services/gita_service.dart';
+import '../core/theme/app_theme.dart';
 import '../main.dart';
 import 'floating_command_dock.dart';
 
@@ -64,7 +65,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.background,
       body: Stack(
         children: [
           // The active page

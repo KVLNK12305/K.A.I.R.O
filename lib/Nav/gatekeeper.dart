@@ -19,11 +19,11 @@ class Gatekeeper extends ConsumerWidget {
     // 1. Check Evening Interrogation (18:00 - 23:59)
     if (hour >= 18) {
       final brutalState = ref.watch(brutalistProvider);
-      if (!brutalState.isLoading && brutalState.todayReview == null) {
+      if (!brutalState.isLoading && brutalState.todayReview?.isCompleted != true) {
         // Force Brutalist Review
         return const Scaffold(
           backgroundColor: Colors.black,
-          body: BrutalistReviewPage(),
+          body: BrutalistReviewPage(showBackButton: false),
         );
       }
     }
