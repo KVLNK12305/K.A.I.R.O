@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:isar/isar.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'Nav/gatekeeper.dart';
+import 'Nav/splash_screen.dart';
+import 'core/theme/app_theme.dart';
 import 'core/models/task.dart';
 import 'core/models/daily_metric.dart';
 import 'core/models/clothing_item.dart';
@@ -59,8 +60,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'K.A.I.R.O',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: const Gatekeeper(),
+      theme: AppTheme.brutalist,
+      home: const SplashScreen(),
     );
   }
 }

@@ -3,12 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 // ensure this import matches your project name in pubspec.yaml
 // based on your error log, it looks like:
 
-import 'package:flutter_application_1/app.dart';
+import 'package:kairo/main.dart';
 
 void main() {
   testWidgets('Critique AI smoke test', (WidgetTester tester) async {
     // 1. Load the correct App Class (CritiqueAiApp)
-    await tester.pumpWidget(const CritiqueAiApp());
+    await tester.pumpWidget(const MyApp());
     
     // 2. Wait for the app to fully load
     await tester.pumpAndSettle();
