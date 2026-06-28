@@ -32,9 +32,11 @@ The application is heavily modularized into distinct philosophical and functiona
 ```text
 lib/
   main.dart                      # App entry point & Isar initialization
-  app.dart                       # MaterialApp & routing setup
   Nav/
+    splash_screen.dart           # Initial loading & branding
     main_scaffold.dart           # Bottom navigation shell
+    gatekeeper.dart              # Authentication & state gateway
+    smooth_page_route.dart       # Custom transition routing
   core/
     models/                      # Isar Collections (Task, LiarGoal, GitaShloka, etc.)
     services/                    # External and Internal services (Gita, GitHub, Graph)
