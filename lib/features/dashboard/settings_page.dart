@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/finance_service.dart';
+import '../../core/theme/app_theme.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
 
@@ -70,7 +71,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text("SYSTEM CONFIG", style: TextStyle(fontSize: 12, letterSpacing: 2, color: Colors.white54)),

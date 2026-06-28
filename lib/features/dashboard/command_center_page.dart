@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'providers/command_center_provider.dart';
+import 'providers/objective_provider.dart';
 import 'providers/finance_provider.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
@@ -10,6 +11,8 @@ import '../psychosomatic/psychosomatic_provider.dart';
 import '../profile/profile_page.dart';
 import 'settings_page.dart';
 import 'memory_graph_view.dart';
+import '../../Nav/smooth_page_route.dart';
+import '../../core/theme/app_theme.dart';
 
 class CommandCenterPage extends ConsumerStatefulWidget {
   const CommandCenterPage({super.key});
@@ -20,32 +23,43 @@ class CommandCenterPage extends ConsumerStatefulWidget {
 
 class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   late TextEditingController _scratchpadController;
+  late TextEditingController _objectiveController;
+  bool _scratchpadSynced = false;
+  bool _objectiveSynced = false;
 
   @override
   void initState() {
     super.initState();
     _scratchpadController = TextEditingController();
+    _objectiveController = TextEditingController();
   }
 
   @override
   void dispose() {
     _scratchpadController.dispose();
+    _objectiveController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final scratchpadState = ref.watch(commandCenterProvider);
+    final objectiveState = ref.watch(objectiveProvider);
     final githubState = ref.watch(githubPRsProvider);
     final wakatimeState = ref.watch(wakatimeProvider);
     final financeState = ref.watch(financeMetricsProvider);
 
-    // Sync the controller with the loaded state once
-    scratchpadState.whenData((content) {
-      if (_scratchpadController.text != content &&
-          _scratchpadController.text.isEmpty &&
-          content.isNotEmpty) {
-        _scratchpadController.text = content;
+    ref.listen(commandCenterProvider, (previous, current) {
+      if (current is AsyncData<String> && !_scratchpadSynced) {
+        _scratchpadController.text = current.value;
+        _scratchpadSynced = true;
+      }
+    });
+
+    ref.listen(objectiveProvider, (previous, current) {
+      if (current is AsyncData<String> && !_objectiveSynced) {
+        _objectiveController.text = current.value;
+        _objectiveSynced = true;
       }
     });
 
@@ -53,7 +67,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     final horizontalPadding = screenWidth < 360 ? 16.0 : 24.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: AppTheme.background,
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).padding.bottom + 85.0,
@@ -112,8 +126,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                       ),
                       onPressed: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const MemoryGraphView(
+                        SmoothPageRoute(
+                          page: const MemoryGraphView(
                             initialCollection: 'Global',
                             initialId: 0,
                             initialTitle: 'Global Hub',
@@ -135,9 +149,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                       ),
                       onPressed: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const SettingsPage(),
-                        ),
+                        SmoothPageRoute(page: const SettingsPage()),
                       ),
                     ),
                   ),
@@ -154,9 +166,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                       ),
                       onPressed: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const ProfilePage(),
-                        ),
+                        SmoothPageRoute(page: const ProfilePage()),
                       ),
                     ),
                   ),
@@ -164,8 +174,12 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               ),
               const SizedBox(height: 32),
 
-              // THE OBJECTIVE
+              // THE OBJECTIVE — now persisted
               TextField(
+                controller: _objectiveController,
+                onChanged: (val) {
+                  ref.read(objectiveProvider.notifier).updateObjective(val);
+                },
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -270,7 +284,14 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   ],
                 ),
                 loading: () => const SizedBox.shrink(),
-                error: (err, stack) => const SizedBox.shrink(),
+                error: (err, stack) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: _buildMetricItem(
+                    Icons.warning_amber_rounded,
+                    "Finance data unavailable",
+                    "—",
+                  ),
+                ),
               ),
               const SizedBox(height: 32),
 

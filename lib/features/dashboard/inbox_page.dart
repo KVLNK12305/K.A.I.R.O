@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/ms_todo_provider.dart';
+import '../../core/theme/app_theme.dart';
 
 class InboxPage extends ConsumerWidget {
   const InboxPage({super.key});
@@ -10,9 +11,9 @@ class InboxPage extends ConsumerWidget {
     final state = ref.watch(msTodoProvider);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppTheme.background,
         elevation: 0,
         title: const Text('STAGING INBOX', style: TextStyle(fontSize: 12, letterSpacing: 2)),
         actions: [
