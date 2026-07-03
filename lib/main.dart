@@ -26,8 +26,12 @@ Future<void> main() async {
   // 1. Ensure Flutter engine bindings are ready before doing async native disk tasks
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables (gracefully handle missing .env in release/device builds)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Notice: .env file not loaded ($e). Falling back to SharedPreferences / environment defaults.");
+  }
 
   // 2. Find a safe, secure folder on your phone to save the database file
   final dir = await getApplicationDocumentsDirectory();

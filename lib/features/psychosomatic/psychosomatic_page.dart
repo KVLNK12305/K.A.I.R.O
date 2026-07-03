@@ -64,12 +64,16 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
     
     // Stand Down Logic: High stress + shallow breath
     if (score >= 70 && breathDepth < 40 && !_isStandingDown) {
-      setState(() => _isStandingDown = true);
+      setState(() {
+        _isStandingDown = true;
+        _standDownSecondsRemaining = 120;
+      });
       _standDownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (_standDownSecondsRemaining <= 1) {
           timer.cancel();
           setState(() {
             _isStandingDown = false;
+            _standDownSecondsRemaining = 120;
           });
           _executeSave();
         } else {

@@ -49,12 +49,13 @@ class MsTodoState {
     bool? isAuthenticated,
     bool? isLoading,
     String? error,
+    bool clearError = false,
   }) {
     return MsTodoState(
       lists: lists ?? this.lists,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
@@ -113,7 +114,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
   }
 
   Future<void> login() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final authorizationEndpoint = Uri.parse('https://login.microsoftonline.com/$_tenantId/oauth2/v2.0/authorize');
       final tokenEndpoint = Uri.parse('https://login.microsoftonline.com/$_tenantId/oauth2/v2.0/token');
@@ -166,7 +167,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
       _linkSubscription?.cancel();
       _grant = null;
 
-      state = state.copyWith(isAuthenticated: true, isLoading: false, error: null);
+      state = state.copyWith(isAuthenticated: true, isLoading: false, clearError: true);
       await fetchTasks();
     } catch (e) {
       state = state.copyWith(isAuthenticated: false, isLoading: false, error: 'Login failed: ${e.toString()}');
@@ -176,7 +177,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
   Future<void> fetchTasks() async {
     if (_client == null || !state.isAuthenticated) return;
     
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       // Refresh token is handled automatically by oauth2.Client if needed before making the request.
