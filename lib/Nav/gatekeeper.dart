@@ -18,8 +18,10 @@ class Gatekeeper extends ConsumerWidget {
 
     // 1. Check Evening Interrogation (18:00 - 23:59)
     if (hour >= 18) {
-      final brutalState = ref.watch(brutalistProvider);
-      if (!brutalState.isLoading && brutalState.todayReview?.isCompleted != true) {
+      final needsReview = ref.watch(brutalistProvider.select(
+        (s) => !s.isLoading && s.todayReview?.isCompleted != true,
+      ));
+      if (needsReview) {
         // Force Brutalist Review
         return const Scaffold(
           backgroundColor: Colors.black,
@@ -30,22 +32,22 @@ class Gatekeeper extends ConsumerWidget {
 
     // 2. Check Morning Enforcer (05:00 - 12:00)
     if (hour >= 5 && hour < 12) {
-      final energyState = ref.watch(energyEconomyProvider);
-      if (!energyState.isLoading && !energyState.hasAssignedPeaksToday) {
+      final needsMorningEnforcement = ref.watch(energyEconomyProvider.select(
+        (s) => !s.isLoading && !s.hasAssignedPeaksToday,
+      ));
+      if (needsMorningEnforcement) {
         return MorningEnforcerPage(
-          onPassedGauntlet: () {
-            // Trigger rebuild by updating state or just relying on Provider
-            // Since it watches energyEconomyProvider, it should rebuild automatically when assigned.
-          },
+          onPassedGauntlet: () {},
         );
       }
     }
 
     // 3. Weekly Liar's Confrontation (Sunday)
     if (now.weekday == DateTime.sunday) {
-      final liarsState = ref.watch(liarsChartProvider);
-      if (!liarsState.isLoading &&
-          liarsState.goals.any((g) => g.liarsChartActive)) {
+      final needsLiarsConfrontation = ref.watch(liarsChartProvider.select(
+        (s) => !s.isLoading && s.goals.any((g) => g.liarsChartActive),
+      ));
+      if (needsLiarsConfrontation) {
         return const Scaffold(
           backgroundColor: Colors.black,
           body: LiarsChartPage(isForced: true),

@@ -32,7 +32,7 @@ class GitHubService {
         'Authorization': 'Bearer $token',
         'Accept': 'application/vnd.github.v3+json',
       },
-    );
+    ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);

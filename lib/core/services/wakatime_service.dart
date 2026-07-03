@@ -25,7 +25,7 @@ class WakaTimeService {
         'Authorization': 'Basic $encodedKey',
         'Accept': 'application/json',
       },
-    );
+    ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);

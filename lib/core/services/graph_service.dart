@@ -54,8 +54,8 @@ class GraphService {
         .findAll();
   }
 
-  /// Gets the entire global graph (limit in production!).
-  Future<List<MemoryEdge>> getGlobalGraph() async {
-    return await isar.memoryEdges.where().findAll();
+  /// Gets the global graph with a safety limit to prevent memory bloat.
+  Future<List<MemoryEdge>> getGlobalGraph({int limit = 500}) async {
+    return await isar.memoryEdges.where().limit(limit).findAll();
   }
 }

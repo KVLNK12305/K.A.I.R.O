@@ -18,7 +18,7 @@ class GitHubPR {
     final repoUrl = json['repository_url'] as String? ?? '';
     final repoParts = repoUrl.split('/');
     final repoName = repoParts.length >= 2 
-        ? '${repoParts[repoParts.length - 2]}/${repoParts.length > 0 ? repoParts.last : ''}' 
+        ? '${repoParts[repoParts.length - 2]}/${repoParts.last}' 
         : 'Unknown Repo';
 
     return GitHubPR(
