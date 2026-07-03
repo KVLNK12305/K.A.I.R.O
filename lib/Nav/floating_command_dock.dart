@@ -43,6 +43,8 @@ class FloatingCommandDock extends StatelessWidget {
               _buildNavItem(2, Icons.monitor_heart_outlined, 'BODY'),
               const SizedBox(width: 8),
               _buildNavItem(3, Icons.show_chart_rounded, 'TRUTH'),
+              const SizedBox(width: 8),
+              _buildNavItem(4, Icons.psychology_outlined, 'COACH'),
             ],
           ),
         ),
