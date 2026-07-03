@@ -22,12 +22,12 @@ class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
   bool _isDockVisible = true;
 
-  final List<Widget> _pages = const [
-    CommandCenterPage(),
-    InboxPage(),
-    PsychosomaticPage(),
-    LiarsChartPage(),
-    AiCoachChatPage(),
+  final List<Widget> _pages = [
+    const CommandCenterPage(),
+    const InboxPage(),
+    const PsychosomaticPage(),
+    const LiarsChartPage(),
+    const AiCoachChatPage(),
   ];
 
   @override
