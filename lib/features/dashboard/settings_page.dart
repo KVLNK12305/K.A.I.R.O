@@ -148,7 +148,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               const SizedBox(height: 32),
 
               const Text(
-                "OPENAI (AI COACH)",
+                "OPENAI / CUSTOM LLM KEY (OPTIONAL)",
                 style: TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 1.5),
               ),
               const SizedBox(height: 12),
@@ -156,7 +156,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 controller: _openAiKeyCtrl,
                 style: const TextStyle(color: Colors.white, fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: "Enter OpenAI API Key",
+                  hintText: "Enter custom API Key (for future fallback)",
                   hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.05),

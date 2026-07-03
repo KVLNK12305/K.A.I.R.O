@@ -7,5 +7,5 @@ import (
 )
 
 type AIProvider interface {
-	Chat(ctx context.Context, messages []models.Message) (string, error)
+	Chat(ctx context.Context, messages []models.Message, modelOverride string) (string, error)
 }

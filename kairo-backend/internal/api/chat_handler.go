@@ -27,7 +27,7 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 		return
 	}
 
-	respContent, err := h.provider.Chat(c.Request.Context(), req.Messages)
+	respContent, err := h.provider.Chat(c.Request.Context(), req.Messages, req.Model)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "AI Provider error: " + err.Error()})
 		return

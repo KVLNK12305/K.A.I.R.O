@@ -25,7 +25,7 @@ func NewGroqProvider(apiKey string, defaultModel string) *GroqProvider {
 		apiKey: apiKey,
 		model:  defaultModel,
 		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: 120 * time.Second,
 		},
 	}
 }
@@ -52,9 +52,13 @@ type groqResponse struct {
 	} `json:"error,omitempty"`
 }
 
-func (g *GroqProvider) Chat(ctx context.Context, messages []models.Message) (string, error) {
+func (g *GroqProvider) Chat(ctx context.Context, messages []models.Message, modelOverride string) (string, error) {
+	modelToUse := g.model
+	if modelOverride != "" {
+		modelToUse = modelOverride
+	}
 	reqBody := groqRequest{
-		Model:    g.model,
+		Model:    modelToUse,
 		Messages: messages,
 		Stream:   false,
 	}

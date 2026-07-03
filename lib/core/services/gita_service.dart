@@ -8,9 +8,9 @@ import '../models/gita_shloka.dart';
 class GitaService {
   final Isar isar;
 
-  /// Verse counts per chapter (1-indexed, chapter 1 has 47 verses, etc.)
+  /// Verse counts per chapter (1-indexed, chapter 1 has 46 verses, etc., totaling 700)
   static const List<int> _versesPerChapter = [
-    47, 72, 43, 42, 29, 47, 30, 28, 34, 42,
+    46, 72, 43, 42, 29, 47, 30, 28, 34, 42,
     55, 20, 35, 27, 20, 24, 28, 78,
   ];
 

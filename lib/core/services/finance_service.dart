@@ -44,10 +44,12 @@ class FinanceService {
         int amountIdx = headers.indexWhere((h) => h.contains('amount'));
         int dateIdx = headers.indexWhere((h) => h.contains('date'));
 
-        // Fallback indices if header names differ slightly
-        if (typeIdx == -1) typeIdx = 0; // Guessing based on typical formats
-        if (amountIdx == -1) amountIdx = 4;
-        if (dateIdx == -1) dateIdx = 1;
+        if (amountIdx == -1 || dateIdx == -1) {
+          throw const FormatException('Invalid CSV: Could not locate "amount" and "date" columns in file header.');
+        }
+        if (typeIdx == -1) {
+          debugPrint("Notice: No 'type' column found in CSV. Assuming all entries with valid amounts are expenses.");
+        }
 
         double todayTotal = 0.0;
         double monthTotal = 0.0;
@@ -58,10 +60,12 @@ class FinanceService {
 
         for (int i = 1; i < rows.length; i++) {
           final row = rows[i];
-          if (row.length <= amountIdx || row.length <= dateIdx || row.length <= typeIdx) continue;
+          if (row.length <= amountIdx || row.length <= dateIdx || (typeIdx != -1 && row.length <= typeIdx)) continue;
 
-          final type = row[typeIdx].toString().toLowerCase();
-          if (!type.contains('expense')) continue; // Only count expenses
+          if (typeIdx != -1) {
+            final type = row[typeIdx].toString().toLowerCase();
+            if (!type.contains('expense')) continue; // Only count expenses
+          }
 
           final date = row[dateIdx].toString(); // Assuming format contains yyyy-MM-dd
           final amountStr = row[amountIdx].toString().replaceAll(RegExp(r'[^0-9.]'), '');
