@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'gatekeeper.dart';
 
@@ -110,9 +109,9 @@ class _SplashScreenState extends State<SplashScreen>
     // Navigate
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const Gatekeeper(),
+        pageBuilder: (_, _, _) => const Gatekeeper(),
         transitionDuration: const Duration(milliseconds: 500),
-        transitionsBuilder: (_, animation, __, child) {
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },
       ),
