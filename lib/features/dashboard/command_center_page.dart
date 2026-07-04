@@ -9,6 +9,7 @@ import 'providers/wakatime_provider.dart';
 import '../energy_economy/energy_provider.dart';
 import '../psychosomatic/psychosomatic_provider.dart';
 import '../profile/profile_page.dart';
+import '../wardrobe/wardrobe_page.dart';
 import 'settings_page.dart';
 import 'memory_graph_view.dart';
 import '../../Nav/smooth_page_route.dart';
@@ -172,6 +173,23 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                       onPressed: () => Navigator.push(
                         context,
                         SmoothPageRoute(page: const ProfilePage()),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.checkroom,
+                        color: Colors.white38,
+                        size: 18,
+                      ),
+                      onPressed: () => Navigator.push(
+                        context,
+                        SmoothPageRoute(page: const WardrobePage()),
                       ),
                     ),
                   ),

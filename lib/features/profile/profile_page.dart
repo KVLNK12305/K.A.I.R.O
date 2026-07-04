@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:intl/intl.dart';
 import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
+import '../wardrobe/wardrobe_page.dart';
+import '../../Nav/smooth_page_route.dart';
 import '../../core/theme/app_theme.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -172,6 +174,32 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.accent,
+                  side: const BorderSide(color: AppTheme.accent),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () => Navigator.push(
+                  context,
+                  SmoothPageRoute(page: const WardrobePage()),
+                ),
+                icon: const Icon(Icons.checkroom, size: 18),
+                label: const Text(
+                  'OPEN DIGITAL WARDROBE',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
                   ),
                 ),
               ),
