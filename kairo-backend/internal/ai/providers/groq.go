@@ -57,6 +57,13 @@ func (g *GroqProvider) Chat(ctx context.Context, messages []models.Message, mode
 	if modelOverride != "" {
 		modelToUse = modelOverride
 	}
+	// Auto-detect multimodal vision requests (when Content is an array instead of string)
+	for _, msg := range messages {
+		if _, isString := msg.Content.(string); !isString {
+			modelToUse = "llama-3.2-90b-vision-preview"
+			break
+		}
+	}
 	reqBody := groqRequest{
 		Model:    modelToUse,
 		Messages: messages,

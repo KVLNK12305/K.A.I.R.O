@@ -2,7 +2,7 @@ package models
 
 type Message struct {
 	Role    string `json:"role" binding:"required"`
-	Content string `json:"content" binding:"required"`
+	Content any    `json:"content" binding:"required"`
 }
 
 type ChatRequest struct {

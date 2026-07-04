@@ -1,17 +1,32 @@
 class ChatMessage {
   String text;
   bool isUser;
+  String? attachmentPath;
+  String? attachmentType; // 'image', 'pdf', 'file'
+  String? base64Data;
 
-  ChatMessage(this.text, this.isUser);
+  ChatMessage(
+    this.text,
+    this.isUser, {
+    this.attachmentPath,
+    this.attachmentType,
+    this.base64Data,
+  });
 
   Map<String, dynamic> toJson() => {
     'text': text,
     'isUser': isUser,
+    'attachmentPath': attachmentPath,
+    'attachmentType': attachmentType,
+    'base64Data': base64Data,
   };
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
     json['text'] as String? ?? '',
     json['isUser'] as bool? ?? false,
+    attachmentPath: json['attachmentPath'] as String?,
+    attachmentType: json['attachmentType'] as String?,
+    base64Data: json['base64Data'] as String?,
   );
 }
 

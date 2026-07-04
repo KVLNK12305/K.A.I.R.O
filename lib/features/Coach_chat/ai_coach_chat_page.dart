@@ -1,23 +1,37 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../../core/models/chat_message.dart';
 import '../../core/services/ai_service.dart';
 import '../../core/constants/ai_prompts.dart';
+import '../energy_economy/energy_provider.dart';
+import '../psychosomatic/psychosomatic_provider.dart';
+import '../liars_chart/liars_chart_provider.dart';
+import '../dashboard/providers/wakatime_provider.dart';
+import '../dashboard/providers/finance_provider.dart';
 
-class AiCoachChatPage extends StatefulWidget {
+class AiCoachChatPage extends ConsumerStatefulWidget {
   const AiCoachChatPage({super.key});
 
   @override
-  State<AiCoachChatPage> createState() => _AiCoachChatPageState();
+  ConsumerState<AiCoachChatPage> createState() => _AiCoachChatPageState();
 }
 
-class _AiCoachChatPageState extends State<AiCoachChatPage> {
+class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final AiService _aiService = AiService();
   bool _isLoading = false;
   bool _isHistoryLoaded = false;
+
+  File? _attachedFile;
+  String? _attachedType; // 'image', 'pdf', 'file'
+  String? _attachedBase64;
 
   List<ChatSession> _sessions = [];
   String? _currentSessionId;
@@ -183,25 +197,164 @@ class _AiCoachChatPageState extends State<AiCoachChatPage> {
     _saveHistory();
   }
 
+  // ─── Attachments ──────────────────────────────────────────────────
+
+  Future<void> _pickAttachment() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF151515),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.white),
+              title: const Text("Camera (Scan Receipt / Garment / Whiteboard)", style: TextStyle(color: Colors.white, fontSize: 13)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final picker = ImagePicker();
+                final img = await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
+                if (img != null) {
+                  final bytes = await img.readAsBytes();
+                  setState(() {
+                    _attachedFile = File(img.path);
+                    _attachedType = 'image';
+                    _attachedBase64 = base64Encode(bytes);
+                  });
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.white),
+              title: const Text("Gallery Image", style: TextStyle(color: Colors.white, fontSize: 13)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final picker = ImagePicker();
+                final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+                if (img != null) {
+                  final bytes = await img.readAsBytes();
+                  setState(() {
+                    _attachedFile = File(img.path);
+                    _attachedType = 'image';
+                    _attachedBase64 = base64Encode(bytes);
+                  });
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.redAccent),
+              title: const Text("Attach Document (PDF, TXT, CSV, MD)", style: TextStyle(color: Colors.white, fontSize: 13)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'txt', 'csv', 'md', 'json']);
+                if (res != null && res.files.single.path != null) {
+                  final file = File(res.files.single.path!);
+                  final ext = file.path.split('.').last.toLowerCase();
+                  String extractedText = "";
+                  if (ext == 'pdf') {
+                    try {
+                      final bytes = await file.readAsBytes();
+                      final doc = PdfDocument(inputBytes: bytes);
+                      extractedText = PdfTextExtractor(doc).extractText();
+                      doc.dispose();
+                    } catch (e) {
+                      extractedText = "Error extracting PDF text: \$e";
+                    }
+                  } else {
+                    extractedText = await file.readAsString();
+                  }
+                  setState(() {
+                    _attachedFile = file;
+                    _attachedType = 'pdf';
+                    _attachedBase64 = extractedText;
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── Chat ─────────────────────────────────────────────────────────
 
   void _sendMessage() async {
-    if (_controller.text.trim().isEmpty || _isLoading) return;
-    final text = _controller.text.trim();
+    if ((_controller.text.trim().isEmpty && _attachedFile == null) || _isLoading) return;
+    String text = _controller.text.trim();
+    if (text.isEmpty && _attachedType == 'image') text = "Analyze this image.";
+    if (text.isEmpty && _attachedType == 'pdf') text = "Summarize and critique this attached document.";
     _controller.clear();
 
+    String textToSend = text;
+    if (_attachedType == 'pdf' && _attachedBase64 != null) {
+      textToSend = "\$text\n\n[ATTACHED DOCUMENT: \${_attachedFile!.path.split('/').last}]\n--- DOCUMENT CONTENT ---\n\$_attachedBase64\n--- END OF DOCUMENT ---";
+    }
+
+    final newMsg = ChatMessage(
+      textToSend,
+      true,
+      attachmentPath: _attachedFile?.path,
+      attachmentType: _attachedType,
+      base64Data: _attachedType == 'image' ? _attachedBase64 : null,
+    );
+
     setState(() {
-      _messages.add(ChatMessage(text, true));
+      _messages.add(newMsg);
       _isLoading = true;
+      _attachedFile = null;
+      _attachedType = null;
+      _attachedBase64 = null;
     });
     _scrollToBottom();
     _saveHistory();
 
-    final List<Map<String, String>> apiMessages = [
-      {'role': 'system', 'content': AiPrompts.kairoSystemPrompt},
-      ..._messages.map((m) => {
-        'role': m.isUser ? 'user' : 'assistant',
-        'content': m.text,
+    final energyState = ref.read(energyEconomyProvider);
+    final psychoState = ref.read(psychosomaticProvider);
+    final liarsState = ref.read(liarsChartProvider);
+    final wakatimeVal = ref.read(wakatimeProvider).valueOrNull ?? 'N/A';
+    final financeVal = ref.read(financeMetricsProvider).valueOrNull;
+
+    final int completedPeaks = energyState.peak1Tasks.where((t) => t.isCompleted).length +
+        energyState.peak2Tasks.where((t) => t.isCompleted).length;
+    final int totalPeaks = energyState.peak1Tasks.length + energyState.peak2Tasks.length;
+    final String dominantEtiology = energyState.dominantEtiology?.name ?? 'None';
+
+    final double? stressScore = psychoState.todayScan?.stressScore;
+    final String stressStr = stressScore != null ? '${stressScore.toStringAsFixed(0)}%' : 'Not scanned today';
+
+    final int activeLiars = liarsState.goals.where((g) => g.liarsChartActive).length;
+    final String burnToday = financeVal != null ? '\$${financeVal.todayExpense.toStringAsFixed(2)}' : 'N/A';
+
+    final String liveContextBlock = '''
+\n\n=== LIVE K.A.I.R.O. USER STATE ===
+- Body / Psychosomatic Stress: $stressStr
+- Execution / Peak Tasks: $completedPeaks/$totalPeaks completed today (Dominant failure reason: $dominantEtiology)
+- Truth / Liar's Chart: $activeLiars goal(s) flagged for self-deception
+- Deep Work (WakaTime Today): $wakatimeVal
+- Financial Burn Rate Today: $burnToday
+==================================
+''';
+
+    final List<Map<String, dynamic>> apiMessages = [
+      {'role': 'system', 'content': '${AiPrompts.kairoSystemPrompt}$liveContextBlock'},
+      ..._messages.map((m) {
+        if (m.attachmentType == 'image' && m.base64Data != null) {
+          return {
+            'role': m.isUser ? 'user' : 'assistant',
+            'content': [
+              {'type': 'text', 'text': m.text},
+              {
+                'type': 'image_url',
+                'image_url': {'url': 'data:image/jpeg;base64,${m.base64Data}'}
+              }
+            ],
+          };
+        }
+        return {
+          'role': m.isUser ? 'user' : 'assistant',
+          'content': m.text,
+        };
       }),
     ];
 
@@ -461,47 +614,122 @@ class _AiCoachChatPageState extends State<AiCoachChatPage> {
                           color: msg.isUser ? Colors.white : Colors.white.withAlpha(26),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          msg.text,
-                          style: TextStyle(color: msg.isUser ? Colors.black : Colors.white),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (msg.attachmentPath != null && msg.attachmentType == 'image' && File(msg.attachmentPath!).existsSync()) ...[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(File(msg.attachmentPath!), height: 160, width: double.infinity, fit: BoxFit.cover),
+                              ),
+                              const SizedBox(height: 8),
+                            ] else if (msg.attachmentType == 'pdf') ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: msg.isUser ? Colors.black12 : Colors.white12,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.picture_as_pdf, color: msg.isUser ? Colors.red : Colors.redAccent, size: 16),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      msg.attachmentPath?.split('/').last ?? "Attached Document",
+                                      style: TextStyle(color: msg.isUser ? Colors.black87 : Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            Text(
+                              msg.text,
+                              style: TextStyle(color: msg.isUser ? Colors.black : Colors.white),
+                            ),
+                          ],
                         ),
                       ),
                     );
                   },
                 ),
               ),
-              Container(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 16,
-                  bottom: MediaQuery.of(context).viewInsets.bottom == 0 ? 96 : 16,
-                ),
-                color: const Color(0xFF0A0A0A),
-                child: Row(children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      style: const TextStyle(color: Colors.white),
-                      onSubmitted: (_) => _sendMessage(),
-                      decoration: const InputDecoration(
-                        hintText: "Ask your coach...",
-                        hintStyle: TextStyle(color: Colors.white24),
-                        border: InputBorder.none,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_attachedFile != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      color: const Color(0xFF1A1A1A),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _attachedType == 'image' ? Icons.image : Icons.picture_as_pdf,
+                            color: _attachedType == 'image' ? Colors.blueAccent : Colors.redAccent,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Attached: \${_attachedFile!.path.split('/').last}",
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white54, size: 18),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => setState(() {
+                              _attachedFile = null;
+                              _attachedType = null;
+                              _attachedBase64 = null;
+                            }),
+                          ),
+                        ],
                       ),
                     ),
+                  Container(
+                    padding: EdgeInsets.only(
+                      left: 8,
+                      right: 16,
+                      top: 16,
+                      bottom: MediaQuery.of(context).viewInsets.bottom == 0 ? 96 : 16,
+                    ),
+                    color: const Color(0xFF0A0A0A),
+                    child: Row(children: [
+                      IconButton(
+                        icon: const Icon(Icons.attach_file, color: Colors.white70),
+                        tooltip: "Attach Image or Document",
+                        onPressed: _isLoading ? null : _pickAttachment,
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          style: const TextStyle(color: Colors.white),
+                          onSubmitted: (_) => _sendMessage(),
+                          decoration: const InputDecoration(
+                            hintText: "Ask your coach...",
+                            hintStyle: TextStyle(color: Colors.white24),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+                              )
+                            : const Icon(Icons.send, color: Colors.white),
+                        onPressed: _isLoading ? null : _sendMessage,
+                      ),
+                    ]),
                   ),
-                  IconButton(
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
-                          )
-                        : const Icon(Icons.send, color: Colors.white),
-                    onPressed: _isLoading ? null : _sendMessage,
-                  ),
-                ]),
+                ],
               ),
             ]),
     );

@@ -32,7 +32,7 @@ class AiService {
     return null;
   }
 
-  Future<String> chat(List<Map<String, String>> messages) async {
+  Future<String> chat(List<Map<String, dynamic>> messages) async {
     // Use cached URL, or discover one
     String? baseUrl = _workingBaseUrl;
     if (baseUrl == null) {
