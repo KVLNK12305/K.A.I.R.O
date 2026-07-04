@@ -27,15 +27,16 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
 
   final _contextController = TextEditingController();
   bool _submitted = false;
+  bool _showHistory = false;
   
   bool _isStandingDown = false;
   int _standDownSecondsRemaining = 120;
   Timer? _standDownTimer;
 
-  static const Color _accent = AppTheme.accent;
-  static const Color _stressHigh = AppTheme.warning;
-  static const Color _stressMid = AppTheme.secondary;
-  static const Color _stressLow = AppTheme.success;
+  static const Color _accent = Color.fromARGB(255, 0, 106, 255);
+  static const Color _stressHigh = Color.fromARGB(25, 5, 172, 21);
+  static const Color _stressMid = Color.fromARGB(255, 255, 155, 1);
+  static const Color _stressLow = Color.fromARGB(255, 0, 185, 49);
 
   @override
   void dispose() {
@@ -194,12 +195,25 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
             ),
           ],
         ),
+        actions: [
+          TextButton.icon(
+            onPressed: () => setState(() => _showHistory = !_showHistory),
+            icon: Icon(_showHistory ? Icons.speed : Icons.history, color: Colors.white, size: 16),
+            label: Text(
+              _showHistory ? 'SCANNER' : 'HISTORY',
+              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+            ),
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: _showHistory
+            ? _buildHistoryCardsView(state)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
 
             // ─── ALERT BANNER ─────────────────────────────────────────────
             if (state.activeAlert != null) _buildAlert(state.activeAlert!),
@@ -355,8 +369,120 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
                   ),
                 ),
               ),
-          ],
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryCardsView(PsychosomaticState state) {
+    if (state.history.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(48.0),
+          child: Text(
+            'NO BIOMETRIC HISTORY FOUND.\nCOMPLETE DAILY SCANS TO MAP PATTERNS.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38, fontSize: 12, letterSpacing: 1.5, height: 1.8),
+          ),
         ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'BIOMETRIC LOGS & PATTERN RECOGNITION',
+          style: TextStyle(color: AppTheme.secondary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2),
+        ),
+        const SizedBox(height: 16),
+        ...state.history.map((scan) {
+          final color = _stressColor(scan.stressScore);
+          final dateStr = '${scan.date.year}-${scan.date.month.toString().padLeft(2, '0')}-${scan.date.day.toString().padLeft(2, '0')}';
+          
+          final Map<String, int> indicators = {
+            'Muscle Tension': scan.muscleTension,
+            'Head/Stomach': scan.headStomachDisturbance,
+            'Breath Deficit': 100 - scan.breathDepth,
+            'Jaw Clench': scan.jawClench,
+            'Posture Deficit': 100 - scan.posture,
+            'Energy Deficit': 100 - scan.energyLevel,
+            'Skin Reaction': scan.skinReaction,
+          };
+          final sorted = indicators.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+          final top1 = sorted[0];
+          final top2 = sorted[1];
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      dateStr,
+                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        border: Border.all(color: color, width: 1),
+                      ),
+                      child: Text(
+                        'STRESS: ${scan.stressScore.toStringAsFixed(0)}%',
+                        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1),
+                      ),
+                    ),
+                  ],
+                ),
+                if (scan.contextLabel.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'CONTEXT: "${scan.contextLabel.toUpperCase()}"',
+                    style: const TextStyle(color: AppTheme.accent, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                const Text(
+                  'PRIMARY PHYSIOLOGICAL DRIVERS:',
+                  style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildIndicatorBadge(top1.key, top1.value, color),
+                    _buildIndicatorBadge(top2.key, top2.value, color),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildIndicatorBadge(String label, int val, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: Border.all(color: AppTheme.border, width: 1),
+      ),
+      child: Text(
+        '$label: $val%',
+        style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5),
       ),
     );
   }

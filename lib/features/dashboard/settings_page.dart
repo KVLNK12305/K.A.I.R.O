@@ -5,6 +5,7 @@ import '../../core/services/finance_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
+import '../crucible/crucible_provider.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -208,6 +209,30 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Text("SAVE CONFIGURATION", style: TextStyle(letterSpacing: 1, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Divider(color: AppTheme.border),
+              const SizedBox(height: 16),
+              const Text(
+                "DANGER ZONE • SYSTEM OVERRIDES",
+                style: TextStyle(color: AppTheme.warning, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ref.read(crucibleProvider.notifier).triggerManual("MANUAL CONFRONTATION TEST");
+                    Navigator.pop(context); // Go back to gatekeeper which will catch the active crucible!
+                  },
+                  icon: const Icon(Icons.warning_amber_rounded, color: AppTheme.warning, size: 18),
+                  label: const Text("TRIGGER CRUCIBLE BANKRUPTCY (TEST)", style: TextStyle(color: AppTheme.warning, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: AppTheme.warning),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
                 ),
               ),
             ],

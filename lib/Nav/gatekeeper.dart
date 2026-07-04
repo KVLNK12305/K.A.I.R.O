@@ -6,6 +6,8 @@ import '../features/energy_economy/morning_enforcer_page.dart';
 import '../features/brutalist_review/brutalist_review_page.dart';
 import '../features/liars_chart/liars_chart_provider.dart';
 import '../features/liars_chart/liars_chart_page.dart';
+import '../features/crucible/crucible_provider.dart';
+import '../features/crucible/crucible_page.dart';
 import 'main_scaffold.dart';
 
 class Gatekeeper extends ConsumerWidget {
@@ -15,6 +17,12 @@ class Gatekeeper extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
     final hour = now.hour;
+
+    // 0. The Crucible / Bankruptcy Protocol Lockdown (Highest Priority Override)
+    final crucible = ref.watch(crucibleProvider);
+    if (crucible.isActive) {
+      return CruciblePage(crucibleState: crucible);
+    }
 
     // 1. Check Evening Interrogation (18:00 - 23:59)
     if (hour >= 18) {

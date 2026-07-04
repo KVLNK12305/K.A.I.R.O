@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import '../../../main.dart';
 import '../../core/models/psychosomatic_scan.dart';
 import '../../core/models/task.dart';
+import '../../core/models/crucible_state.dart';
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,20 @@ class PsychosomaticNotifier extends StateNotifier<PsychosomaticState> {
             final t = Task(crucibleTitle, 'Crucible')
               ..energySlot = EnergySlot.peak1; // Force into peak energy
             await isar.tasks.put(t);
+          }
+
+          // Activate the Bankruptcy Protocol / Crucible State
+          var crucible = await isar.crucibleStates.get(1);
+          if (crucible == null) {
+            crucible = CrucibleState();
+            crucible.id = 1;
+          }
+          if (!crucible.isActive) {
+            crucible.isActive = true;
+            crucible.commitment = 'Repeated Physiological Toll: "$contextLabel"';
+            crucible.triggeredAt = DateTime.now();
+            crucible.timesTriggered++;
+            await isar.crucibleStates.put(crucible);
           }
         }
       }
