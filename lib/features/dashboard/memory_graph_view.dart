@@ -237,6 +237,35 @@ class _MemoryGraphViewState extends State<MemoryGraphView> {
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
               ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  if (_currentCollection == null || _currentId == null) return;
+                  final result = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => _AddConnectionDialog(
+                      currentCollection: _currentCollection!,
+                      currentId: _currentId!,
+                      currentTitle: _currentTitle!,
+                    ),
+                  );
+                  if (result == true) {
+                    _navigateToNode(
+                      collection: _currentCollection!,
+                      id: _currentId!,
+                      title: _currentTitle!,
+                      isBack: true,
+                    );
+                  }
+                },
+                icon: const Icon(Icons.add_link, size: 16),
+                label: const Text('LINK NODE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                  side: BorderSide(color: Theme.of(context).colorScheme.onPrimaryContainer),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+              ),
             ],
           ),
         ),
@@ -498,6 +527,7 @@ class _AddConnectionDialogState extends State<_AddConnectionDialog> {
                   onPressed: () => _performSearch(_searchController.text),
                 ),
               ),
+              onChanged: _performSearch,
               onSubmitted: _performSearch,
             ),
             
@@ -522,15 +552,57 @@ class _AddConnectionDialogState extends State<_AddConnectionDialog> {
                 ),
               )
             else if (_searchController.text.trim().isNotEmpty)
-              ListTile(
-                title: Text('Create Concept: "${_searchController.text.trim()}"'),
-                subtitle: const Text('Concept • Abstract Node'),
-                trailing: const Icon(Icons.add),
-                onTap: () {
-                  final title = _searchController.text.trim();
-                  final id = title.toLowerCase().hashCode.abs();
-                  _createEdge('Concept', id, title);
-                },
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text('NO MATCHES FOUND. CREATE NEW ENTITY:', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  ),
+                  ListTile(
+                    tileColor: Colors.white.withValues(alpha: 0.05),
+                    title: Text('New Task: "${_searchController.text.trim()}"'),
+                    subtitle: const Text('Task • Actionable execution item'),
+                    trailing: const Icon(Icons.add_circle_outline, color: Colors.white),
+                    onTap: () async {
+                      final title = _searchController.text.trim();
+                      int newId = 0;
+                      await isar.writeTxn(() async {
+                        final t = Task(title, 'Graph Created');
+                        newId = await isar.tasks.put(t);
+                      });
+                      if (newId > 0) _createEdge('Task', newId, title);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    tileColor: Colors.white.withValues(alpha: 0.05),
+                    title: Text('New Idea: "${_searchController.text.trim()}"'),
+                    subtitle: const Text('Idea • Knowledge node'),
+                    trailing: const Icon(Icons.lightbulb_outline, color: Colors.white),
+                    onTap: () async {
+                      final title = _searchController.text.trim();
+                      int newId = 0;
+                      await isar.writeTxn(() async {
+                        final i = Idea(title: title, content: 'Created from Memory Graph');
+                        newId = await isar.ideas.put(i);
+                      });
+                      if (newId > 0) _createEdge('Idea', newId, title);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    tileColor: Colors.white.withValues(alpha: 0.05),
+                    title: Text('New Concept: "${_searchController.text.trim()}"'),
+                    subtitle: const Text('Concept • Abstract Graph Node'),
+                    trailing: const Icon(Icons.hub_outlined, color: Colors.white),
+                    onTap: () {
+                      final title = _searchController.text.trim();
+                      final id = title.toLowerCase().hashCode.abs();
+                      _createEdge('Concept', id, title);
+                    },
+                  ),
+                ],
               )
             else
               const Center(
