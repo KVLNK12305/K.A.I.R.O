@@ -7,6 +7,7 @@ import '../../core/services/google_api_service.dart';
 import '../../core/services/streak_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/services/time_audit_service.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
 import '../crucible/crucible_provider.dart';
@@ -25,12 +26,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   final _openAiKeyCtrl = TextEditingController();
   bool _isLoading = true;
   int _currentStreakDay = 1;
+  double _sleepHoursPerNight = 7.0;
+  bool _adaptiveAlarmsEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _loadKeys();
     _loadStreak();
+    _loadAuditSettings();
+  }
+
+  Future<void> _loadAuditSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _sleepHoursPerNight = prefs.getDouble('kairo_sleep_hours_per_night') ?? 7.0;
+        _adaptiveAlarmsEnabled = prefs.getBool('kairo_adaptive_alarms_enabled') ?? true;
+      });
+    }
   }
 
   Future<void> _loadStreak() async {
@@ -110,14 +124,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("21-DAY NEUROLOGICAL REWIRING", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 4),
-                        Text("Daily checkpoint streak status", style: TextStyle(color: Colors.white54, fontSize: 10)),
-                      ],
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("21-DAY NEUROLOGICAL REWIRING", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                          SizedBox(height: 4),
+                          Text("Daily checkpoint streak status", style: TextStyle(color: Colors.white54, fontSize: 10), overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       "DAY $_currentStreakDay / 21",
                       style: const TextStyle(color: AppTheme.warning, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
@@ -134,7 +151,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         await AlarmService().setMorningAlarm();
                       },
                       icon: const Icon(Icons.alarm, color: Colors.white, size: 16),
-                      label: const Text("06:00 ALARM", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5)),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text("06:00 ALARM", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5))),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
@@ -148,7 +165,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         await AlarmService().setEveningAlarm();
                       },
                       icon: const Icon(Icons.alarm_add, color: Colors.white, size: 16),
-                      label: const Text("18:00 ALARM", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5)),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text("18:00 ALARM", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5))),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
@@ -173,7 +190,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     }
                   },
                   icon: const Icon(Icons.calendar_month, color: Colors.white, size: 16),
-                  label: const Text("SYNC 5 RITUAL BLOCKS TO GOOGLE CALENDAR", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5)),
+                  label: const FittedBox(fit: BoxFit.scaleDown, child: Text("SYNC 5 RITUAL BLOCKS TO GOOGLE CALENDAR", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5))),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
@@ -188,12 +205,51 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     NotificationService().showInstantNotification("🔥 Discipline Engine Active", "Push notification channel verified. Do not break your streak.");
                   },
                   icon: const Icon(Icons.notifications_active, color: Colors.white, size: 16),
-                  label: const Text("TEST PUSH NOTIFICATION CHANNEL", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5)),
+                  label: const FittedBox(fit: BoxFit.scaleDown, child: Text("TEST PUSH NOTIFICATION CHANNEL", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5))),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                 ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: Colors.white10),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(child: Text("SLEEP BASELINE (${_sleepHoursPerNight.toStringAsFixed(1)}h / NIGHT)", style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                  const SizedBox(width: 8),
+                  Text("WEEKLY: ${(_sleepHoursPerNight * 7).toStringAsFixed(0)}h", style: const TextStyle(color: AppTheme.warning, fontSize: 11)),
+                ],
+              ),
+              Slider(
+                value: _sleepHoursPerNight,
+                min: 5.0,
+                max: 9.0,
+                divisions: 8,
+                activeColor: AppTheme.warning,
+                inactiveColor: Colors.white12,
+                label: "${_sleepHoursPerNight.toStringAsFixed(1)} hours",
+                onChanged: (val) {
+                  setState(() => _sleepHoursPerNight = val);
+                },
+                onChangeEnd: (val) async {
+                  await TimeAuditService().setSleepBaseline(val);
+                },
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeThumbColor: AppTheme.warning,
+                title: const Text("ADAPTIVE ALARM SCHEDULING", style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                subtitle: const Text("Auto-recommend morning alarm shifts based on Google Calendar commitments.", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                value: _adaptiveAlarmsEnabled,
+                onChanged: (val) async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('kairo_adaptive_alarms_enabled', val);
+                  setState(() => _adaptiveAlarmsEnabled = val);
+                },
               ),
               const SizedBox(height: 32),
               const Divider(color: AppTheme.border),

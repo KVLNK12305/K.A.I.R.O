@@ -7,6 +7,10 @@ import 'providers/finance_provider.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
 import '../energy_economy/energy_provider.dart';
+import '../energy_economy/providers/time_audit_provider.dart';
+import '../../core/services/time_audit_service.dart';
+import '../../core/services/alarm_service.dart';
+import '../../core/services/google_api_service.dart';
 import '../psychosomatic/psychosomatic_provider.dart';
 import '../profile/profile_page.dart';
 import '../wardrobe/wardrobe_page.dart';
@@ -27,6 +31,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   late TextEditingController _objectiveController;
   bool _scratchpadSynced = false;
   bool _objectiveSynced = false;
+  bool _is168Expanded = false;
 
   @override
   void initState() {
@@ -196,6 +201,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 ],
               ),
               const SizedBox(height: 32),
+
+              // 168-HOUR BANDWIDTH CARD
+              _build168HourCard(context, ref),
 
               // THE OBJECTIVE — now persisted
               TextField(
@@ -556,6 +564,277 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _build168HourCard(BuildContext context, WidgetRef ref) {
+    final auditAsync = ref.watch(timeAuditProvider);
+
+    return auditAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(8.0),
+          child: CircularProgressIndicator(color: Colors.white24, strokeWidth: 2),
+        ),
+      ),
+      error: (e, st) => const SizedBox.shrink(),
+      data: (audit) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141414),
+            border: Border.all(
+              color: _is168Expanded
+                  ? AppTheme.warning.withValues(alpha: 0.5)
+                  : AppTheme.border,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InkWell(
+                onTap: () => setState(() => _is168Expanded = !_is168Expanded),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.timer_outlined,
+                              color: AppTheme.warning,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                "168h WEEKLY LEDGER • ${audit.freeHours.toStringAsFixed(1)}h FREE",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        _is168Expanded ? Icons.expand_less : Icons.expand_more,
+                        color: Colors.white54,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_is168Expanded) ...[
+                const Divider(color: AppTheme.border, height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        audit.brutalAssessment,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          height: 1.4,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Segmented bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: SizedBox(
+                          height: 12,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: (audit.sleepHours * 10).toInt().clamp(1, 1680),
+                                child: Container(color: const Color(0xFF1E88E5)),
+                              ),
+                              Expanded(
+                                flex: (audit.calendarHours * 10).toInt().clamp(1, 1680),
+                                child: Container(color: Colors.grey.shade700),
+                              ),
+                              Expanded(
+                                flex: (audit.peakWorkHours * 10).toInt().clamp(1, 1680),
+                                child: Container(color: AppTheme.warning),
+                              ),
+                              if (audit.urgentHours > 0)
+                                Expanded(
+                                  flex: (audit.urgentHours * 10).toInt().clamp(1, 1680),
+                                  child: Container(color: const Color(0xFFE53935)),
+                                ),
+                              Expanded(
+                                flex: (audit.freeHours * 10).toInt().clamp(1, 1680),
+                                child: Container(color: const Color(0xFF43A047)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: [
+                          _buildLegendItem("Sleep", "${audit.sleepHours.toStringAsFixed(0)}h", const Color(0xFF1E88E5)),
+                          _buildLegendItem("Calendar", "${audit.calendarHours.toStringAsFixed(1)}h", Colors.grey.shade700),
+                          _buildLegendItem("Peak Work", "${audit.peakWorkHours.toStringAsFixed(1)}h", AppTheme.warning),
+                          if (audit.urgentHours > 0)
+                            _buildLegendItem("Urgent", "${audit.urgentHours.toStringAsFixed(1)}h", const Color(0xFFE53935)),
+                          _buildLegendItem("Free", "${audit.freeHours.toStringAsFixed(1)}h", const Color(0xFF43A047)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showUrgentOverrideModal(context, ref),
+                              icon: const Icon(Icons.notification_important, color: Color(0xFFE53935), size: 14),
+                              label: const FittedBox(fit: BoxFit.scaleDown, child: Text("+ URGENT", style: TextStyle(color: Colors.white, fontSize: 10, letterSpacing: 0.5))),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                side: BorderSide(color: const Color(0xFFE53935).withValues(alpha: 0.4)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final events = await GoogleApiService().fetchTomorrowEvents();
+                                final rec = await AlarmService().analyzeAndRecommendAlarm(events);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(rec.reason),
+                                      backgroundColor: const Color(0xFF2A2A2A),
+                                      action: SnackBarAction(
+                                        label: "SET ALARM",
+                                        textColor: AppTheme.warning,
+                                        onPressed: () => AlarmService().setMorningAlarm(hour: rec.hour, minute: rec.minute),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.alarm_on, color: AppTheme.warning, size: 14),
+                              label: const FittedBox(fit: BoxFit.scaleDown, child: Text("ADAPT ALARM", style: TextStyle(color: Colors.white, fontSize: 10, letterSpacing: 0.5))),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                side: BorderSide(color: AppTheme.warning.withValues(alpha: 0.4)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLegendItem(String label, String val, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          "$label: $val",
+          style: const TextStyle(color: Colors.white70, fontSize: 10),
+        ),
+      ],
+    );
+  }
+
+  void _showUrgentOverrideModal(BuildContext context, WidgetRef ref) {
+    final titleCtrl = TextEditingController();
+    final hoursCtrl = TextEditingController(text: "2.0");
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        title: const Text(
+          "LOG URGENT OVERRIDE",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            letterSpacing: 1.5,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: const InputDecoration(
+                labelText: "Task / Crisis Title",
+                labelStyle: TextStyle(color: Colors.white54),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: hoursCtrl,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: "Hours Required",
+                labelStyle: TextStyle(color: Colors.white54),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("CANCEL", style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE53935)),
+            onPressed: () async {
+              final title = titleCtrl.text.trim().isEmpty ? "Urgent Crisis" : titleCtrl.text.trim();
+              final hours = double.tryParse(hoursCtrl.text.trim()) ?? 2.0;
+              await TimeAuditService().addUrgentOverride(title, hours);
+              ref.invalidate(timeAuditProvider);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text(
+              "DEDUCT BANDWIDTH",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
