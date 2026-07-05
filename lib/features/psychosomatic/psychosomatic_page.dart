@@ -34,7 +34,7 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
   Timer? _standDownTimer;
 
   static const Color _accent = Color.fromARGB(255, 0, 106, 255);
-  static const Color _stressHigh = Color.fromARGB(25, 5, 172, 21);
+  static const Color _stressHigh = Color.fromARGB(208, 255, 0, 0);
   static const Color _stressMid = Color.fromARGB(255, 255, 155, 1);
   static const Color _stressLow = Color.fromARGB(255, 0, 185, 49);
 

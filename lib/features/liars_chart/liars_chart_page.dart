@@ -376,13 +376,23 @@ class _LiarsChartPageState extends ConsumerState<LiarsChartPage>
           children: [
             Container(width: 8, height: 8, color: _accent),
             const SizedBox(width: 6),
-            Text(goal.leadMetricLabel,
-                style: const TextStyle(color: Colors.white54, fontSize: 10)),
+            Flexible(
+              child: Text(
+                goal.leadMetricLabel,
+                style: const TextStyle(color: Colors.white54, fontSize: 10),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             const SizedBox(width: 16),
             Container(width: 8, height: 8, color: Colors.white24),
             const SizedBox(width: 6),
-            Text(goal.lagMetricLabel,
-                style: const TextStyle(color: Colors.white38, fontSize: 10)),
+            Flexible(
+              child: Text(
+                goal.lagMetricLabel,
+                style: const TextStyle(color: Colors.white38, fontSize: 10),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ],
@@ -556,50 +566,52 @@ class _LiarsChartPageState extends ConsumerState<LiarsChartPage>
       builder: (ctx) => Padding(
         padding: EdgeInsets.fromLTRB(
             24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('LOG CYCLE — ${goal.title.toUpperCase()}',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1)),
-            const SizedBox(height: 20),
-            _sheetField(leadCtrl, '${goal.leadMetricLabel} (${goal.leadUnit})',
-                'Enter the number'),
-            const SizedBox(height: 12),
-            _sheetField(lagCtrl, '${goal.lagMetricLabel} (${goal.lagUnit})',
-                'Enter the number'),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _accent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('LOG CYCLE — ${goal.title.toUpperCase()}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1)),
+              const SizedBox(height: 20),
+              _sheetField(leadCtrl, '${goal.leadMetricLabel} (${goal.leadUnit})',
+                  'Enter the number'),
+              const SizedBox(height: 12),
+              _sheetField(lagCtrl, '${goal.lagMetricLabel} (${goal.lagUnit})',
+                  'Enter the number'),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _accent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4)),
+                  ),
+                  onPressed: () {
+                    final lead = double.tryParse(leadCtrl.text) ?? 0;
+                    final lag = double.tryParse(lagCtrl.text) ?? 0;
+                    ref.read(liarsChartProvider.notifier).logMetrics(
+                          goalId: goal.id,
+                          leadValue: lead,
+                          lagValue: lag,
+                        );
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('LOG CYCLE',
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5)),
                 ),
-                onPressed: () {
-                  final lead = double.tryParse(leadCtrl.text) ?? 0;
-                  final lag = double.tryParse(lagCtrl.text) ?? 0;
-                  ref.read(liarsChartProvider.notifier).logMetrics(
-                        goalId: goal.id,
-                        leadValue: lead,
-                        lagValue: lag,
-                      );
-                  Navigator.pop(ctx);
-                },
-                child: const Text('LOG CYCLE',
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5)),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

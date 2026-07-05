@@ -58,13 +58,17 @@ class _CruciblePageState extends ConsumerState<CruciblePage> {
                 children: [
                   const Icon(Icons.warning_amber_rounded, color: AppTheme.warning, size: 28),
                   const SizedBox(width: 12),
-                  Text(
-                    "SYSTEM LOCKDOWN • BANKRUPTCY PROTOCOL",
-                    style: TextStyle(
-                      color: AppTheme.warning,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
+                  Flexible(
+                    child: Text(
+                      "SYSTEM LOCKDOWN • BANKRUPTCY PROTOCOL",
+                      style: TextStyle(
+                        color: AppTheme.warning,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                      ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

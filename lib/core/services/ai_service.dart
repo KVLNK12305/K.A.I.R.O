@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class AiService {
@@ -20,7 +21,7 @@ class AiService {
       try {
         final resp = await http.get(
           Uri.parse('$baseUrl/health'),
-        ).timeout(const Duration(seconds: 3));
+        ).timeout(const Duration(seconds: 2));
         if (resp.statusCode == 200) {
           debugPrint('AiService: Discovered backend at $baseUrl');
           return baseUrl;
@@ -38,7 +39,8 @@ class AiService {
     if (baseUrl == null) {
       baseUrl = await _discoverBaseUrl();
       if (baseUrl == null) {
-        return 'Connection failed. Ensure the AI Gateway server (kairo-backend) is running on port 8080.';
+        debugPrint('AiService: No local backend found. Falling back to direct serverless Groq API.');
+        return _chatDirectlyWithGroq(messages);
       }
       _workingBaseUrl = baseUrl;
     }
@@ -61,12 +63,59 @@ class AiService {
     } on TimeoutException {
       throw AiServiceException('Request timed out. The AI model is taking too long to respond.');
     } on http.ClientException catch (e) {
-      // Backend may have become unreachable — clear cache so next call re-discovers
+      // Backend may have become unreachable — clear cache and fallback to direct Groq API
       _workingBaseUrl = null;
-      throw AiServiceException('Lost connection to backend: ${e.message}');
+      debugPrint('AiService: Lost connection to backend ($e). Falling back to direct Groq API.');
+      return _chatDirectlyWithGroq(messages);
     } catch (e) {
       if (e is AiServiceException) rethrow;
       _workingBaseUrl = null;
+      debugPrint('AiService: Error connecting to backend ($e). Falling back to direct Groq API.');
+      return _chatDirectlyWithGroq(messages);
+    }
+  }
+
+  Future<String> _chatDirectlyWithGroq(List<Map<String, dynamic>> messages) async {
+    final apiKey = dotenv.env['GROQ_API_KEY'] ?? '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';
+    String model = dotenv.env['MODEL'] ?? 'llama-3.3-70b-versatile';
+
+    // Auto-detect vision
+    for (final msg in messages) {
+      if (msg['content'] is! String) {
+        model = 'llama-3.2-90b-vision-preview';
+        break;
+      }
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          'model': model,
+          'messages': messages,
+          'stream': false,
+        }),
+      ).timeout(const Duration(seconds: 90));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final choices = data['choices'] as List<dynamic>?;
+        if (choices != null && choices.isNotEmpty) {
+          return choices[0]['message']['content'] as String? ?? 'No response from AI Coach.';
+        }
+        return 'No response from AI Coach.';
+      } else {
+        debugPrint('Direct Groq API Error (${response.statusCode}): ${response.body}');
+        throw AiServiceException('Groq API returned status ${response.statusCode}. Please check your API key.');
+      }
+    } on TimeoutException {
+      throw AiServiceException('Request timed out. The AI model is taking too long to respond.');
+    } catch (e) {
+      if (e is AiServiceException) rethrow;
       throw AiServiceException('Connection error: $e');
     }
   }

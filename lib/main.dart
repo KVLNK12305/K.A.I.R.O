@@ -49,18 +49,18 @@ Future<void> main() async {
           }
         }
       }).catchError((e) {
-        debugPrint("Notice: Adaptive alarm check error: \$e");
+        debugPrint("Notice: Adaptive alarm check error: $e");
       });
     }
   } catch (e) {
-    debugPrint("Notice: Notification/Streak init warning: \$e");
+    debugPrint("Notice: Notification/Streak init warning: $e");
   }
 
   // Load environment variables (gracefully handle missing .env in release/device builds)
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    debugPrint("Notice: .env file not loaded (\$e). Falling back to SharedPreferences / environment defaults.");
+    debugPrint("Notice: .env file not loaded ($e). Falling back to SharedPreferences / environment defaults.");
   }
 
   // 2. Find a safe, secure folder on your phone to save the database file

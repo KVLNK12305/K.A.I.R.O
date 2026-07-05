@@ -176,21 +176,28 @@ class _WardrobePageState extends ConsumerState<WardrobePage> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          item.category.toUpperCase(),
-                                          style: const TextStyle(
-                                            color: AppTheme.accent,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 1,
+                                        Flexible(
+                                          child: Text(
+                                            item.category.toUpperCase(),
+                                            style: const TextStyle(
+                                              color: AppTheme.accent,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 1,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        Text(
-                                          item.primaryColor.toUpperCase(),
-                                          style: const TextStyle(
-                                            color: Colors.white54,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w600,
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            item.primaryColor.toUpperCase(),
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       ],
@@ -264,11 +271,12 @@ class _AddItemFormState extends ConsumerState<_AddItemForm> {
         right: 24,
         top: 24,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
@@ -440,6 +448,7 @@ class _AddItemFormState extends ConsumerState<_AddItemForm> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

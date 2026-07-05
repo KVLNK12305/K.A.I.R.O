@@ -258,7 +258,7 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
                       extractedText = PdfTextExtractor(doc).extractText();
                       doc.dispose();
                     } catch (e) {
-                      extractedText = "Error extracting PDF text: \$e";
+                      extractedText = "Error extracting PDF text: $e";
                     }
                   } else {
                     extractedText = await file.readAsString();
@@ -288,7 +288,7 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
 
     String textToSend = text;
     if (_attachedType == 'pdf' && _attachedBase64 != null) {
-      textToSend = "\$text\n\n[ATTACHED DOCUMENT: \${_attachedFile!.path.split('/').last}]\n--- DOCUMENT CONTENT ---\n\$_attachedBase64\n--- END OF DOCUMENT ---";
+      textToSend = "$text\n\n[ATTACHED DOCUMENT: ${_attachedFile!.path.split('/').last}]\n--- DOCUMENT CONTENT ---\n$_attachedBase64\n--- END OF DOCUMENT ---";
     }
 
     final newMsg = ChatMessage(
@@ -672,7 +672,7 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              "Attached: \${_attachedFile!.path.split('/').last}",
+                              "Attached: ${_attachedFile!.path.split('/').last}",
                               style: const TextStyle(color: Colors.white70, fontSize: 12),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
