@@ -133,6 +133,26 @@ class NotificationService {
     await _notifications.show(id, title, body, details);
   }
 
+  Future<void> showAdaptiveAlarmRecommendation(String reason) async {
+    if (!_initialized) await init();
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'kairo_adaptive_alarms',
+        'Adaptive Alarm Recommendations',
+        channelDescription: 'Dynamic alarm suggestions based on Google Calendar schedule',
+        importance: Importance.high,
+        priority: Priority.high,
+        color: Color(0xFFFFA000),
+      ),
+    );
+    await _notifications.show(
+      200,
+      "⚡ K.A.I.R.O Adaptive Alarm Adjustment",
+      reason,
+      details,
+    );
+  }
+
   Future<void> cancelAll() async {
     await _notifications.cancelAll();
   }

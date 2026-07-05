@@ -20,6 +20,9 @@ import 'core/models/project.dart';
 import 'core/models/gita_shloka.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/streak_service.dart';
+import 'core/services/google_api_service.dart';
+import 'core/services/alarm_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Create a global instance of Isar so any screen can access it easily
 late Isar isar;
@@ -33,6 +36,22 @@ Future<void> main() async {
     await NotificationService().init();
     await NotificationService().scheduleDailyNotifications();
     await StreakService().initOrCheckStreak();
+
+    final prefs = await SharedPreferences.getInstance();
+    final adaptiveEnabled = prefs.getBool('kairo_adaptive_alarms_enabled') ?? true;
+    if (adaptiveEnabled) {
+      GoogleApiService().signInSilently().then((account) async {
+        if (account != null) {
+          final tomorrowEvents = await GoogleApiService().fetchTomorrowEvents();
+          final rec = await AlarmService().analyzeAndRecommendAlarm(tomorrowEvents);
+          if (rec.hour != 6 || rec.minute != 0) {
+            await NotificationService().showAdaptiveAlarmRecommendation(rec.reason);
+          }
+        }
+      }).catchError((e) {
+        debugPrint("Notice: Adaptive alarm check error: \$e");
+      });
+    }
   } catch (e) {
     debugPrint("Notice: Notification/Streak init warning: \$e");
   }
