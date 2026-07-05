@@ -91,7 +91,7 @@ class _LiarsChartPageState extends ConsumerState<LiarsChartPage>
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
                   itemCount: state.goals.length,
-                  separatorBuilder: (_, _x) => const SizedBox(height: 24),
+                  separatorBuilder: (c, i) => const SizedBox(height: 24),
                   itemBuilder: (context, i) {
                     return _buildGoalCard(state.goals[i]);
                   },

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/finance_service.dart';
+import '../../core/services/alarm_service.dart';
+import '../../core/services/google_api_service.dart';
+import '../../core/services/streak_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
@@ -20,11 +24,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   final _azureClientIdCtrl = TextEditingController();
   final _openAiKeyCtrl = TextEditingController();
   bool _isLoading = true;
+  int _currentStreakDay = 1;
 
   @override
   void initState() {
     super.initState();
     _loadKeys();
+    _loadStreak();
+  }
+
+  Future<void> _loadStreak() async {
+    final day = await StreakService().getDayNumber();
+    if (mounted) setState(() => _currentStreakDay = day);
   }
 
   Future<void> _loadKeys() async {
@@ -84,6 +95,109 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         : ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              const Text(
+                "DISCIPLINE ENGINE • ENFORCEMENT",
+                style: TextStyle(color: AppTheme.warning, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF141414),
+                  border: Border.all(color: AppTheme.warning.withValues(alpha: 0.4)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("21-DAY NEUROLOGICAL REWIRING", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text("Daily checkpoint streak status", style: TextStyle(color: Colors.white54, fontSize: 10)),
+                      ],
+                    ),
+                    Text(
+                      "DAY $_currentStreakDay / 21",
+                      style: const TextStyle(color: AppTheme.warning, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await AlarmService().setMorningAlarm();
+                      },
+                      icon: const Icon(Icons.alarm, color: Colors.white, size: 16),
+                      label: const Text("06:00 ALARM", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await AlarmService().setEveningAlarm();
+                      },
+                      icon: const Icon(Icons.alarm_add, color: Colors.white, size: 16),
+                      label: const Text("18:00 ALARM", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final success = await GoogleApiService().createKairoRitualBlocks();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(success ? "5 Daily Ritual Blocks synced to Google Calendar!" : "Failed to sync. Make sure you are signed in to Google."),
+                          backgroundColor: success ? Colors.green : AppTheme.warning,
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.calendar_month, color: Colors.white, size: 16),
+                  label: const Text("SYNC 5 RITUAL BLOCKS TO GOOGLE CALENDAR", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    NotificationService().showInstantNotification("🔥 Discipline Engine Active", "Push notification channel verified. Do not break your streak.");
+                  },
+                  icon: const Icon(Icons.notifications_active, color: Colors.white, size: 16),
+                  label: const Text("TEST PUSH NOTIFICATION CHANNEL", style: TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.5)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Divider(color: AppTheme.border),
+              const SizedBox(height: 24),
               const Text("API CONFIGURATIONS", style: TextStyle(color: Colors.white, fontSize: 14, letterSpacing: 2, fontWeight: FontWeight.bold)),
               const SizedBox(height: 24),
               const Text(
@@ -178,11 +292,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   onPressed: () async {
                     try {
                       await FinanceService().importAndParseCSV();
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ivy Wallet CSV Parsed!"), backgroundColor: Colors.green));
                       }
                     } catch (e) {
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
                       }
                     }

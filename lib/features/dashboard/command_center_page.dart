@@ -45,7 +45,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   @override
   Widget build(BuildContext context) {
     final scratchpadState = ref.watch(commandCenterProvider);
-    final objectiveState = ref.watch(objectiveProvider);
+    ref.watch(objectiveProvider);
     final githubState = ref.watch(githubPRsProvider);
     final wakatimeState = ref.watch(wakatimeProvider);
     final financeState = ref.watch(financeMetricsProvider);

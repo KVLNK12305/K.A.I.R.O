@@ -18,6 +18,8 @@ import 'core/models/book.dart';
 import 'core/models/idea.dart';
 import 'core/models/project.dart';
 import 'core/models/gita_shloka.dart';
+import 'core/services/notification_service.dart';
+import 'core/services/streak_service.dart';
 
 // Create a global instance of Isar so any screen can access it easily
 late Isar isar;
@@ -26,11 +28,20 @@ Future<void> main() async {
   // 1. Ensure Flutter engine bindings are ready before doing async native disk tasks
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize notifications and habit streak tracking
+  try {
+    await NotificationService().init();
+    await NotificationService().scheduleDailyNotifications();
+    await StreakService().initOrCheckStreak();
+  } catch (e) {
+    debugPrint("Notice: Notification/Streak init warning: \$e");
+  }
+
   // Load environment variables (gracefully handle missing .env in release/device builds)
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    debugPrint("Notice: .env file not loaded ($e). Falling back to SharedPreferences / environment defaults.");
+    debugPrint("Notice: .env file not loaded (\$e). Falling back to SharedPreferences / environment defaults.");
   }
 
   // 2. Find a safe, secure folder on your phone to save the database file
