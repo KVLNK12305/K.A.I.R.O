@@ -7,8 +7,8 @@ import 'package:flutter/foundation.dart';
 class GoogleApiService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
-      calendar.CalendarApi.calendarReadonlyScope,
-      tasks_api.TasksApi.tasksReadonlyScope,
+      calendar.CalendarApi.calendarScope,
+      tasks_api.TasksApi.tasksScope,
     ],
   );
 
@@ -73,5 +73,103 @@ class GoogleApiService {
       debugPrint("Error fetching tasks: $e");
       return [];
     }
+  }
+
+  Future<bool> createEvent(String title, DateTime start, DateTime end, {String? description, List<String>? recurrence}) async {
+    if (currentUser == null) return false;
+    final authClient = await _googleSignIn.authenticatedClient();
+    if (authClient == null) return false;
+
+    final calendarApi = calendar.CalendarApi(authClient);
+    final event = calendar.Event(
+      summary: title,
+      description: description ?? 'Created by K.A.I.R.O Discipline Engine',
+      start: calendar.EventDateTime(dateTime: start.toUtc()),
+      end: calendar.EventDateTime(dateTime: end.toUtc()),
+      recurrence: recurrence,
+    );
+
+    try {
+      await calendarApi.events.insert(event, 'primary');
+      debugPrint("Created Calendar Event: $title");
+      return true;
+    } catch (e) {
+      debugPrint("Error creating calendar event: $e");
+      return false;
+    }
+  }
+
+  Future<bool> createKairoRitualBlocks() async {
+    if (currentUser == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final rituals = [
+      {
+        'title': '🔥 K.A.I.R.O Morning Enforcer',
+        'start': today.add(const Duration(hours: 6)),
+        'end': today.add(const Duration(hours: 6, minutes: 30)),
+        'desc': 'Assign peak energy tasks for the day before entropy takes hold.'
+      },
+      {
+        'title': '⚡ Peak 1 Deep Work',
+        'start': today.add(const Duration(hours: 9)),
+        'end': today.add(const Duration(hours: 11)),
+        'desc': 'Highest cognitive demand block. Zero distractions.'
+      },
+      {
+        'title': '⚡ Peak 2 Deep Work',
+        'start': today.add(const Duration(hours: 11)),
+        'end': today.add(const Duration(hours: 12, minutes: 30)),
+        'desc': 'Second wind execution block.'
+      },
+      {
+        'title': '🧘 Recovery Block',
+        'start': today.add(const Duration(hours: 14)),
+        'end': today.add(const Duration(hours: 15, minutes: 30)),
+        'desc': 'Low-stakes admin and recovery. Protect cognitive bandwidth.'
+      },
+      {
+        'title': '🔪 Evening Interrogation',
+        'start': today.add(const Duration(hours: 18)),
+        'end': today.add(const Duration(hours: 18, minutes: 30)),
+        'desc': 'Brutalist Review: confront the truth of your execution today.'
+      },
+    ];
+
+    bool allSuccess = true;
+    for (final r in rituals) {
+      final success = await createEvent(
+        r['title'] as String,
+        r['start'] as DateTime,
+        r['end'] as DateTime,
+        description: r['desc'] as String,
+        recurrence: ['RRULE:FREQ=DAILY'],
+      );
+      if (!success) allSuccess = false;
+    }
+    return allSuccess;
+  }
+
+  Future<bool> syncPeakTasksToCalendar(String peak1Title, String peak2Title) async {
+    if (currentUser == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final p1Success = await createEvent(
+      '⚡ PEAK 1: $peak1Title',
+      today.add(const Duration(hours: 9)),
+      today.add(const Duration(hours: 11)),
+      description: 'K.A.I.R.O Assigned Peak 1 Objective',
+    );
+
+    final p2Success = await createEvent(
+      '⚡ PEAK 2: $peak2Title',
+      today.add(const Duration(hours: 11)),
+      today.add(const Duration(hours: 12, minutes: 30)),
+      description: 'K.A.I.R.O Assigned Peak 2 Objective',
+    );
+
+    return p1Success && p2Success;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/task.dart';
+import '../../core/services/google_api_service.dart';
 import '../dashboard/providers/ms_todo_provider.dart';
 import 'energy_provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -49,6 +50,8 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
     final notifier = ref.read(energyEconomyProvider.notifier);
     notifier.addTask(p1, 'Peak', EnergySlot.peak1);
     notifier.addTask(p2, 'Peak', EnergySlot.peak2);
+
+    GoogleApiService().syncPeakTasksToCalendar(p1, p2);
 
     widget.onPassedGauntlet();
   }
