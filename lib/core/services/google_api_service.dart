@@ -58,6 +58,65 @@ class GoogleApiService {
     }
   }
 
+  static DateTime getStartOfCurrentWeek() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1)); // Monday 00:00:00
+  }
+
+  Future<List<calendar.Event>> fetchWeeklyEvents() async {
+    if (currentUser == null) return [];
+    
+    final authClient = await _googleSignIn.authenticatedClient();
+    if (authClient == null) return [];
+
+    final calendarApi = calendar.CalendarApi(authClient);
+    
+    final startOfWeek = getStartOfCurrentWeek();
+    final endOfWeek = startOfWeek.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+
+    try {
+      final events = await calendarApi.events.list(
+        'primary',
+        timeMin: startOfWeek.toUtc(),
+        timeMax: endOfWeek.toUtc(),
+        orderBy: 'startTime',
+        singleEvents: true,
+      );
+      return events.items ?? [];
+    } catch (e) {
+      debugPrint("Error fetching weekly events: $e");
+      return [];
+    }
+  }
+
+  Future<List<calendar.Event>> fetchTomorrowEvents() async {
+    if (currentUser == null) return [];
+    
+    final authClient = await _googleSignIn.authenticatedClient();
+    if (authClient == null) return [];
+
+    final calendarApi = calendar.CalendarApi(authClient);
+    
+    final now = DateTime.now();
+    final startOfTomorrow = DateTime(now.year, now.month, now.day + 1);
+    final endOfTomorrow = DateTime(now.year, now.month, now.day + 1, 23, 59, 59);
+
+    try {
+      final events = await calendarApi.events.list(
+        'primary',
+        timeMin: startOfTomorrow.toUtc(),
+        timeMax: endOfTomorrow.toUtc(),
+        orderBy: 'startTime',
+        singleEvents: true,
+      );
+      return events.items ?? [];
+    } catch (e) {
+      debugPrint("Error fetching tomorrow events: $e");
+      return [];
+    }
+  }
+
   Future<List<tasks_api.Task>> fetchPendingTasks() async {
     if (currentUser == null) return [];
 
