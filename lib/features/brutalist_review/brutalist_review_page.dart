@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/brutalist_review.dart';
 import '../../core/models/task.dart';
+import '../../core/services/streak_service.dart';
+import '../../core/services/notification_service.dart';
 import '../energy_economy/energy_provider.dart';
 import '../profile/providers/profile_provider.dart';
 import 'brutalist_provider.dart';
@@ -105,6 +107,9 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
           cowardiceDescription: _cowardiceDescController.text.trim(),
           futureCostLost: cost,
         );
+
+    final currentDay = await StreakService().recordDayComplete();
+    NotificationService().show21DayStreakNotification(currentDay);
 
     setState(() => _submitted = true);
 
