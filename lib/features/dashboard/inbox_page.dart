@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'providers/ms_todo_provider.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -29,7 +30,7 @@ class InboxPage extends ConsumerWidget {
               child: FloatingActionButton(
                 backgroundColor: Colors.white10,
                 elevation: 0,
-                onPressed: () => _showAddTaskSheet(context, ref, state.lists),
+                onPressed: () => _showTaskSheet(context, ref, state.lists),
                 child: const Icon(Icons.add, color: Colors.white),
               ),
             )
@@ -69,9 +70,22 @@ class InboxPage extends ConsumerWidget {
     );
   }
 
-  void _showAddTaskSheet(BuildContext context, WidgetRef ref, List<MsTodoList> lists) {
-    String selectedListId = lists.first.id;
-    final taskController = TextEditingController();
+  void _showTaskSheet(
+    BuildContext context,
+    WidgetRef ref,
+    List<MsTodoList> lists, {
+    MsTodoList? initialList,
+    MsTodoTask? existingTask,
+  }) {
+    final isEditing = existingTask != null;
+    String selectedListId = initialList?.id ?? lists.first.id;
+    final taskController = TextEditingController(text: existingTask?.title ?? '');
+    final notesController = TextEditingController(text: existingTask?.body ?? '');
+    
+    DateTime? selectedDueDate = existingTask?.dueDate;
+    DateTime? selectedReminderDate = existingTask?.reminderDateTime;
+    bool isReminderOn = existingTask?.isReminderOn ?? false;
+    String selectedImportance = existingTask?.importance ?? 'normal';
 
     showModalBottomSheet(
       context: context,
@@ -83,85 +97,283 @@ class InboxPage extends ConsumerWidget {
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
               child: Container(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
                 padding: const EdgeInsets.all(24),
                 decoration: const BoxDecoration(
-                  color: Color(0xEE0A0A0A),
+                  color: Color(0xFF0F0F0F),
                   borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  border: Border(top: BorderSide(color: Color(0xFF2A2A2A))),
                 ),
                 child: SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'NEW TASK',
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 10,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.bold,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isEditing ? 'EDIT TASK' : 'NEW TASK',
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedListId,
-                          dropdownColor: const Color(0xFF1A1A1A),
-                          isExpanded: true,
-                          icon: const Icon(Icons.arrow_drop_down, color: Colors.white38),
-                          style: const TextStyle(color: Colors.white70, fontSize: 14),
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              setState(() {
-                                selectedListId = newValue;
-                              });
-                            }
-                          },
-                          items: lists.map<DropdownMenuItem<String>>((MsTodoList list) {
-                            return DropdownMenuItem<String>(
-                              value: list.id,
-                              child: Text(list.name),
+                        const SizedBox(height: 16),
+                        if (!isEditing) ...[
+                          DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedListId,
+                              dropdownColor: const Color(0xFF1A1A1A),
+                              isExpanded: true,
+                              icon: const Icon(Icons.arrow_drop_down, color: Colors.white38),
+                              style: const TextStyle(color: Colors.white70, fontSize: 14),
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    selectedListId = newValue;
+                                  });
+                                }
+                              },
+                              items: lists.map<DropdownMenuItem<String>>((MsTodoList list) {
+                                return DropdownMenuItem<String>(
+                                  value: list.id,
+                                  child: Text(list.name),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        TextField(
+                          controller: taskController,
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          autofocus: !isEditing,
+                          decoration: InputDecoration(
+                            hintText: "What needs to be done?",
+                            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // IMPORTANCE SELECTOR
+                        const Text(
+                          'IMPORTANCE',
+                          style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1.5),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: ['low', 'normal', 'high'].map((imp) {
+                            final isSelected = selectedImportance == imp;
+                            Color accentColor = Colors.white54;
+                            if (imp == 'high') accentColor = Colors.redAccent;
+                            if (imp == 'low') accentColor = Colors.blueAccent;
+                            
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => selectedImportance = imp),
+                                child: Container(
+                                  margin: EdgeInsets.only(right: imp != 'high' ? 8 : 0),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? accentColor.withValues(alpha: 0.2) : const Color(0xFF1A1A1A),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isSelected ? accentColor : const Color(0xFF2A2A2A),
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    imp.toUpperCase(),
+                                    style: TextStyle(
+                                      color: isSelected ? accentColor : Colors.white54,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             );
                           }).toList(),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: taskController,
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          hintText: "What needs to be done?",
-                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
-                          border: InputBorder.none,
-                        ),
-                        onSubmitted: (value) {
-                          if (value.trim().isNotEmpty) {
-                            ref.read(msTodoProvider.notifier).createTask(selectedListId, value.trim());
-                            Navigator.pop(ctx);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white10,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: () {
-                            if (taskController.text.trim().isNotEmpty) {
-                              ref.read(msTodoProvider.notifier).createTask(selectedListId, taskController.text.trim());
-                              Navigator.pop(ctx);
+                        const SizedBox(height: 20),
+                        // DUE DATE PICKER
+                        _buildPickerRow(
+                          icon: Icons.calendar_today_outlined,
+                          label: 'DUE DATE',
+                          valueText: selectedDueDate != null
+                              ? DateFormat('EEE, MMM d, y').format(selectedDueDate!)
+                              : 'None',
+                          onTap: () async {
+                            final now = DateTime.now();
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDueDate ?? now,
+                              firstDate: now.subtract(const Duration(days: 365)),
+                              lastDate: now.add(const Duration(days: 365 * 5)),
+                              builder: (context, child) => Theme(
+                                data: ThemeData.dark().copyWith(
+                                  colorScheme: const ColorScheme.dark(
+                                    primary: Colors.white,
+                                    onPrimary: Colors.black,
+                                    surface: Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                                child: child!,
+                              ),
+                            );
+                            if (date != null) {
+                              setState(() {
+                                selectedDueDate = DateTime(
+                                  date.year,
+                                  date.month,
+                                  date.day,
+                                );
+                              });
                             }
                           },
-                          child: const Text('SAVE TASK', style: TextStyle(color: Colors.white)),
+                          onClear: selectedDueDate != null ? () => setState(() => selectedDueDate = null) : null,
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                        const SizedBox(height: 12),
+                        // REMINDER PICKER
+                        _buildPickerRow(
+                          icon: Icons.notifications_none_outlined,
+                          label: 'REMINDER',
+                          valueText: isReminderOn && selectedReminderDate != null
+                              ? DateFormat('EEE, MMM d - h:mm a').format(selectedReminderDate!)
+                              : 'None',
+                          onTap: () async {
+                            final now = DateTime.now();
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedReminderDate ?? now,
+                              firstDate: now,
+                              lastDate: now.add(const Duration(days: 365 * 5)),
+                              builder: (context, child) => Theme(
+                                data: ThemeData.dark().copyWith(
+                                  colorScheme: const ColorScheme.dark(
+                                    primary: Colors.white,
+                                    onPrimary: Colors.black,
+                                    surface: Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                                child: child!,
+                              ),
+                            );
+                            if (date != null) {
+                              if (!context.mounted) return;
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: selectedReminderDate != null
+                                    ? TimeOfDay.fromDateTime(selectedReminderDate!)
+                                    : const TimeOfDay(hour: 9, minute: 0),
+                                builder: (context, child) => Theme(
+                                  data: ThemeData.dark().copyWith(
+                                    colorScheme: const ColorScheme.dark(
+                                      primary: Colors.white,
+                                      onPrimary: Colors.black,
+                                      surface: Color(0xFF1A1A1A),
+                                    ),
+                                  ),
+                                  child: child!,
+                                ),
+                              );
+                              if (time != null) {
+                                setState(() {
+                                  selectedReminderDate = DateTime(
+                                    date.year,
+                                    date.month,
+                                    date.day,
+                                    time.hour,
+                                    time.minute,
+                                  );
+                                  isReminderOn = true;
+                                });
+                              }
+                            }
+                          },
+                          onClear: isReminderOn ? () => setState(() {
+                            isReminderOn = false;
+                            selectedReminderDate = null;
+                          }) : null,
+                        ),
+                        const SizedBox(height: 20),
+                        // NOTES FIELD
+                        const Text(
+                          'NOTES',
+                          style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1.5),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A1A1A),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF2A2A2A)),
+                          ),
+                          child: TextField(
+                            controller: notesController,
+                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                            maxLines: 4,
+                            minLines: 2,
+                            decoration: InputDecoration(
+                              hintText: "Add notes, details or links...",
+                              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: () {
+                              final titleText = taskController.text.trim();
+                              if (titleText.isNotEmpty) {
+                                if (isEditing) {
+                                  ref.read(msTodoProvider.notifier).updateTask(
+                                    selectedListId,
+                                    existingTask.id,
+                                    title: titleText,
+                                    dueDate: selectedDueDate,
+                                    clearDueDate: selectedDueDate == null && existingTask.dueDate != null,
+                                    reminderDateTime: selectedReminderDate,
+                                    clearReminder: !isReminderOn && existingTask.isReminderOn,
+                                    isReminderOn: isReminderOn,
+                                    importance: selectedImportance,
+                                    body: notesController.text.trim(),
+                                    clearBody: notesController.text.trim().isEmpty && (existingTask.body?.isNotEmpty ?? false),
+                                  );
+                                } else {
+                                  ref.read(msTodoProvider.notifier).createTask(
+                                    selectedListId,
+                                    titleText,
+                                    dueDate: selectedDueDate,
+                                    reminderDateTime: selectedReminderDate,
+                                    isReminderOn: isReminderOn,
+                                    importance: selectedImportance,
+                                    body: notesController.text.trim(),
+                                  );
+                                }
+                                Navigator.pop(ctx);
+                              }
+                            },
+                            child: Text(
+                              isEditing ? 'UPDATE TASK' : 'SAVE TASK',
+                              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -169,6 +381,57 @@ class InboxPage extends ConsumerWidget {
           }
         );
       },
+    );
+  }
+
+  Widget _buildPickerRow({
+    required IconData icon,
+    required String label,
+    required String valueText,
+    required VoidCallback onTap,
+    VoidCallback? onClear,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF2A2A2A)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white54, size: 18),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                valueText,
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (onClear != null) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onClear,
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.close, color: Colors.white38, size: 16),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -229,56 +492,188 @@ class InboxPage extends ConsumerWidget {
                 ),
               ),
             ),
-            ...list.tasks.map((task) => Dismissible(
-                  key: Key(task.id),
-                  direction: DismissDirection.endToStart,
-                  onDismissed: (direction) {
-                    ref.read(msTodoProvider.notifier).deleteTask(list.id, task.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Task deleted', style: TextStyle(color: Colors.white)),
-                        backgroundColor: Color(0xFF2A2A2A),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  background: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
+            ...list.tasks.map((task) {
+              final isOverdue = task.dueDate != null && task.dueDate!.isBefore(DateTime.now()) && !task.isCompleted;
+              final isHighImportance = task.importance == 'high';
+
+              return Dismissible(
+                key: Key(task.id),
+                direction: DismissDirection.endToStart,
+                onDismissed: (direction) {
+                  ref.read(msTodoProvider.notifier).deleteTask(list.id, task.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Task deleted', style: TextStyle(color: Colors.white)),
+                      backgroundColor: Color(0xFF2A2A2A),
+                      duration: Duration(seconds: 2),
                     ),
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  );
+                },
+                background: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  child: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                ),
+                child: GestureDetector(
+                  onTap: () => _showTaskSheet(context, ref, lists, initialList: list, existingTask: task),
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: const Color(0xFF111111),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(
+                        color: isOverdue
+                            ? Colors.redAccent.withValues(alpha: 0.6)
+                            : isHighImportance
+                                ? Colors.amber.withValues(alpha: 0.4)
+                                : const Color(0xFF2A2A2A),
+                      ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            ref.read(msTodoProvider.notifier).completeTask(list.id, task.id);
-                          },
-                          child: const Icon(Icons.circle_outlined, color: Colors.white38, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            task.title,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                ref.read(msTodoProvider.notifier).completeTask(list.id, task.id);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 2.0),
+                                child: Icon(
+                                  Icons.circle_outlined,
+                                  color: isOverdue ? Colors.redAccent : Colors.white38,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    task.title,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: isHighImportance ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
+                                  if (task.body != null && task.body!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      task.body!,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      if (task.dueDate != null)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: isOverdue
+                                                ? Colors.redAccent.withValues(alpha: 0.2)
+                                                : Colors.white10,
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: isOverdue ? Colors.redAccent : Colors.white24,
+                                              width: 0.5,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.calendar_today,
+                                                size: 10,
+                                                color: isOverdue ? Colors.redAccent : Colors.white70,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                DateFormat('MMM d').format(task.dueDate!),
+                                                style: TextStyle(
+                                                  color: isOverdue ? Colors.redAccent : Colors.white70,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      if (task.isReminderOn && task.reminderDateTime != null)
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.notifications_active, size: 12, color: Colors.amber.withValues(alpha: 0.8)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              DateFormat('MMM d, h:mm a').format(task.reminderDateTime!),
+                                              style: TextStyle(color: Colors.amber.withValues(alpha: 0.8), fontSize: 11),
+                                            ),
+                                          ],
+                                        ),
+                                      if (task.importance == 'high')
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.redAccent.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            'HIGH',
+                                            style: TextStyle(
+                                              color: Colors.redAccent,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        )
+                                      else if (task.importance == 'low')
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blueAccent.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            'LOW',
+                                            style: TextStyle(
+                                              color: Colors.blueAccent,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                )),
+                ),
+              );
+            }),
             const SizedBox(height: 16),
           ],
         );
@@ -286,4 +681,5 @@ class InboxPage extends ConsumerWidget {
     );
   }
 }
+
 

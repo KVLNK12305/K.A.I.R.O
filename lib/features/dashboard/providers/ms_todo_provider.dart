@@ -11,14 +11,77 @@ class MsTodoTask {
   final String id;
   final String title;
   final bool isCompleted;
+  final DateTime? dueDate;
+  final DateTime? reminderDateTime;
+  final bool isReminderOn;
+  final String importance; // 'low', 'normal', 'high'
+  final String? body;
 
-  MsTodoTask({required this.id, required this.title, required this.isCompleted});
+  MsTodoTask({
+    required this.id,
+    required this.title,
+    required this.isCompleted,
+    this.dueDate,
+    this.reminderDateTime,
+    this.isReminderOn = false,
+    this.importance = 'normal',
+    this.body,
+  });
 
   factory MsTodoTask.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDt(dynamic dtJson) {
+      if (dtJson == null || dtJson is! Map || dtJson['dateTime'] == null) return null;
+      try {
+        String dtStr = dtJson['dateTime'].toString();
+        if (!dtStr.endsWith('Z') && !dtStr.contains('+') && !dtStr.contains('-', 10)) {
+          dtStr += 'Z';
+        }
+        return DateTime.tryParse(dtStr)?.toLocal();
+      } catch (_) {
+        return null;
+      }
+    }
+
+    String? parseBody(dynamic bodyJson) {
+      if (bodyJson == null || bodyJson is! Map) return null;
+      final content = bodyJson['content']?.toString() ?? '';
+      return content.trim().isEmpty ? null : content;
+    }
+
     return MsTodoTask(
-      id: json['id'],
-      title: json['title'],
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
       isCompleted: json['status'] == 'completed',
+      dueDate: parseDt(json['dueDateTime']),
+      reminderDateTime: parseDt(json['reminderDateTime']),
+      isReminderOn: json['isReminderOn'] == true,
+      importance: (json['importance'] ?? 'normal').toString().toLowerCase(),
+      body: parseBody(json['body']),
+    );
+  }
+
+  MsTodoTask copyWith({
+    String? id,
+    String? title,
+    bool? isCompleted,
+    DateTime? dueDate,
+    DateTime? reminderDateTime,
+    bool? isReminderOn,
+    String? importance,
+    String? body,
+    bool clearDueDate = false,
+    bool clearReminder = false,
+    bool clearBody = false,
+  }) {
+    return MsTodoTask(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      isCompleted: isCompleted ?? this.isCompleted,
+      dueDate: clearDueDate ? null : (dueDate ?? this.dueDate),
+      reminderDateTime: clearReminder ? null : (reminderDateTime ?? this.reminderDateTime),
+      isReminderOn: isReminderOn ?? this.isReminderOn,
+      importance: importance ?? this.importance,
+      body: clearBody ? null : (body ?? this.body),
     );
   }
 }
@@ -228,11 +291,79 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
     }
   }
 
-  Future<void> createTask(String listId, String title) async {
+  Map<String, dynamic> _buildTaskPayload({
+    required String title,
+    DateTime? dueDate,
+    bool clearDueDate = false,
+    DateTime? reminderDateTime,
+    bool clearReminder = false,
+    bool isReminderOn = false,
+    String importance = 'normal',
+    String? body,
+    bool clearBody = false,
+  }) {
+    final map = <String, dynamic>{
+      'title': title,
+      'importance': importance.toLowerCase(),
+    };
+
+    if (dueDate != null) {
+      map['dueDateTime'] = {
+        'dateTime': dueDate.toUtc().toIso8601String().substring(0, 19),
+        'timeZone': 'UTC',
+      };
+    } else if (clearDueDate) {
+      map['dueDateTime'] = null;
+    }
+
+    if (reminderDateTime != null && isReminderOn) {
+      map['reminderDateTime'] = {
+        'dateTime': reminderDateTime.toUtc().toIso8601String().substring(0, 19),
+        'timeZone': 'UTC',
+      };
+      map['isReminderOn'] = true;
+    } else if (clearReminder || !isReminderOn) {
+      map['reminderDateTime'] = null;
+      map['isReminderOn'] = false;
+    }
+
+    if (body != null && body.isNotEmpty) {
+      map['body'] = {
+        'content': body,
+        'contentType': 'text',
+      };
+    } else if (clearBody) {
+      map['body'] = {
+        'content': '',
+        'contentType': 'text',
+      };
+    }
+
+    return map;
+  }
+
+  Future<void> createTask(
+    String listId,
+    String title, {
+    DateTime? dueDate,
+    DateTime? reminderDateTime,
+    bool isReminderOn = false,
+    String importance = 'normal',
+    String? body,
+  }) async {
     if (_client == null || !state.isAuthenticated) return;
     
     // Optimistic update
-    final newTask = MsTodoTask(id: 'temp_${DateTime.now().millisecondsSinceEpoch}', title: title, isCompleted: false);
+    final newTask = MsTodoTask(
+      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      isCompleted: false,
+      dueDate: dueDate,
+      reminderDateTime: reminderDateTime,
+      isReminderOn: isReminderOn,
+      importance: importance,
+      body: body,
+    );
     final updatedLists = state.lists.map((l) {
       if (l.id == listId) {
         return MsTodoList(id: l.id, name: l.name, tasks: [newTask, ...l.tasks]);
@@ -242,10 +373,19 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
     state = state.copyWith(lists: updatedLists);
 
     try {
+      final payload = _buildTaskPayload(
+        title: title,
+        dueDate: dueDate,
+        reminderDateTime: reminderDateTime,
+        isReminderOn: isReminderOn,
+        importance: importance,
+        body: body,
+      );
+
       final res = await _client!.post(
         Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'title': title}),
+        body: json.encode(payload),
       );
 
       if (res.statusCode != 201) {
@@ -263,6 +403,82 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
       state = state.copyWith(lists: finalLists);
     } catch (e) {
       // Revert optimistic update on failure
+      await fetchTasks();
+    }
+  }
+
+  Future<void> updateTask(
+    String listId,
+    String taskId, {
+    required String title,
+    DateTime? dueDate,
+    bool clearDueDate = false,
+    DateTime? reminderDateTime,
+    bool clearReminder = false,
+    bool isReminderOn = false,
+    String importance = 'normal',
+    String? body,
+    bool clearBody = false,
+  }) async {
+    if (_client == null || !state.isAuthenticated) return;
+
+    // Optimistic update
+    final updatedLists = state.lists.map((l) {
+      if (l.id == listId) {
+        final newTasks = l.tasks.map((t) {
+          if (t.id == taskId) {
+            return t.copyWith(
+              title: title,
+              dueDate: dueDate,
+              clearDueDate: clearDueDate,
+              reminderDateTime: reminderDateTime,
+              clearReminder: clearReminder,
+              isReminderOn: isReminderOn,
+              importance: importance,
+              body: body,
+              clearBody: clearBody,
+            );
+          }
+          return t;
+        }).toList();
+        return MsTodoList(id: l.id, name: l.name, tasks: newTasks);
+      }
+      return l;
+    }).toList();
+    state = state.copyWith(lists: updatedLists);
+
+    try {
+      final payload = _buildTaskPayload(
+        title: title,
+        dueDate: dueDate,
+        clearDueDate: clearDueDate,
+        reminderDateTime: reminderDateTime,
+        clearReminder: clearReminder,
+        isReminderOn: isReminderOn,
+        importance: importance,
+        body: body,
+        clearBody: clearBody,
+      );
+
+      final res = await _client!.patch(
+        Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks/$taskId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(payload),
+      );
+
+      if (res.statusCode != 200) {
+        throw Exception('Failed to update task: ${res.body}');
+      }
+      final realTask = MsTodoTask.fromJson(json.decode(res.body));
+      final finalLists = state.lists.map((l) {
+        if (l.id == listId) {
+          final newTasks = l.tasks.map((t) => t.id == taskId ? realTask : t).toList();
+          return MsTodoList(id: l.id, name: l.name, tasks: newTasks);
+        }
+        return l;
+      }).toList();
+      state = state.copyWith(lists: finalLists);
+    } catch (e) {
       await fetchTasks();
     }
   }

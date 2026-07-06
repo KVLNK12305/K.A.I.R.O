@@ -102,8 +102,6 @@ class LiarsChartNotifier extends StateNotifier<LiarsChartState> {
     await _load();
   }
 
-  /// Simulates sending the accountability webhook (email/message).
-  /// In production, this calls your configured endpoint.
   Future<bool> triggerAccountabilityWebhook(LiarGoal goal) async {
     // TODO: Replace with actual HTTP call (email API, Telegram bot, etc.)
     // For now, returns true to simulate success.
