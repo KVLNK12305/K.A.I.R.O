@@ -40,5 +40,11 @@ class Task {
   /// Whether this task was explicitly failed (vs just not done yet).
   bool isFailed = false;
 
+  /// Subtasks checklist items for granular execution.
+  List<String> subTasks = [];
+
+  /// Subtasks that have been checked as completed.
+  List<String> completedSubTasks = [];
+
   Task(this.title, this.category, {this.isCompleted = false});
 }

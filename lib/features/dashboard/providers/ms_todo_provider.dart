@@ -7,6 +7,34 @@ import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:app_links/app_links.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+class MsTodoSubTask {
+  final String id;
+  final String title;
+  final bool isChecked;
+
+  MsTodoSubTask({
+    required this.id,
+    required this.title,
+    this.isChecked = false,
+  });
+
+  factory MsTodoSubTask.fromJson(Map<String, dynamic> json) {
+    return MsTodoSubTask(
+      id: json['id']?.toString() ?? '',
+      title: (json['displayName'] ?? json['title'] ?? '').toString(),
+      isChecked: json['isChecked'] == true || json['status'] == 'completed',
+    );
+  }
+
+  MsTodoSubTask copyWith({String? id, String? title, bool? isChecked}) {
+    return MsTodoSubTask(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      isChecked: isChecked ?? this.isChecked,
+    );
+  }
+}
+
 class MsTodoTask {
   final String id;
   final String title;
@@ -16,6 +44,7 @@ class MsTodoTask {
   final bool isReminderOn;
   final String importance; // 'low', 'normal', 'high'
   final String? body;
+  final List<MsTodoSubTask> subTasks;
 
   MsTodoTask({
     required this.id,
@@ -26,6 +55,7 @@ class MsTodoTask {
     this.isReminderOn = false,
     this.importance = 'normal',
     this.body,
+    this.subTasks = const [],
   });
 
   factory MsTodoTask.fromJson(Map<String, dynamic> json) {
@@ -48,6 +78,14 @@ class MsTodoTask {
       return content.trim().isEmpty ? null : content;
     }
 
+    List<MsTodoSubTask> parseSubTasks(dynamic subJson) {
+      if (subJson == null || subJson is! List) return [];
+      return subJson
+          .whereType<Map<String, dynamic>>()
+          .map((item) => MsTodoSubTask.fromJson(item))
+          .toList();
+    }
+
     return MsTodoTask(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
@@ -57,6 +95,7 @@ class MsTodoTask {
       isReminderOn: json['isReminderOn'] == true,
       importance: (json['importance'] ?? 'normal').toString().toLowerCase(),
       body: parseBody(json['body']),
+      subTasks: parseSubTasks(json['checklistItems']),
     );
   }
 
@@ -69,6 +108,7 @@ class MsTodoTask {
     bool? isReminderOn,
     String? importance,
     String? body,
+    List<MsTodoSubTask>? subTasks,
     bool clearDueDate = false,
     bool clearReminder = false,
     bool clearBody = false,
@@ -82,6 +122,7 @@ class MsTodoTask {
       isReminderOn: isReminderOn ?? this.isReminderOn,
       importance: importance ?? this.importance,
       body: clearBody ? null : (body ?? this.body),
+      subTasks: subTasks ?? this.subTasks,
     );
   }
 }
@@ -269,7 +310,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
         final listName = listJson['displayName'];
 
         final tasksRes = await _client!.get(
-          Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks?\$filter=status ne \'completed\''),
+          Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks?\$filter=status ne \'completed\'&\$expand=checklistItems'),
         );
 
         if (tasksRes.statusCode != 200) {
@@ -531,6 +572,52 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
         throw Exception('Failed to delete task: ${res.body}');
       }
     } catch (e) {
+      await fetchTasks();
+    }
+  }
+
+  Future<void> addChecklistItem(String listId, String taskId, String displayName) async {
+    if (_client == null || !state.isAuthenticated) return;
+    try {
+      final res = await _client!.post(
+        Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks/$taskId/checklistItems'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'displayName': displayName}),
+      );
+      if (res.statusCode == 201 || res.statusCode == 200) {
+        await fetchTasks();
+      }
+    } catch (_) {
+      await fetchTasks();
+    }
+  }
+
+  Future<void> toggleChecklistItem(String listId, String taskId, String itemId, bool isChecked) async {
+    if (_client == null || !state.isAuthenticated) return;
+    try {
+      final res = await _client!.patch(
+        Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks/$taskId/checklistItems/$itemId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'isChecked': isChecked}),
+      );
+      if (res.statusCode == 200) {
+        await fetchTasks();
+      }
+    } catch (_) {
+      await fetchTasks();
+    }
+  }
+
+  Future<void> deleteChecklistItem(String listId, String taskId, String itemId) async {
+    if (_client == null || !state.isAuthenticated) return;
+    try {
+      final res = await _client!.delete(
+        Uri.parse('https://graph.microsoft.com/v1.0/me/todo/lists/$listId/tasks/$taskId/checklistItems/$itemId'),
+      );
+      if (res.statusCode == 204) {
+        await fetchTasks();
+      }
+    } catch (_) {
       await fetchTasks();
     }
   }

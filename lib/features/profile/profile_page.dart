@@ -81,6 +81,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final timeString = DateFormat('HH:mm:ss').format(_now);
     final dateString = DateFormat('EEEE, MMMM d, yyyy').format(_now);
     final user = ref.watch(authProvider);
+    final clerkUser = ref.watch(clerkAuthProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -183,8 +184,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               width: double.infinity,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.accent,
-                  side: const BorderSide(color: AppTheme.accent),
+                  foregroundColor: const Color.fromARGB(255, 0, 115, 255),
+                  side: const BorderSide(color: Color.fromARGB(255, 239, 239, 232)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -206,23 +207,37 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const SizedBox(height: 48),
 
+            const Text(
+              "IDENTITY & GOOGLE AUTH VIA CLERK (ZERO CONFIG)",
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 10,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+
             // Identity Section
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: const Color(0xFF111111),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(
+                  color: (clerkUser != null || user != null)
+                      ? const Color.fromARGB(255, 48, 58, 161).withValues(alpha: 0.5)
+                      : Colors.white10,
+                ),
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.white10,
-                    backgroundImage: user?.photoUrl != null
-                        ? NetworkImage(user!.photoUrl!)
+                    backgroundImage: (clerkUser?.photoUrl != null || user?.photoUrl != null)
+                        ? NetworkImage(clerkUser?.photoUrl ?? user!.photoUrl!)
                         : null,
-                    child: user?.photoUrl == null
+                    child: (clerkUser?.photoUrl == null && user?.photoUrl == null)
                         ? const Icon(
                             Icons.person,
                             size: 24,
@@ -235,19 +250,46 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user?.displayName?.toUpperCase() ??
-                              "OFFLINE PROTOCOL",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                            color: Colors.white,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                clerkUser?.displayName.toUpperCase() ??
+                                    user?.displayName?.toUpperCase() ??
+                                    "OFFLINE PROTOCOL",
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            if (clerkUser != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 239, 239, 229).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color.fromARGB(255, 0, 119, 255)),
+                                ),
+                                child: const Text(
+                                  "CLERK ACTIVE",
+                                  style: TextStyle(
+                                    color: Color.fromARGB(255, 0, 47, 255),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          user?.email ?? "Google Auth Disconnected",
+                          clerkUser?.email ??
+                              user?.email ??
+                              "Google Auth Disconnected (Clerk Zero-Config Available)",
                           style: const TextStyle(
                             color: Colors.white38,
                             fontSize: 12,
@@ -262,7 +304,48 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const SizedBox(height: 16),
 
-            // Auth Button
+            // Clerk Auth Button (Zero Manual Setup)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: clerkUser == null
+                      ? const Color.fromARGB(255, 235, 238, 240)
+                      : const Color(0xFF2A2A2A),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () {
+                  if (clerkUser == null) {
+                    ref.read(clerkAuthProvider.notifier).signInWithGoogle(context);
+                  } else {
+                    ref.read(clerkAuthProvider.notifier).signOut();
+                  }
+                },
+                icon: Icon(
+                  clerkUser == null ? Icons.cloud_done_outlined : Icons.logout,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  clerkUser == null
+                      ? "SIGN IN WITH GOOGLE VIA CLERK (INSTANT)"
+                      : "DISCONNECT CLERK GOOGLE SESSION",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Legacy manual Google Auth Button
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -276,19 +359,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 icon: Icon(
                   user == null ? Icons.login : Icons.logout,
                   size: 18,
-                  color: Colors.white,
+                  color: Colors.white54,
                 ),
                 label: Text(
-                  user == null ? "CONNECT GOOGLE ACCOUNT" : "DISCONNECT GOOGLE",
+                  user == null ? "MANUAL GOOGLE SIGN-IN (LEGACY)" : "DISCONNECT LEGACY GOOGLE",
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
+                    color: Colors.white54,
+                    fontSize: 11,
                     letterSpacing: 1,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white24),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: Colors.white12),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

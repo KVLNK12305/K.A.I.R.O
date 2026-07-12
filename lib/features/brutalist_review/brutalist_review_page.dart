@@ -114,9 +114,12 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
     setState(() => _submitted = true);
 
     if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: _bloodRed,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
           content: Text(
             cost > 0
                 ? 'Your vent has been deleted. You lost \$${cost.toStringAsFixed(0)} today. Baseline updated.'

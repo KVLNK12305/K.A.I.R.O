@@ -499,15 +499,25 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                         letterSpacing: 1,
                       ),
                     ),
-                    onPressed: () {
-                      ref.read(energyEconomyProvider.notifier).logEnergyLeak();
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Leak captured. Categorize tonight.'),
-                          backgroundColor: Color(0xFF2A2A2A),
-                        ),
-                      );
+                    onPressed: () async {
+                      await ref
+                          .read(energyEconomyProvider.notifier)
+                          .logEnergyLeak();
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).clearSnackBars();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Leak captured. Categorize tonight.',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: Color(0xFF2A2A2A),
+                            behavior: SnackBarBehavior.floating,
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),
@@ -534,8 +544,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                         letterSpacing: 1,
                       ),
                     ),
-                    onPressed: () {
-                      ref
+                    onPressed: () async {
+                      await ref
                           .read(psychosomaticProvider.notifier)
                           .saveScan(
                             muscleTension:
@@ -548,13 +558,21 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                             skinReaction: 50,
                             contextLabel: 'Quick Capture',
                           );
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Symptom captured.'),
-                          backgroundColor: Color(0xFF2A2A2A),
-                        ),
-                      );
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).clearSnackBars();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Symptom captured.',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: Color(0xFF2A2A2A),
+                            behavior: SnackBarBehavior.floating,
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),

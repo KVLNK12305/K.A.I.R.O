@@ -86,6 +86,13 @@ class InboxPage extends ConsumerWidget {
     DateTime? selectedReminderDate = existingTask?.reminderDateTime;
     bool isReminderOn = existingTask?.isReminderOn ?? false;
     String selectedImportance = existingTask?.importance ?? 'normal';
+    final subtaskController = TextEditingController();
+    List<String> subTasks = existingTask?.subTasks.map((s) => s.title).toList() ?? [];
+    Set<String> completedSubTasks = existingTask?.subTasks
+            .where((s) => s.isChecked)
+            .map((s) => s.title)
+            .toSet() ??
+        {};
 
     showModalBottomSheet(
       context: context,
@@ -324,6 +331,160 @@ class InboxPage extends ConsumerWidget {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 20),
+                        // SUBTASKS FIELD & CHECKLIST
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'SUBTASKS / EXECUTION CHECKLIST',
+                              style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1.5),
+                            ),
+                            if (subTasks.isNotEmpty)
+                              Text(
+                                '${completedSubTasks.length}/${subTasks.length} COMPLETED',
+                                style: const TextStyle(color: AppTheme.accent, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1A1A1A),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFF2A2A2A)),
+                                ),
+                                child: TextField(
+                                  controller: subtaskController,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                  decoration: InputDecoration(
+                                    hintText: "Add step to checklist...",
+                                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                                    border: InputBorder.none,
+                                  ),
+                                  onSubmitted: (val) {
+                                    final text = val.trim();
+                                    if (text.isNotEmpty) {
+                                      setState(() {
+                                        subTasks.add(text);
+                                        subtaskController.clear();
+                                      });
+                                      if (existingTask != null && initialList != null) {
+                                        ref.read(msTodoProvider.notifier).addChecklistItem(
+                                          initialList.id,
+                                          existingTask.id,
+                                          text,
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              style: IconButton.styleFrom(
+                                backgroundColor: const Color(0xFF2A2A2A),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                              onPressed: () {
+                                final text = subtaskController.text.trim();
+                                if (text.isNotEmpty) {
+                                  setState(() {
+                                    subTasks.add(text);
+                                    subtaskController.clear();
+                                  });
+                                  if (existingTask != null && initialList != null) {
+                                    ref.read(msTodoProvider.notifier).addChecklistItem(
+                                      initialList.id,
+                                      existingTask.id,
+                                      text,
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        if (subTasks.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF141414),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: Column(
+                              children: subTasks.asMap().entries.map((entry) {
+                                final idx = entry.key;
+                                final st = entry.value;
+                                final isDone = completedSubTasks.contains(st);
+                                return CheckboxListTile(
+                                  dense: true,
+                                  activeColor: AppTheme.accent,
+                                  checkColor: Colors.black,
+                                  title: Text(
+                                    st,
+                                    style: TextStyle(
+                                      color: isDone ? Colors.white38 : Colors.white70,
+                                      fontSize: 13,
+                                      decoration: isDone ? TextDecoration.lineThrough : null,
+                                    ),
+                                  ),
+                                  value: isDone,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      if (val == true) {
+                                        completedSubTasks.add(st);
+                                      } else {
+                                        completedSubTasks.remove(st);
+                                      }
+                                    });
+                                    if (existingTask != null && initialList != null) {
+                                      final msItem = existingTask.subTasks
+                                          .where((item) => item.title == st)
+                                          .firstOrNull;
+                                      if (msItem != null) {
+                                        ref.read(msTodoProvider.notifier).toggleChecklistItem(
+                                          initialList.id,
+                                          existingTask.id,
+                                          msItem.id,
+                                          val == true,
+                                        );
+                                      }
+                                    }
+                                  },
+                                  secondary: IconButton(
+                                    icon: const Icon(Icons.close, color: Colors.white38, size: 16),
+                                    onPressed: () {
+                                      setState(() {
+                                        subTasks.removeAt(idx);
+                                        completedSubTasks.remove(st);
+                                      });
+                                      if (existingTask != null && initialList != null) {
+                                        final msItem = existingTask.subTasks
+                                            .where((item) => item.title == st)
+                                            .firstOrNull;
+                                        if (msItem != null) {
+                                          ref.read(msTodoProvider.notifier).deleteChecklistItem(
+                                            initialList.id,
+                                            existingTask.id,
+                                            msItem.id,
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
@@ -661,8 +822,66 @@ class InboxPage extends ConsumerWidget {
                                             ),
                                           ),
                                         ),
+                                      if (task.subTasks.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.accent.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: AppTheme.accent.withValues(alpha: 0.4), width: 0.5),
+                                          ),
+                                          child: Text(
+                                            '${task.subTasks.where((s) => s.isChecked).length}/${task.subTasks.length} SUBTASKS',
+                                            style: const TextStyle(
+                                              color: AppTheme.accent,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
+                                  if (task.subTasks.isNotEmpty) ...[
+                                    const SizedBox(height: 10),
+                                    Column(
+                                      children: task.subTasks.map((st) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 4),
+                                          child: Row(
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () {
+                                                  ref.read(msTodoProvider.notifier).toggleChecklistItem(
+                                                    list.id,
+                                                    task.id,
+                                                    st.id,
+                                                    !st.isChecked,
+                                                  );
+                                                },
+                                                child: Icon(
+                                                  st.isChecked ? Icons.check_box : Icons.check_box_outline_blank,
+                                                  size: 16,
+                                                  color: st.isChecked ? AppTheme.accent : Colors.white38,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  st.title,
+                                                  style: TextStyle(
+                                                    color: st.isChecked ? Colors.white38 : Colors.white70,
+                                                    fontSize: 12,
+                                                    decoration: st.isChecked ? TextDecoration.lineThrough : null,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

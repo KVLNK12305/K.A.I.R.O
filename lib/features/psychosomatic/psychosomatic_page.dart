@@ -100,7 +100,21 @@ class _PsychosomaticPageState extends ConsumerState<PsychosomaticPage> {
           skinReaction: _sliders['Skin Reaction']!,
           contextLabel: _contextController.text.trim(),
         );
-    setState(() => _submitted = true);
+    if (mounted) {
+      setState(() => _submitted = true);
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Physiological scan recorded.',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Color(0xFF2A2A2A),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
