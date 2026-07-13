@@ -19,10 +19,12 @@ class TaskTile extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(
-            color: task.isCompleted ? Colors.white54 : Colors.white10,
+            color: task.carryForwardCount >= 2
+                ? Colors.orangeAccent.withValues(alpha: 0.6)
+                : (task.isCompleted ? Colors.white54 : Colors.white10),
           ),
         ),
-        clipBehavior: Clip.antiAlias, // Ensures the splash doesn't bleed outside the rounded corners
+        clipBehavior: Clip.antiAlias,
         child: CheckboxListTile(
           activeColor: Colors.white,
           checkColor: Colors.black,
@@ -33,31 +35,79 @@ class TaskTile extends StatelessWidget {
               decoration: task.isCompleted ? TextDecoration.lineThrough : null,
             ),
           ),
-          subtitle: Row(
-            children: [
-              Text(
-                task.category,
-                style: const TextStyle(color: Colors.white30, fontSize: 10),
-              ),
-              if (task.subTasks.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '${task.completedSubTasks.length}/${task.subTasks.length} SUBTASKS',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  task.category,
+                  style: const TextStyle(color: Colors.white30, fontSize: 10),
+                ),
+                if (task.subTasks.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${task.completedSubTasks.length}/${task.subTasks.length} SUBTASKS',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
+                if (task.progressPercent > 0 && !task.isCompleted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.greenAccent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: Colors.greenAccent.withValues(alpha: 0.4),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      '${task.progressPercent}% DONE',
+                      style: const TextStyle(
+                        color: Colors.greenAccent,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                if (task.isCarriedForward)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (task.carryForwardCount >= 2 ? Colors.redAccent : Colors.orangeAccent)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: (task.carryForwardCount >= 2 ? Colors.redAccent : Colors.orangeAccent)
+                            .withValues(alpha: 0.4),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      task.carryForwardCount >= 2
+                          ? 'CARRIED ×${task.carryForwardCount} • EXECUTE OR KILL'
+                          : 'CARRIED ×${task.carryForwardCount}',
+                      style: TextStyle(
+                        color: task.carryForwardCount >= 2 ? Colors.redAccent : Colors.orangeAccent,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
               ],
-            ],
+            ),
           ),
           value: task.isCompleted,
           onChanged: (val) {

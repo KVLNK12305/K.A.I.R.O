@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
+import '../../main.dart';
 import '../../core/models/task.dart';
 import '../../core/services/google_api_service.dart';
 import '../dashboard/providers/ms_todo_provider.dart';
@@ -19,9 +21,26 @@ class MorningEnforcerPage extends ConsumerStatefulWidget {
 class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
   final _peak1Controller = TextEditingController();
   final _peak2Controller = TextEditingController();
+  List<Task> _carriedTasks = [];
 
   static const Color _accent = AppTheme.accent;
   static const Color _bloodRed = AppTheme.warning;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCarriedTasks();
+  }
+
+  Future<void> _loadCarriedTasks() async {
+    final allTasks = await isar.tasks.where().anyId().findAll();
+    final carried = allTasks
+        .where((t) => t.isCarriedForward && !t.isCompleted && !t.isFailed)
+        .toList();
+    if (mounted) {
+      setState(() => _carriedTasks = carried);
+    }
+  }
 
   @override
   void dispose() {
@@ -188,7 +207,104 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
+              if (_carriedTasks.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orangeAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.orangeAccent.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.bolt,
+                            color: Colors.orangeAccent,
+                            size: 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'CARRIED FORWARD FROM YESTERDAY',
+                            style: TextStyle(
+                              color: Colors.orangeAccent,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ..._carriedTasks.map((t) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      t.title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${t.progressPercent}% DONE • CARRIED ×${t.carryForwardCount}',
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: _accent,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  backgroundColor:
+                                      _accent.withValues(alpha: 0.15),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    if (_peak1Controller.text.isEmpty) {
+                                      _peak1Controller.text = t.title;
+                                    } else {
+                                      _peak2Controller.text = t.title;
+                                    }
+                                  });
+                                },
+                                child: const Text(
+                                  'ASSIGN PEAK',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
               _buildTaskInput(
                 'PEAK 1',
                 'Your most critical, high-friction task.',
