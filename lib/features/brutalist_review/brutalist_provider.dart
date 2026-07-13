@@ -56,10 +56,23 @@ class BrutalistNotifier extends StateNotifier<BrutalistState> {
     // Find unresolved peak tasks created today
     final allTasks = await isar.tasks.where().anyId().findAll();
     final unresolved = allTasks.where((t) {
-      return (t.energySlot == EnergySlot.peak1 || t.energySlot == EnergySlot.peak2) &&
-             t.createdAt.isAfter(startOfDay.subtract(const Duration(seconds: 1))) &&
-             !t.isCompleted;
+      final isToday = t.createdAt.isAfter(startOfDay.subtract(const Duration(seconds: 1)));
+      final isPeak = (t.energySlot == EnergySlot.peak1 || t.energySlot == EnergySlot.peak2);
+      return isPeak && isToday && !t.isCompleted;
     }).toList();
+
+    // Include carried-forward tasks from previous days that are still incomplete
+    final carriedForward = allTasks.where((t) {
+      return t.isCarriedForward && !t.isCompleted && !t.isFailed;
+    }).toList();
+
+    // Merge: today's unresolved + carried-forward (deduplicate by id)
+    final unresolvedIds = unresolved.map((t) => t.id).toSet();
+    for (final cf in carriedForward) {
+      if (!unresolvedIds.contains(cf.id)) {
+        unresolved.add(cf);
+      }
+    }
 
     if (existing != null) {
       state = BrutalistState(todayReview: existing, unresolvedTasks: unresolved);
@@ -68,6 +81,25 @@ class BrutalistNotifier extends StateNotifier<BrutalistState> {
       final newReview = BrutalistReview()..date = startOfDay;
       state = BrutalistState(todayReview: newReview, unresolvedTasks: unresolved);
     }
+  }
+
+  /// Carry a task forward to the next day with its progress preserved.
+  Future<void> carryForwardTask(int taskId, int progressPercent) async {
+    final allTasks = await isar.tasks.where().anyId().findAll();
+    final task = allTasks.where((t) => t.id == taskId).firstOrNull;
+    if (task == null) return;
+
+    task.progressPercent = progressPercent;
+    task.isCarriedForward = true;
+    task.carryForwardCount += 1;
+
+    await isar.writeTxn(() async {
+      await isar.tasks.put(task);
+    });
+
+    // Update state: remove the carried-forward task from unresolved list
+    final updatedUnresolved = state.unresolvedTasks.where((t) => t.id != taskId).toList();
+    state = state.copyWith(unresolvedTasks: updatedUnresolved);
   }
 
   Future<void> save({
@@ -129,3 +161,4 @@ final brutalistProvider =
     StateNotifierProvider<BrutalistNotifier, BrutalistState>((ref) {
   return BrutalistNotifier();
 });
+

@@ -46,5 +46,14 @@ class Task {
   /// Subtasks that have been checked as completed.
   List<String> completedSubTasks = [];
 
+  /// Progress percentage (0–100) set during Brutalist Review triage.
+  int progressPercent = 0;
+
+  /// Whether this task was carried forward to the next day (in-progress, not failed).
+  bool isCarriedForward = false;
+
+  /// How many times this task has been carried forward. Detects chronic procrastination.
+  int carryForwardCount = 0;
+
   Task(this.title, this.category, {this.isCompleted = false});
 }

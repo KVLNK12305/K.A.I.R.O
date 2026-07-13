@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../main.dart';
 import '../../core/models/brutalist_review.dart';
 import '../../core/models/task.dart';
 import '../../core/services/streak_service.dart';
@@ -28,6 +29,8 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
   bool _submitted = false;
   int _ventChars = 0;
   final Map<int, FailureEtiology> _taskEtiologies = {};
+  final Map<int, int> _taskProgress = {};
+  final Map<int, bool> _taskIntents = {};
 
   static const int _ventLimit = 300;
   static const Color _bloodRed = AppTheme.warning;
@@ -65,11 +68,25 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
   }
 
   Future<void> _submit(List<Task> unresolvedTasks) async {
-    // Validate unresolved tasks
+    // Validate unresolved tasks — progress triage
     for (final t in unresolvedTasks) {
-      if (_taskEtiologies[t.id] == null || _taskEtiologies[t.id] == FailureEtiology.none) {
-        _showError('You left Peak tasks unfinished. Assign a failure etiology to "${t.title}". No escape.');
+      final progress = _taskProgress[t.id] ?? t.progressPercent;
+      final intent = _taskIntents[t.id];
+      final isChronic = t.carryForwardCount >= 2;
+
+      if (progress >= 100) continue; // Will be auto-completed
+
+      if (progress > 0 && progress < 100 && intent == null) {
+        _showError('Decide the fate of "${t.title}". Will you finish it or not?');
         return;
+      }
+
+      // If intent is false, or progress is 0, or chronic — need failure etiology
+      if (intent == false || progress == 0 || (isChronic && intent != true)) {
+        if (_taskEtiologies[t.id] == null || _taskEtiologies[t.id] == FailureEtiology.none) {
+          _showError('Assign a failure etiology to "${t.title}". No escape.');
+          return;
+        }
       }
     }
 
@@ -88,11 +105,31 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
     final cost =
         double.tryParse(_costController.text.trim()) ?? 0.0;
 
-    // Fail the tasks in the Energy Economy
+    // Process triage outcomes
     final energyNotifier = ref.read(energyEconomyProvider.notifier);
-    for (final entry in _taskEtiologies.entries) {
-      if (entry.value != FailureEtiology.none) {
-        await energyNotifier.failTask(entry.key, entry.value);
+    final brutalistNotifier = ref.read(brutalistProvider.notifier);
+
+    for (final t in unresolvedTasks) {
+      final progress = _taskProgress[t.id] ?? t.progressPercent;
+      final intent = _taskIntents[t.id];
+
+      if (progress >= 100) {
+        // Auto-complete the task
+        t.isCompleted = true;
+        t.progressPercent = 100;
+        t.isCarriedForward = false;
+        await isar.writeTxn(() async {
+          await isar.tasks.put(t);
+        });
+      } else if (intent == true) {
+        // Carry forward with progress preserved
+        await brutalistNotifier.carryForwardTask(t.id, progress);
+      } else {
+        // Mark as failed with etiology
+        final etiology = _taskEtiologies[t.id];
+        if (etiology != null && etiology != FailureEtiology.none) {
+          await energyNotifier.failTask(t.id, etiology);
+        }
       }
     }
 
@@ -203,14 +240,14 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                 children: [
                   // ─── SECTION 0: UNRESOLVED TASKS ──────────────────────────
                   if (state.unresolvedTasks.isNotEmpty) ...[
-                    _sectionLabel('00 — THE FAILURES'),
+                    _sectionLabel('00 — PROGRESS TRIAGE'),
                     const SizedBox(height: 4),
                     const Text(
-                      'You assigned these peak tasks but did not complete them. Categorize your failure before proceeding.',
+                      'These peak tasks are unfinished. Assess your progress honestly — carry forward what\'s in-flight, confront what\'s abandoned.',
                       style: TextStyle(color: Colors.white38, fontSize: 12),
                     ),
                     const SizedBox(height: 12),
-                    ...state.unresolvedTasks.map((t) => _buildEtiologySelector(t)),
+                    ...state.unresolvedTasks.map((t) => _buildTaskTriageCard(t)),
                     const SizedBox(height: 36),
                   ],
 
@@ -368,8 +405,26 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
         ),
       );
 
-  Widget _buildEtiologySelector(Task task) {
+  Widget _buildTaskTriageCard(Task task) {
+    final progress = _taskProgress[task.id] ?? task.progressPercent;
+    final intent = _taskIntents[task.id]; // null = not decided, true = will finish, false = won't finish
     final current = _taskEtiologies[task.id] ?? FailureEtiology.none;
+    final isChronic = task.carryForwardCount >= 2;
+
+    // Color tinting based on progress
+    Color tierColor;
+    String tierLabel;
+    if (progress >= 70) {
+      tierColor = Colors.greenAccent;
+      tierLabel = 'ALMOST THERE';
+    } else if (progress >= 30) {
+      tierColor = Colors.amber;
+      tierLabel = 'IN PROGRESS';
+    } else {
+      tierColor = _bloodRed;
+      tierLabel = 'BARELY STARTED';
+    }
+
     final labels = {
       FailureEtiology.none: 'Select Etiology...',
       FailureEtiology.miscalibratedEnergy: 'Miscalibrated Energy',
@@ -380,41 +435,339 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
     };
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: _surface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: current == FailureEtiology.none ? _bloodRed : _border,
+          color: tierColor.withValues(alpha: 0.5),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(task.title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<FailureEtiology>(
-              isExpanded: true,
-              value: current,
-              dropdownColor: const Color(0xFF1A1A1A),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white38),
-              style: TextStyle(
-                color: current == FailureEtiology.none ? _bloodRed : _dimWhite,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+      child: StatefulBuilder(
+        builder: (context, setLocalState) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Task header
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(task.title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: tierColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  tierLabel,
+                                  style: TextStyle(color: tierColor, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1),
+                                ),
+                              ),
+                              if (task.isCarriedForward) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'CARRIED ×${task.carryForwardCount}',
+                                    style: const TextStyle(color: Colors.orange, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Progress percentage display
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: tierColor.withValues(alpha: 0.6), width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$progress%',
+                          style: TextStyle(color: tierColor, fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              onChanged: (val) => setState(() => _taskEtiologies[task.id] = val ?? FailureEtiology.none),
-              items: FailureEtiology.values.map((tag) {
-                return DropdownMenuItem(
-                  value: tag,
-                  child: Text(labels[tag]!),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
+
+              // Progress slider
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'HOW FAR DID YOU GET?',
+                      style: TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: 1.5, fontWeight: FontWeight.w600),
+                    ),
+                    SliderTheme(
+                      data: SliderThemeData(
+                        activeTrackColor: tierColor,
+                        inactiveTrackColor: Colors.white10,
+                        thumbColor: tierColor,
+                        overlayColor: tierColor.withValues(alpha: 0.2),
+                        trackHeight: 4,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                      ),
+                      child: Slider(
+                        value: progress.toDouble(),
+                        min: 0,
+                        max: 100,
+                        divisions: 20,
+                        label: '$progress%',
+                        onChanged: (val) {
+                          final newProgress = val.round();
+                          setLocalState(() {
+                            _taskProgress[task.id] = newProgress;
+                            // Reset intent when progress changes significantly
+                            if (newProgress >= 100) {
+                              _taskIntents[task.id] = true;
+                            }
+                          });
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                    // Progress marks
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: ['0%', '25%', '50%', '75%', '100%']
+                            .map((l) => Text(l, style: const TextStyle(color: Colors.white24, fontSize: 9)))
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // Chronic procrastination warning
+              if (isChronic)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _bloodRed.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: _bloodRed.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: _bloodRed, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'This task has been carried forward ${task.carryForwardCount} times. Execute or kill it. No more extensions.',
+                          style: TextStyle(color: _bloodRed, fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Intent assessment — only if progress > 0 and < 100
+              if (progress > 0 && progress < 100) ...[
+                const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF141414),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        progress >= 70
+                            ? 'WILL YOU FINISH THIS TONIGHT?'
+                            : 'BE HONEST — IS THIS GETTING DONE TODAY?',
+                        style: const TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: isChronic ? null : () {
+                                setLocalState(() {
+                                  _taskIntents[task.id] = true;
+                                });
+                                setState(() {});
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: intent == true
+                                      ? Colors.greenAccent.withValues(alpha: 0.15)
+                                      : Colors.white.withValues(alpha: 0.03),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: intent == true
+                                        ? Colors.greenAccent.withValues(alpha: 0.5)
+                                        : Colors.white10,
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.check_circle_outline,
+                                        color: intent == true ? Colors.greenAccent : Colors.white38, size: 22),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      isChronic ? 'BLOCKED' : 'YES — CARRY FORWARD',
+                                      style: TextStyle(
+                                        color: isChronic
+                                            ? Colors.white24
+                                            : (intent == true ? Colors.greenAccent : Colors.white38),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setLocalState(() {
+                                  _taskIntents[task.id] = false;
+                                });
+                                setState(() {});
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: intent == false
+                                      ? _bloodRed.withValues(alpha: 0.15)
+                                      : Colors.white.withValues(alpha: 0.03),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: intent == false
+                                        ? _bloodRed.withValues(alpha: 0.5)
+                                        : Colors.white10,
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.cancel_outlined,
+                                        color: intent == false ? _bloodRed : Colors.white38, size: 22),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'NO — MARK FAILED',
+                                      style: TextStyle(
+                                        color: intent == false ? _bloodRed : Colors.white38,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Failure etiology dropdown — shown when intent is false OR progress < 30 OR task at 0%
+              if (intent == false || progress == 0 || (isChronic && intent != true)) ...[
+                const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF141414),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: current == FailureEtiology.none ? _bloodRed : _border,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<FailureEtiology>(
+                      isExpanded: true,
+                      value: current,
+                      dropdownColor: const Color(0xFF1A1A1A),
+                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white38),
+                      style: TextStyle(
+                        color: current == FailureEtiology.none ? _bloodRed : _dimWhite,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      onChanged: (val) {
+                        setLocalState(() => _taskEtiologies[task.id] = val ?? FailureEtiology.none);
+                        setState(() {});
+                      },
+                      items: FailureEtiology.values.map((tag) {
+                        return DropdownMenuItem(
+                          value: tag,
+                          child: Text(labels[tag]!),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+
+              // Auto-complete message for 100%
+              if (progress >= 100)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'This will be auto-marked as completed on submit.',
+                          style: TextStyle(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 12),
+            ],
+          );
+        },
       ),
     );
   }

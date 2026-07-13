@@ -79,6 +79,7 @@ class NotificationService {
       {'id': 1, 'hour': 6, 'min': 5, 'title': 'K.A.I.R.O — 🌅 Morning Enforcer', 'body': 'Assign your peak energy before the day steals it.'},
       {'id': 2, 'hour': 9, 'min': 30, 'title': 'K.A.I.R.O — ⚡ Peak 1 Checkpoint', 'body': 'Are you executing on your highest priority or drifting into entropy?'},
       {'id': 3, 'hour': 14, 'min': 0, 'title': 'K.A.I.R.O — 🧘 Recovery Block', 'body': 'Low-stakes admin. Protect your cognitive bandwidth.'},
+      {'id': 6, 'hour': 17, 'min': 0, 'title': 'K.A.I.R.O — ⏳ EOD Checkpoint', 'body': 'You have unfinished peak tasks. Finish now or face the review in 1 hour.'},
       {'id': 4, 'hour': 18, 'min': 5, 'title': 'K.A.I.R.O — 🔪 Evening Interrogation', 'body': 'The Brutalist Review awaits. Confront the truth of your day.'},
       {'id': 5, 'hour': 21, 'min': 0, 'title': 'K.A.I.R.O — 🔥 21-Day Streak Checkpoint', 'body': 'Did you conquer today? Log your evening review to protect your streak.'},
     ];
@@ -109,7 +110,7 @@ class NotificationService {
         );
       }
     }
-    debugPrint("Scheduled 5 daily recurring discipline notifications.");
+    debugPrint("Scheduled 6 daily recurring discipline notifications.");
   }
 
   Future<void> show21DayStreakNotification(int currentDay) async {

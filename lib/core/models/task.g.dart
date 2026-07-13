@@ -17,50 +17,65 @@ const TaskSchema = CollectionSchema(
   name: r'Task',
   id: 2998003626758701373,
   properties: {
-    r'category': PropertySchema(
+    r'carryForwardCount': PropertySchema(
       id: 0,
+      name: r'carryForwardCount',
+      type: IsarType.long,
+    ),
+    r'category': PropertySchema(
+      id: 1,
       name: r'category',
       type: IsarType.string,
     ),
     r'completedSubTasks': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'completedSubTasks',
       type: IsarType.stringList,
     ),
     r'createdAt': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'energySlot': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'energySlot',
       type: IsarType.byte,
       enumMap: _TaskenergySlotEnumValueMap,
     ),
     r'failureEtiology': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'failureEtiology',
       type: IsarType.byte,
       enumMap: _TaskfailureEtiologyEnumValueMap,
     ),
+    r'isCarriedForward': PropertySchema(
+      id: 6,
+      name: r'isCarriedForward',
+      type: IsarType.bool,
+    ),
     r'isCompleted': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'isCompleted',
       type: IsarType.bool,
     ),
     r'isFailed': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'isFailed',
       type: IsarType.bool,
     ),
+    r'progressPercent': PropertySchema(
+      id: 9,
+      name: r'progressPercent',
+      type: IsarType.long,
+    ),
     r'subTasks': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'subTasks',
       type: IsarType.stringList,
     ),
     r'title': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'title',
       type: IsarType.string,
     )
@@ -110,15 +125,18 @@ void _taskSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.category);
-  writer.writeStringList(offsets[1], object.completedSubTasks);
-  writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeByte(offsets[3], object.energySlot.index);
-  writer.writeByte(offsets[4], object.failureEtiology.index);
-  writer.writeBool(offsets[5], object.isCompleted);
-  writer.writeBool(offsets[6], object.isFailed);
-  writer.writeStringList(offsets[7], object.subTasks);
-  writer.writeString(offsets[8], object.title);
+  writer.writeLong(offsets[0], object.carryForwardCount);
+  writer.writeString(offsets[1], object.category);
+  writer.writeStringList(offsets[2], object.completedSubTasks);
+  writer.writeDateTime(offsets[3], object.createdAt);
+  writer.writeByte(offsets[4], object.energySlot.index);
+  writer.writeByte(offsets[5], object.failureEtiology.index);
+  writer.writeBool(offsets[6], object.isCarriedForward);
+  writer.writeBool(offsets[7], object.isCompleted);
+  writer.writeBool(offsets[8], object.isFailed);
+  writer.writeLong(offsets[9], object.progressPercent);
+  writer.writeStringList(offsets[10], object.subTasks);
+  writer.writeString(offsets[11], object.title);
 }
 
 Task _taskDeserialize(
@@ -128,21 +146,24 @@ Task _taskDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Task(
-    reader.readString(offsets[8]),
-    reader.readString(offsets[0]),
-    isCompleted: reader.readBoolOrNull(offsets[5]) ?? false,
+    reader.readString(offsets[11]),
+    reader.readString(offsets[1]),
+    isCompleted: reader.readBoolOrNull(offsets[7]) ?? false,
   );
-  object.completedSubTasks = reader.readStringList(offsets[1]) ?? [];
-  object.createdAt = reader.readDateTime(offsets[2]);
+  object.carryForwardCount = reader.readLong(offsets[0]);
+  object.completedSubTasks = reader.readStringList(offsets[2]) ?? [];
+  object.createdAt = reader.readDateTime(offsets[3]);
   object.energySlot =
-      _TaskenergySlotValueEnumMap[reader.readByteOrNull(offsets[3])] ??
+      _TaskenergySlotValueEnumMap[reader.readByteOrNull(offsets[4])] ??
           EnergySlot.peak1;
   object.failureEtiology =
-      _TaskfailureEtiologyValueEnumMap[reader.readByteOrNull(offsets[4])] ??
+      _TaskfailureEtiologyValueEnumMap[reader.readByteOrNull(offsets[5])] ??
           FailureEtiology.none;
   object.id = id;
-  object.isFailed = reader.readBool(offsets[6]);
-  object.subTasks = reader.readStringList(offsets[7]) ?? [];
+  object.isCarriedForward = reader.readBool(offsets[6]);
+  object.isFailed = reader.readBool(offsets[8]);
+  object.progressPercent = reader.readLong(offsets[9]);
+  object.subTasks = reader.readStringList(offsets[10]) ?? [];
   return object;
 }
 
@@ -154,24 +175,30 @@ P _taskDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 1:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 3:
+      return (reader.readDateTime(offset)) as P;
+    case 4:
       return (_TaskenergySlotValueEnumMap[reader.readByteOrNull(offset)] ??
           EnergySlot.peak1) as P;
-    case 4:
+    case 5:
       return (_TaskfailureEtiologyValueEnumMap[reader.readByteOrNull(offset)] ??
           FailureEtiology.none) as P;
-    case 5:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
+      return (reader.readLong(offset)) as P;
+    case 10:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 11:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -295,6 +322,59 @@ extension TaskQueryWhere on QueryBuilder<Task, Task, QWhereClause> {
 }
 
 extension TaskQueryFilter on QueryBuilder<Task, Task, QFilterCondition> {
+  QueryBuilder<Task, Task, QAfterFilterCondition> carryForwardCountEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'carryForwardCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> carryForwardCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'carryForwardCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> carryForwardCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'carryForwardCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> carryForwardCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'carryForwardCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterFilterCondition> categoryEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -861,6 +941,16 @@ extension TaskQueryFilter on QueryBuilder<Task, Task, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Task, Task, QAfterFilterCondition> isCarriedForwardEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isCarriedForward',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterFilterCondition> isCompletedEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
@@ -876,6 +966,59 @@ extension TaskQueryFilter on QueryBuilder<Task, Task, QFilterCondition> {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isFailed',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> progressPercentEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'progressPercent',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> progressPercentGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'progressPercent',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> progressPercentLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'progressPercent',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterFilterCondition> progressPercentBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'progressPercent',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -1228,6 +1371,18 @@ extension TaskQueryObject on QueryBuilder<Task, Task, QFilterCondition> {}
 extension TaskQueryLinks on QueryBuilder<Task, Task, QFilterCondition> {}
 
 extension TaskQuerySortBy on QueryBuilder<Task, Task, QSortBy> {
+  QueryBuilder<Task, Task, QAfterSortBy> sortByCarryForwardCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'carryForwardCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> sortByCarryForwardCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'carryForwardCount', Sort.desc);
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterSortBy> sortByCategory() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'category', Sort.asc);
@@ -1276,6 +1431,18 @@ extension TaskQuerySortBy on QueryBuilder<Task, Task, QSortBy> {
     });
   }
 
+  QueryBuilder<Task, Task, QAfterSortBy> sortByIsCarriedForward() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isCarriedForward', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> sortByIsCarriedForwardDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isCarriedForward', Sort.desc);
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterSortBy> sortByIsCompleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isCompleted', Sort.asc);
@@ -1300,6 +1467,18 @@ extension TaskQuerySortBy on QueryBuilder<Task, Task, QSortBy> {
     });
   }
 
+  QueryBuilder<Task, Task, QAfterSortBy> sortByProgressPercent() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'progressPercent', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> sortByProgressPercentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'progressPercent', Sort.desc);
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -1314,6 +1493,18 @@ extension TaskQuerySortBy on QueryBuilder<Task, Task, QSortBy> {
 }
 
 extension TaskQuerySortThenBy on QueryBuilder<Task, Task, QSortThenBy> {
+  QueryBuilder<Task, Task, QAfterSortBy> thenByCarryForwardCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'carryForwardCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> thenByCarryForwardCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'carryForwardCount', Sort.desc);
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterSortBy> thenByCategory() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'category', Sort.asc);
@@ -1374,6 +1565,18 @@ extension TaskQuerySortThenBy on QueryBuilder<Task, Task, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Task, Task, QAfterSortBy> thenByIsCarriedForward() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isCarriedForward', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> thenByIsCarriedForwardDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isCarriedForward', Sort.desc);
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterSortBy> thenByIsCompleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isCompleted', Sort.asc);
@@ -1398,6 +1601,18 @@ extension TaskQuerySortThenBy on QueryBuilder<Task, Task, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Task, Task, QAfterSortBy> thenByProgressPercent() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'progressPercent', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Task, Task, QAfterSortBy> thenByProgressPercentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'progressPercent', Sort.desc);
+    });
+  }
+
   QueryBuilder<Task, Task, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -1412,6 +1627,12 @@ extension TaskQuerySortThenBy on QueryBuilder<Task, Task, QSortThenBy> {
 }
 
 extension TaskQueryWhereDistinct on QueryBuilder<Task, Task, QDistinct> {
+  QueryBuilder<Task, Task, QDistinct> distinctByCarryForwardCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'carryForwardCount');
+    });
+  }
+
   QueryBuilder<Task, Task, QDistinct> distinctByCategory(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1443,6 +1664,12 @@ extension TaskQueryWhereDistinct on QueryBuilder<Task, Task, QDistinct> {
     });
   }
 
+  QueryBuilder<Task, Task, QDistinct> distinctByIsCarriedForward() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isCarriedForward');
+    });
+  }
+
   QueryBuilder<Task, Task, QDistinct> distinctByIsCompleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isCompleted');
@@ -1452,6 +1679,12 @@ extension TaskQueryWhereDistinct on QueryBuilder<Task, Task, QDistinct> {
   QueryBuilder<Task, Task, QDistinct> distinctByIsFailed() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isFailed');
+    });
+  }
+
+  QueryBuilder<Task, Task, QDistinct> distinctByProgressPercent() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'progressPercent');
     });
   }
 
@@ -1473,6 +1706,12 @@ extension TaskQueryProperty on QueryBuilder<Task, Task, QQueryProperty> {
   QueryBuilder<Task, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<Task, int, QQueryOperations> carryForwardCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'carryForwardCount');
     });
   }
 
@@ -1508,6 +1747,12 @@ extension TaskQueryProperty on QueryBuilder<Task, Task, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Task, bool, QQueryOperations> isCarriedForwardProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isCarriedForward');
+    });
+  }
+
   QueryBuilder<Task, bool, QQueryOperations> isCompletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isCompleted');
@@ -1517,6 +1762,12 @@ extension TaskQueryProperty on QueryBuilder<Task, Task, QQueryProperty> {
   QueryBuilder<Task, bool, QQueryOperations> isFailedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isFailed');
+    });
+  }
+
+  QueryBuilder<Task, int, QQueryOperations> progressPercentProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'progressPercent');
     });
   }
 
