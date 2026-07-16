@@ -121,6 +121,7 @@ class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
     if (task == null) return;
     task.isCompleted = true;
     task.isFailed = false;
+    task.isCarriedForward = false;
     task.failureEtiology = FailureEtiology.none;
     await isar.writeTxn(() async => await isar.tasks.put(task));
     await _load();
@@ -130,6 +131,8 @@ class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
     final task = await isar.tasks.get(taskId);
     if (task == null) return;
     task.isFailed = true;
+    task.isCompleted = false;
+    task.isCarriedForward = false;
     task.failureEtiology = etiology;
     await isar.writeTxn(() async => await isar.tasks.put(task));
 

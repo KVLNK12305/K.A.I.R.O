@@ -58,7 +58,7 @@ class BrutalistNotifier extends StateNotifier<BrutalistState> {
     final unresolved = allTasks.where((t) {
       final isToday = t.createdAt.isAfter(startOfDay.subtract(const Duration(seconds: 1)));
       final isPeak = (t.energySlot == EnergySlot.peak1 || t.energySlot == EnergySlot.peak2);
-      return isPeak && isToday && !t.isCompleted;
+      return isPeak && isToday && !t.isCompleted && !t.isFailed;
     }).toList();
 
     // Include carried-forward tasks from previous days that are still incomplete
@@ -92,6 +92,8 @@ class BrutalistNotifier extends StateNotifier<BrutalistState> {
     task.progressPercent = progressPercent;
     task.isCarriedForward = true;
     task.carryForwardCount += 1;
+    task.isFailed = false;
+    task.failureEtiology = FailureEtiology.none;
 
     await isar.writeTxn(() async {
       await isar.tasks.put(task);

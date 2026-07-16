@@ -8,6 +8,7 @@ import '../../core/services/streak_service.dart';
 import '../../core/services/notification_service.dart';
 import '../energy_economy/energy_provider.dart';
 import '../profile/providers/profile_provider.dart';
+import '../dashboard/providers/task_provider.dart';
 import 'brutalist_provider.dart';
 import '../../core/theme/app_theme.dart';
 class BrutalistReviewPage extends ConsumerStatefulWidget {
@@ -68,21 +69,25 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
   }
 
   Future<void> _submit(List<Task> unresolvedTasks) async {
+    final tasksToProcess = List<Task>.from(unresolvedTasks);
+
     // Validate unresolved tasks — progress triage
-    for (final t in unresolvedTasks) {
+    for (final t in tasksToProcess) {
       final progress = _taskProgress[t.id] ?? t.progressPercent;
       final intent = _taskIntents[t.id];
       final isChronic = t.carryForwardCount >= 2;
 
       if (progress >= 100) continue; // Will be auto-completed
 
-      if (progress > 0 && progress < 100 && intent == null) {
-        _showError('Decide the fate of "${t.title}". Will you finish it or not?');
+      if (isChronic && intent != true) {
+        if (_taskEtiologies[t.id] == null || _taskEtiologies[t.id] == FailureEtiology.none) {
+          _showError('Chronic task "${t.title}" cannot be carried forward again. Assign a failure etiology or mark 100%.');
+          return;
+        }
+      } else if (progress < 100 && intent == null) {
+        _showError('Decide the fate of "${t.title}". Will you carry it forward or mark it failed?');
         return;
-      }
-
-      // If intent is false, or progress is 0, or chronic — need failure etiology
-      if (intent == false || progress == 0 || (isChronic && intent != true)) {
+      } else if (intent == false) {
         if (_taskEtiologies[t.id] == null || _taskEtiologies[t.id] == FailureEtiology.none) {
           _showError('Assign a failure etiology to "${t.title}". No escape.');
           return;
@@ -109,27 +114,28 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
     final energyNotifier = ref.read(energyEconomyProvider.notifier);
     final brutalistNotifier = ref.read(brutalistProvider.notifier);
 
-    for (final t in unresolvedTasks) {
+    for (final t in tasksToProcess) {
       final progress = _taskProgress[t.id] ?? t.progressPercent;
       final intent = _taskIntents[t.id];
+      final isChronic = t.carryForwardCount >= 2;
 
       if (progress >= 100) {
         // Auto-complete the task
         t.isCompleted = true;
         t.progressPercent = 100;
         t.isCarriedForward = false;
+        t.isFailed = false;
+        t.failureEtiology = FailureEtiology.none;
         await isar.writeTxn(() async {
           await isar.tasks.put(t);
         });
-      } else if (intent == true) {
+      } else if (intent == true && !isChronic) {
         // Carry forward with progress preserved
         await brutalistNotifier.carryForwardTask(t.id, progress);
       } else {
         // Mark as failed with etiology
-        final etiology = _taskEtiologies[t.id];
-        if (etiology != null && etiology != FailureEtiology.none) {
-          await energyNotifier.failTask(t.id, etiology);
-        }
+        final etiology = _taskEtiologies[t.id] ?? FailureEtiology.taskAversive;
+        await energyNotifier.failTask(t.id, etiology);
       }
     }
 
@@ -144,6 +150,8 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
           cowardiceDescription: _cowardiceDescController.text.trim(),
           futureCostLost: cost,
         );
+
+    ref.read(taskProvider.notifier).loadAllData();
 
     final currentDay = await StreakService().recordDayComplete();
     NotificationService().show21DayStreakNotification(currentDay);
@@ -406,25 +414,6 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
       );
 
   Widget _buildTaskTriageCard(Task task) {
-    final progress = _taskProgress[task.id] ?? task.progressPercent;
-    final intent = _taskIntents[task.id]; // null = not decided, true = will finish, false = won't finish
-    final current = _taskEtiologies[task.id] ?? FailureEtiology.none;
-    final isChronic = task.carryForwardCount >= 2;
-
-    // Color tinting based on progress
-    Color tierColor;
-    String tierLabel;
-    if (progress >= 70) {
-      tierColor = Colors.greenAccent;
-      tierLabel = 'ALMOST THERE';
-    } else if (progress >= 30) {
-      tierColor = Colors.amber;
-      tierLabel = 'IN PROGRESS';
-    } else {
-      tierColor = _bloodRed;
-      tierLabel = 'BARELY STARTED';
-    }
-
     final labels = {
       FailureEtiology.none: 'Select Etiology...',
       FailureEtiology.miscalibratedEnergy: 'Miscalibrated Energy',
@@ -440,11 +429,33 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
         color: _surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: tierColor.withValues(alpha: 0.5),
+          color: (_taskProgress[task.id] ?? task.progressPercent) >= 70
+              ? Colors.greenAccent.withValues(alpha: 0.5)
+              : ((_taskProgress[task.id] ?? task.progressPercent) >= 30
+                  ? Colors.amber.withValues(alpha: 0.5)
+                  : _bloodRed.withValues(alpha: 0.5)),
         ),
       ),
       child: StatefulBuilder(
         builder: (context, setLocalState) {
+          final progress = _taskProgress[task.id] ?? task.progressPercent;
+          final intent = _taskIntents[task.id]; // null = not decided, true = will finish, false = won't finish
+          final current = _taskEtiologies[task.id] ?? FailureEtiology.none;
+          final isChronic = task.carryForwardCount >= 2;
+
+          Color tierColor;
+          String tierLabel;
+          if (progress >= 70) {
+            tierColor = Colors.greenAccent;
+            tierLabel = 'ALMOST THERE';
+          } else if (progress >= 30) {
+            tierColor = Colors.amber;
+            tierLabel = 'IN PROGRESS';
+          } else {
+            tierColor = _bloodRed;
+            tierLabel = 'BARELY STARTED';
+          }
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -588,8 +599,8 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                   ),
                 ),
 
-              // Intent assessment — only if progress > 0 and < 100
-              if (progress > 0 && progress < 100) ...[
+              // Intent assessment — shown when progress < 100
+              if (progress < 100) ...[
                 const SizedBox(height: 8),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -605,7 +616,7 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                       Text(
                         progress >= 70
                             ? 'WILL YOU FINISH THIS TONIGHT?'
-                            : 'BE HONEST — IS THIS GETTING DONE TODAY?',
+                            : 'BE HONEST — IS THIS GETTING DONE TODAY OR CARRIED?',
                         style: const TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 10),
@@ -613,7 +624,9 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                         children: [
                           Expanded(
                             child: GestureDetector(
-                              onTap: isChronic ? null : () {
+                              onTap: isChronic ? () {
+                                _showError('Chronic procrastination! Executing or killing required — cannot carry forward.');
+                              } : () {
                                 setLocalState(() {
                                   _taskIntents[task.id] = true;
                                 });
@@ -622,12 +635,12 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
-                                  color: intent == true
+                                  color: intent == true && !isChronic
                                       ? Colors.greenAccent.withValues(alpha: 0.15)
                                       : Colors.white.withValues(alpha: 0.03),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: intent == true
+                                    color: intent == true && !isChronic
                                         ? Colors.greenAccent.withValues(alpha: 0.5)
                                         : Colors.white10,
                                   ),
@@ -635,7 +648,7 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                                 child: Column(
                                   children: [
                                     Icon(Icons.check_circle_outline,
-                                        color: intent == true ? Colors.greenAccent : Colors.white38, size: 22),
+                                        color: intent == true && !isChronic ? Colors.greenAccent : Colors.white38, size: 22),
                                     const SizedBox(height: 4),
                                     Text(
                                       isChronic ? 'BLOCKED' : 'YES — CARRY FORWARD',
@@ -701,8 +714,8 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                 ),
               ],
 
-              // Failure etiology dropdown — shown when intent is false OR progress < 30 OR task at 0%
-              if (intent == false || progress == 0 || (isChronic && intent != true)) ...[
+              // Failure etiology dropdown — shown when intent is false OR (isChronic && intent != true)
+              if (intent == false || (isChronic && intent != true)) ...[
                 const SizedBox(height: 8),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
