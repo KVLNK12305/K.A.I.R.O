@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'providers/ms_todo_provider.dart';
+import '../spirituality/daily_shloka_dialog.dart';
 import '../../core/theme/app_theme.dart';
 
 class InboxPage extends ConsumerWidget {
@@ -18,6 +19,11 @@ class InboxPage extends ConsumerWidget {
         elevation: 0,
         title: const Text('STAGING INBOX', style: TextStyle(fontSize: 12, letterSpacing: 2)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_stories_rounded, color: Colors.amber, size: 20),
+            tooltip: 'Shloka of the Day',
+            onPressed: () => DailyShlokaDialog.showOnDemand(context),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white54, size: 20),
             onPressed: () => ref.read(msTodoProvider.notifier).fetchTasks(),

@@ -16,6 +16,7 @@ import '../profile/profile_page.dart';
 import '../wardrobe/wardrobe_page.dart';
 import 'settings_page.dart';
 import 'memory_graph_view.dart';
+import '../spirituality/daily_shloka_dialog.dart';
 import '../../Nav/smooth_page_route.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -187,6 +188,21 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                     child: IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
+                      tooltip: 'Bhagavad Gita Shloka of the Day',
+                      icon: const Icon(
+                        Icons.auto_stories_rounded,
+                        color: Colors.amber,
+                        size: 18,
+                      ),
+                      onPressed: () => DailyShlokaDialog.showOnDemand(context),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                       icon: const Icon(
                         Icons.checkroom,
                         color: Colors.white38,
@@ -200,7 +216,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+
+              // DAILY SHLOKA BANNER
+              const DailyShlokaBanner(),
+              const SizedBox(height: 16),
 
               // 168-HOUR BANDWIDTH CARD
               _build168HourCard(context, ref),

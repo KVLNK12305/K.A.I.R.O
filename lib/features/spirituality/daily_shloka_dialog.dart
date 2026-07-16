@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../main.dart';
 import '../../core/models/gita_shloka.dart';
+import '../../core/services/gita_service.dart';
 
 /// A premium modal dialog that displays the daily Bhagavad Gita shloka.
 /// Designed to feel calm, spiritual, and intentional — not intrusive.
@@ -16,6 +18,42 @@ class DailyShlokaDialog extends StatelessWidget {
       barrierColor: Colors.black87,
       builder: (_) => DailyShlokaDialog(shloka: shloka),
     );
+  }
+
+  /// Shows the daily shloka at any time during the day on demand.
+  /// If the cache is not yet ready or empty, it fetches or displays a helpful fallback.
+  static Future<void> showOnDemand(BuildContext context) async {
+    final gitaService = GitaService(isar);
+    
+    var shloka = await gitaService.getDailyShloka();
+    if (shloka == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fetching sacred verses... Please wait a moment.', style: TextStyle(color: Colors.white)),
+            backgroundColor: Color(0xFF2A2A2A),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      await gitaService.fetchAndCacheAllShlokas();
+      shloka = await gitaService.getDailyShloka();
+    }
+
+    if (!context.mounted) return;
+
+    if (shloka != null) {
+      await show(context, shloka);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not load Shloka right now. Check internet connection and try again.', style: TextStyle(color: Colors.white)),
+          backgroundColor: Color(0xFFCC2222),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -192,6 +230,88 @@ class DailyShlokaDialog extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class DailyShlokaBanner extends StatelessWidget {
+  const DailyShlokaBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 16, bottom: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.amber.withValues(alpha: 0.25),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.03),
+            blurRadius: 15,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => DailyShlokaDialog.showOnDemand(context),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.auto_stories_rounded,
+                    color: Colors.amber,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '॥ श्रीमद्भगवद्गीता ॥ SHLOKA OF THE DAY',
+                        style: TextStyle(
+                          color: Colors.amber.withValues(alpha: 0.8),
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Tap anytime to read & reflect on today\'s divine verse.',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white24,
+                  size: 14,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
