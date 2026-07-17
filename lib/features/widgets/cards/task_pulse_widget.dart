@@ -57,35 +57,38 @@ class _TaskPulseWidgetState extends ConsumerState<TaskPulseWidget>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Row(
-            children: [
-              const Icon(
-                Icons.check_circle_outline_rounded,
-                color: Color(0xFF00E676),
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'TASK PULSE',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontSize: 9,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: Color(0xFF00E676),
+                  size: 16,
                 ),
-              ),
-              const Spacer(),
-              Text(
-                total == 0 ? 'NO TASKS' : '$completed OF $total',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'monospace',
-                  letterSpacing: 1,
+                const SizedBox(width: 6),
+                const Text(
+                  'TASK PULSE',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 9,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 24),
+                Text(
+                  total == 0 ? 'NO TASKS' : '$completed OF $total',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'monospace',
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
 
@@ -106,13 +109,18 @@ class _TaskPulseWidgetState extends ConsumerState<TaskPulseWidget>
           const SizedBox(height: 14),
 
           // Footer metrics summary
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _subMetric('PEAK 1', state.peak1Tasks.where((t) => t.isCompleted).length, state.peak1Tasks.length),
-              _subMetric('PEAK 2', state.peak2Tasks.where((t) => t.isCompleted).length, state.peak2Tasks.length),
-              _subMetric('RECOVERY', state.recoveryTasks.where((t) => t.isCompleted).length, state.recoveryTasks.length),
-            ],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _subMetric('PEAK 1', state.peak1Tasks.where((t) => t.isCompleted).length, state.peak1Tasks.length),
+                const SizedBox(width: 16),
+                _subMetric('PEAK 2', state.peak2Tasks.where((t) => t.isCompleted).length, state.peak2Tasks.length),
+                const SizedBox(width: 16),
+                _subMetric('RECOVERY', state.recoveryTasks.where((t) => t.isCompleted).length, state.recoveryTasks.length),
+              ],
+            ),
           ),
         ],
       ),

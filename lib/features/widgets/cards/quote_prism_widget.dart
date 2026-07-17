@@ -120,7 +120,7 @@ class _QuotePrismWidgetState extends ConsumerState<QuotePrismWidget>
                     ),
                   ),
                 ),
-                error: (_, __) => const Center(
+                error: (_, _) => const Center(
                   child: Text('—', style: TextStyle(color: Colors.white24)),
                 ),
                 data: (shlokas) {
@@ -129,36 +129,40 @@ class _QuotePrismWidgetState extends ConsumerState<QuotePrismWidget>
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Header
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Color(0xFFFFD700),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'QUOTE PRISM • WISDOM',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 9,
-                              letterSpacing: 2,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            'CH ${quote.chapter}:${quote.verse}',
-                            style: const TextStyle(
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.auto_awesome_rounded,
                               color: Color(0xFFFFD700),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'monospace',
+                              size: 16,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            const Text(
+                              'QUOTE PRISM • WISDOM',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 9,
+                                letterSpacing: 2,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              'CH ${quote.chapter}:${quote.verse}',
+                              style: const TextStyle(
+                                color: Color(0xFFFFD700),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 14),
 

@@ -67,36 +67,40 @@ class _WeeklyHeatmapWidgetState extends ConsumerState<WeeklyHeatmapWidget>
     return _WidgetCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Header
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_view_month_rounded,
-                color: Color(0xFFE040FB),
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                '4-WEEK EXECUTION MATRIX',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontSize: 9,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.calendar_view_month_rounded,
+                  color: Color(0xFFE040FB),
+                  size: 16,
                 ),
-              ),
-              const Spacer(),
-              Text(
-                '${DateFormat('MMM d').format(DateTime.now().subtract(const Duration(days: 27)))} - ${DateFormat('MMM d').format(DateTime.now())}',
-                style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 8,
-                  letterSpacing: 1,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(width: 6),
+                const Text(
+                  '4-WEEK EXECUTION MATRIX',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 9,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Text(
+                  '${DateFormat('MMM d').format(DateTime.now().subtract(const Duration(days: 27)))} - ${DateFormat('MMM d').format(DateTime.now())}',
+                  style: const TextStyle(
+                    color: Colors.white38,
+                    fontSize: 8,
+                    letterSpacing: 1,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -112,7 +116,7 @@ class _WeeklyHeatmapWidgetState extends ConsumerState<WeeklyHeatmapWidget>
                 ),
               ),
             ),
-            error: (_, __) => const Center(
+            error: (_, _) => const Center(
               child: Text('—', style: TextStyle(color: Colors.white24)),
             ),
             data: (counts) {

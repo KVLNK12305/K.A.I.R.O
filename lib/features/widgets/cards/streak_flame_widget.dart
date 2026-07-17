@@ -74,7 +74,7 @@ class _StreakFlameWidgetState extends ConsumerState<StreakFlameWidget>
             ),
           ),
         ),
-        error: (_, __) => const Center(
+        error: (_, _) => const Center(
           child: Text('—', style: TextStyle(color: Colors.white24)),
         ),
         data: (data) {
@@ -86,70 +86,82 @@ class _StreakFlameWidgetState extends ConsumerState<StreakFlameWidget>
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Header
-              Row(
-                children: [
-                  Icon(
-                    isBroken ? Icons.heart_broken : Icons.local_fire_department,
-                    color: isBroken
-                        ? const Color(0xFFFF4444)
-                        : const Color(0xFFFF6B35),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'STREAK FLAME',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 9,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w700,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    Icon(
+                      isBroken ? Icons.heart_broken : Icons.local_fire_department,
+                      color: isBroken
+                          ? const Color(0xFFFF4444)
+                          : const Color(0xFFFF6B35),
+                      size: 16,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    const Text(
+                      'STREAK FLAME',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
               // Ring visualization
-              Expanded(
+              SizedBox(
+                height: 140,
                 child: Center(
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([
-                      _ringController,
-                      _pulseController,
-                      _particleController,
-                    ]),
-                    builder: (context, _) {
-                      return CustomPaint(
-                        size: const Size(120, 120),
-                        painter: _StreakRingPainter(
-                          progress: progress * _ringController.value,
-                          isBroken: isBroken,
-                          pulseValue: _pulseController.value,
-                          particleValue: _particleController.value,
-                          dayNumber: dayNumber,
-                        ),
-                      );
-                    },
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([
+                        _ringController,
+                        _pulseController,
+                        _particleController,
+                      ]),
+                      builder: (context, _) {
+                        return CustomPaint(
+                          size: const Size(130, 130),
+                          painter: _StreakRingPainter(
+                            progress: progress * _ringController.value,
+                            isBroken: isBroken,
+                            pulseValue: _pulseController.value,
+                            particleValue: _particleController.value,
+                            dayNumber: dayNumber,
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
               // Footer
               Center(
-                child: Text(
-                  isBroken
-                      ? 'CHAIN BROKEN'
-                      : 'DAY $dayNumber OF 21  •  $completed LOGGED',
-                  style: TextStyle(
-                    color: isBroken
-                        ? const Color(0xFFFF4444).withValues(alpha: 0.7)
-                        : Colors.white38,
-                    fontSize: 9,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w600,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    isBroken
+                        ? 'CHAIN BROKEN'
+                        : 'DAY $dayNumber OF 21  •  $completed LOGGED',
+                    style: TextStyle(
+                      color: isBroken
+                          ? const Color(0xFFFF4444).withValues(alpha: 0.7)
+                          : Colors.white38,
+                      fontSize: 9,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),

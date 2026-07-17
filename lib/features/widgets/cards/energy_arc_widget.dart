@@ -56,56 +56,76 @@ class _EnergyArcWidgetState extends ConsumerState<EnergyArcWidget>
     return _WidgetCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Header
-          const Row(
-            children: [
-              Icon(Icons.bolt_rounded, color: Color(0xFFFFA726), size: 16),
-              SizedBox(width: 6),
-              Text(
-                'ENERGY ARC',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontSize: 9,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              children: [
+                const Icon(Icons.bolt_rounded, color: Color(0xFFFFA726), size: 16),
+                const SizedBox(width: 6),
+                const Text(
+                  'ENERGY ARC',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 9,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
 
           // Triple arc gauges
-          Expanded(
-            child: AnimatedBuilder(
-              animation: Listenable.merge([_fillController, _shimmerController]),
-              builder: (context, _) {
-                return CustomPaint(
-                  size: const Size(double.infinity, double.infinity),
-                  painter: _EnergyArcPainter(
-                    peak1: peak1Pct * _fillController.value,
-                    peak2: peak2Pct * _fillController.value,
-                    recovery: recPct * _fillController.value,
-                    shimmerValue: _shimmerController.value,
-                    peak1Label: '$peak1Done/$peak1Total',
-                    peak2Label: '$peak2Done/$peak2Total',
-                    recLabel: '$recDone/$recTotal',
+          SizedBox(
+            height: 140,
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: 140,
+                  height: 140,
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([_fillController, _shimmerController]),
+                    builder: (context, _) {
+                      return CustomPaint(
+                        size: const Size(140, 140),
+                        painter: _EnergyArcPainter(
+                          peak1: peak1Pct * _fillController.value,
+                          peak2: peak2Pct * _fillController.value,
+                          recovery: recPct * _fillController.value,
+                          shimmerValue: _shimmerController.value,
+                          peak1Label: '$peak1Done/$peak1Total',
+                          peak2Label: '$peak2Done/$peak2Total',
+                          recLabel: '$recDone/$recTotal',
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Legend
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _legend(const Color(0xFFFFA726), 'PEAK 1'),
-              _legend(const Color(0xFF26C6DA), 'PEAK 2'),
-              _legend(const Color(0xFFAB47BC), 'RECOVER'),
-            ],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _legend(const Color(0xFFFFA726), 'PEAK 1'),
+                const SizedBox(width: 16),
+                _legend(const Color(0xFF26C6DA), 'PEAK 2'),
+                const SizedBox(width: 16),
+                _legend(const Color(0xFFAB47BC), 'RECOVER'),
+              ],
+            ),
           ),
         ],
       ),

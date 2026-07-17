@@ -44,44 +44,48 @@ class _LiarDetectorWidgetState extends ConsumerState<LiarDetectorWidget>
     return _WidgetCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Header
-          Row(
-            children: [
-              Icon(
-                anyLiar ? Icons.warning_amber_rounded : Icons.graphic_eq_rounded,
-                color: statusColor,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'LIAR DETECT MATRIX',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontSize: 9,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w700,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              children: [
+                Icon(
+                  anyLiar ? Icons.warning_amber_rounded : Icons.graphic_eq_rounded,
+                  color: statusColor,
+                  size: 16,
                 ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.4), width: 0.5),
-                ),
-                child: Text(
-                  anyLiar ? 'ALERT' : 'VERIFIED',
+                const SizedBox(width: 6),
+                const Text(
+                  'LIAR DETECT MATRIX',
                   style: TextStyle(
-                    color: statusColor,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
+                    color: Colors.white54,
+                    fontSize: 9,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.4), width: 0.5),
+                  ),
+                  child: Text(
+                    anyLiar ? 'ALERT' : 'VERIFIED',
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -105,28 +109,31 @@ class _LiarDetectorWidgetState extends ConsumerState<LiarDetectorWidget>
           const SizedBox(height: 12),
 
           // Footer info
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                statusText,
-                style: TextStyle(
-                  color: statusColor.withValues(alpha: 0.9),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor.withValues(alpha: 0.9),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                  ),
                 ),
-              ),
-              Text(
-                '$totalGoals GOALS TRACKED',
-                style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
+                const SizedBox(width: 16),
+                Text(
+                  '$totalGoals GOALS TRACKED',
+                  style: const TextStyle(
+                    color: Colors.white38,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
