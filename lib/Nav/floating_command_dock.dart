@@ -37,14 +37,16 @@ class FloatingCommandDock extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildNavItem(0, Icons.grid_view_rounded, 'HUB'),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _buildNavItem(1, Icons.all_inbox_rounded, 'INBOX'),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _buildNavItem(2, Icons.monitor_heart_outlined, 'BODY'),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _buildNavItem(3, Icons.show_chart_rounded, 'TRUTH'),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _buildNavItem(4, Icons.psychology_outlined, 'COACH'),
+              const SizedBox(width: 6),
+              _buildNavItem(5, Icons.widgets_rounded, 'DECK'),
             ],
           ),
         ),
@@ -61,7 +63,7 @@ class FloatingCommandDock extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutQuart,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
+          horizontal: isSelected ? 12 : 8,
           vertical: 12,
         ),
         decoration: BoxDecoration(
@@ -73,11 +75,11 @@ class FloatingCommandDock extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 20,
+              size: 18,
               color: isSelected ? Colors.white : Colors.white38,
             ),
             if (isSelected) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Text(
                 label,
                 style: const TextStyle(

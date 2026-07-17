@@ -5,6 +5,7 @@ import '../features/dashboard/inbox_page.dart';
 import '../features/psychosomatic/psychosomatic_page.dart';
 import '../features/liars_chart/liars_chart_page.dart';
 import '../features/Coach_chat/ai_coach_chat_page.dart';
+import '../features/widgets/widgets_page.dart';
 import '../features/spirituality/daily_shloka_dialog.dart';
 import '../core/services/gita_service.dart';
 import '../core/theme/app_theme.dart';
@@ -28,6 +29,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     const PsychosomaticPage(),
     const LiarsChartPage(),
     const AiCoachChatPage(),
+    const WidgetsPage(),
   ];
 
   @override
