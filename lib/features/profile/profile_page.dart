@@ -7,6 +7,7 @@ import 'providers/profile_provider.dart';
 import '../wardrobe/wardrobe_page.dart';
 import '../../Nav/smooth_page_route.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/cards/discipline_heatmap_widget.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -128,6 +129,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
             ),
             const SizedBox(height: 48),
+
+            const DisciplineHeatmapWidget(),
+            const SizedBox(height: 32),
 
             const Text(
               "DEMOGRAPHICS & HOSTILITY SEEDING",

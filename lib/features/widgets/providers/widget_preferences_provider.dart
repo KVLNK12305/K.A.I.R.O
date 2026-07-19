@@ -13,6 +13,8 @@ class WidgetPreferences {
       'weekly_heatmap',
       'liar_detector',
       'quote_prism',
+      'decision_journal',
+      'discipline_heatmap',
     },
   });
 
@@ -42,6 +44,8 @@ class WidgetPreferencesNotifier extends StateNotifier<WidgetPreferences> {
         'weekly_heatmap',
         'liar_detector',
         'quote_prism',
+        'decision_journal',
+        'discipline_heatmap',
       ]).toSet(),
     );
   }

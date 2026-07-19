@@ -6,6 +6,8 @@ import 'cards/task_pulse_widget.dart';
 import 'cards/weekly_heatmap_widget.dart';
 import 'cards/liar_detector_widget.dart';
 import 'cards/quote_prism_widget.dart';
+import 'cards/decision_journal_widget.dart';
+import 'cards/discipline_heatmap_widget.dart';
 import 'providers/widget_preferences_provider.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -104,6 +106,18 @@ class _WidgetsPageState extends ConsumerState<WidgetsPage> {
                     const QuotePrismWidget(),
                     const SizedBox(height: 16),
                   ],
+
+                  // Full width Decision Journal Pipeline
+                  if (visible.contains('decision_journal')) ...[
+                    const DecisionJournalCardWidget(),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Full width Discipline Heatmap Matrix
+                  if (visible.contains('discipline_heatmap')) ...[
+                    const DisciplineHeatmapWidget(),
+                    const SizedBox(height: 16),
+                  ],
                 ]),
               ),
             ),
@@ -167,6 +181,8 @@ class _WidgetsPageState extends ConsumerState<WidgetsPage> {
                       _widgetCheckbox(ref, 'weekly_heatmap', '4-Week Execution Matrix', prefs.visibleWidgets.contains('weekly_heatmap')),
                       _widgetCheckbox(ref, 'liar_detector', 'Liar Detect Matrix (Polygraph)', prefs.visibleWidgets.contains('liar_detector')),
                       _widgetCheckbox(ref, 'quote_prism', 'Quote Prism (Gita Shloka)', prefs.visibleWidgets.contains('quote_prism')),
+                      _widgetCheckbox(ref, 'decision_journal', 'Decision Journal Pipeline', prefs.visibleWidgets.contains('decision_journal')),
+                      _widgetCheckbox(ref, 'discipline_heatmap', 'Discipline Heatmap Matrix', prefs.visibleWidgets.contains('discipline_heatmap')),
                       const SizedBox(height: 16),
                     ],
                   ),
