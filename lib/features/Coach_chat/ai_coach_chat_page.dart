@@ -9,11 +9,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../../core/models/chat_message.dart';
 import '../../core/services/ai_service.dart';
 import '../../core/constants/ai_prompts.dart';
-import '../energy_economy/energy_provider.dart';
-import '../psychosomatic/psychosomatic_provider.dart';
-import '../liars_chart/liars_chart_provider.dart';
-import '../dashboard/providers/wakatime_provider.dart';
-import '../dashboard/providers/finance_provider.dart';
+import 'providers/kairo_context_provider.dart';
 
 class AiCoachChatPage extends ConsumerStatefulWidget {
   const AiCoachChatPage({super.key});
@@ -309,32 +305,7 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
     _scrollToBottom();
     _saveHistory();
 
-    final energyState = ref.read(energyEconomyProvider);
-    final psychoState = ref.read(psychosomaticProvider);
-    final liarsState = ref.read(liarsChartProvider);
-    final wakatimeVal = ref.read(wakatimeProvider).valueOrNull ?? 'N/A';
-    final financeVal = ref.read(financeMetricsProvider).valueOrNull;
-
-    final int completedPeaks = energyState.peak1Tasks.where((t) => t.isCompleted).length +
-        energyState.peak2Tasks.where((t) => t.isCompleted).length;
-    final int totalPeaks = energyState.peak1Tasks.length + energyState.peak2Tasks.length;
-    final String dominantEtiology = energyState.dominantEtiology?.name ?? 'None';
-
-    final double? stressScore = psychoState.todayScan?.stressScore;
-    final String stressStr = stressScore != null ? '${stressScore.toStringAsFixed(0)}%' : 'Not scanned today';
-
-    final int activeLiars = liarsState.goals.where((g) => g.liarsChartActive).length;
-    final String burnToday = financeVal != null ? '\$${financeVal.todayExpense.toStringAsFixed(2)}' : 'N/A';
-
-    final String liveContextBlock = '''
-\n\n=== LIVE K.A.I.R.O. USER STATE ===
-- Body / Psychosomatic Stress: $stressStr
-- Execution / Peak Tasks: $completedPeaks/$totalPeaks completed today (Dominant failure reason: $dominantEtiology)
-- Truth / Liar's Chart: $activeLiars goal(s) flagged for self-deception
-- Deep Work (WakaTime Today): $wakatimeVal
-- Financial Burn Rate Today: $burnToday
-==================================
-''';
+    final String liveContextBlock = await ref.read(kairoFormattedPromptProvider.future);
 
     final List<Map<String, dynamic>> apiMessages = [
       {'role': 'system', 'content': '${AiPrompts.kairoSystemPrompt}$liveContextBlock'},
@@ -658,6 +629,26 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Container(
+                    height: 42,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    color: const Color(0xFF0F0F0F),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          _buildChip("⚡ Diagnose Bottleneck", "Examine my live systemic dossier today and diagnose exactly what is choking my productive output right now. No clichés."),
+                          const SizedBox(width: 8),
+                          _buildChip("🔪 Interrogate Liar's Chart", "Look at my flagged Liar's Chart goals and lead/lag disconnects. Grill me on where I am lying to myself right now."),
+                          const SizedBox(width: 8),
+                          _buildChip("🧘 Analyze Body & Stress", "Correlate my psychosomatic stress scan today with my recent execution patterns. What is my body trying to warn me about?"),
+                          const SizedBox(width: 8),
+                          _buildChip("⏳ Audit 168-Hr Bandwidth", "Review my 168-hour bandwidth audit and tell me ruthlessly where I need to cut non-essential admin to survive."),
+                        ],
+                      ),
+                    ),
+                  ),
                   if (_attachedFile != null)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -732,6 +723,19 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
                 ],
               ),
             ]),
+    );
+  }
+
+  Widget _buildChip(String label, String prompt) {
+    return ActionChip(
+      label: Text(label, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+      backgroundColor: const Color(0xFF1F1F1F),
+      side: const BorderSide(color: Colors.white12),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      onPressed: _isLoading ? null : () {
+        _controller.text = prompt;
+        _sendMessage();
+      },
     );
   }
 }
