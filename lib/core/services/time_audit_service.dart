@@ -28,24 +28,60 @@ class UrgentOverride {
       );
 }
 
+class CustomRecurringBlock {
+  final String id;
+  final String title;
+  final double hoursPerWeek;
+  final String category; // e.g. 'Classes / Lectures', 'Physical / Training', 'Commute', 'Admin / Chores', 'Other'
+  final int colorHex;
+
+  CustomRecurringBlock({
+    required this.id,
+    required this.title,
+    required this.hoursPerWeek,
+    required this.category,
+    this.colorHex = 0xFF8E24AA,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'hoursPerWeek': hoursPerWeek,
+        'category': category,
+        'colorHex': colorHex,
+      };
+
+  factory CustomRecurringBlock.fromJson(Map<String, dynamic> json) => CustomRecurringBlock(
+        id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        title: json['title'] as String? ?? 'Commitment',
+        hoursPerWeek: (json['hoursPerWeek'] as num?)?.toDouble() ?? 5.0,
+        category: json['category'] as String? ?? 'Classes / Lectures',
+        colorHex: (json['colorHex'] as num?)?.toInt() ?? 0xFF8E24AA,
+      );
+}
+
 class TimeAuditResult {
   final double totalHours = 168.0;
   final double sleepHours;
   final double calendarHours;
   final double urgentHours;
   final double peakWorkHours;
+  final double customRecurringHours;
   final double freeHours;
   final String brutalAssessment;
   final List<UrgentOverride> urgentOverrides;
+  final List<CustomRecurringBlock> customRecurringBlocks;
 
   TimeAuditResult({
     required this.sleepHours,
     required this.calendarHours,
     required this.urgentHours,
     required this.peakWorkHours,
+    required this.customRecurringHours,
     required this.freeHours,
     required this.brutalAssessment,
     required this.urgentOverrides,
+    required this.customRecurringBlocks,
   });
 }
 
@@ -57,6 +93,8 @@ class TimeAuditService {
   static const String _keySleepHours = 'kairo_sleep_hours_per_night';
   static const String _keyUrgentOverrides = 'kairo_urgent_overrides';
   static const String _keyUrgentWeekStart = 'kairo_urgent_week_start';
+  static const String _keyCustomBlocks = 'kairo_custom_recurring_blocks';
+  static const String _keyCustomSeeded = 'kairo_custom_recurring_seeded';
 
   Future<double> getSleepBaseline() async {
     final prefs = await SharedPreferences.getInstance();
@@ -107,6 +145,65 @@ class TimeAuditService {
     debugPrint("Added urgent override: $title ($hours h)");
   }
 
+  Future<List<CustomRecurringBlock>> getCustomRecurringBlocks() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_keyCustomSeeded) != true) {
+      final defaults = [
+        CustomRecurringBlock(id: 'classes_default', title: 'University Classes & Labs', hoursPerWeek: 15.0, category: 'Classes / Lectures', colorHex: 0xFF8E24AA),
+        CustomRecurringBlock(id: 'gym_default', title: 'Physical Training / Gym', hoursPerWeek: 6.0, category: 'Physical / Training', colorHex: 0xFF00ACC1),
+        CustomRecurringBlock(id: 'commute_default', title: 'Commute & Transit', hoursPerWeek: 5.0, category: 'Commute', colorHex: 0xFFFB8C00),
+      ];
+      await prefs.setStringList(_keyCustomBlocks, defaults.map((b) => jsonEncode(b.toJson())).toList());
+      await prefs.setBool(_keyCustomSeeded, true);
+      return defaults;
+    }
+
+    final list = prefs.getStringList(_keyCustomBlocks) ?? [];
+    return list.map((item) {
+      try {
+        return CustomRecurringBlock.fromJson(jsonDecode(item) as Map<String, dynamic>);
+      } catch (e) {
+        return CustomRecurringBlock(id: 'err', title: 'Commitment', hoursPerWeek: 2.0, category: 'Other');
+      }
+    }).toList();
+  }
+
+  Future<void> addCustomRecurringBlock(String title, double hoursPerWeek, String category, int colorHex) async {
+    final blocks = await getCustomRecurringBlocks();
+    blocks.add(CustomRecurringBlock(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      hoursPerWeek: hoursPerWeek,
+      category: category,
+      colorHex: colorHex,
+    ));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keyCustomBlocks, blocks.map((b) => jsonEncode(b.toJson())).toList());
+  }
+
+  Future<void> updateCustomRecurringBlock(String id, String title, double hoursPerWeek, String category, int colorHex) async {
+    final blocks = await getCustomRecurringBlocks();
+    final index = blocks.indexWhere((b) => b.id == id);
+    if (index != -1) {
+      blocks[index] = CustomRecurringBlock(
+        id: id,
+        title: title,
+        hoursPerWeek: hoursPerWeek,
+        category: category,
+        colorHex: colorHex,
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_keyCustomBlocks, blocks.map((b) => jsonEncode(b.toJson())).toList());
+    }
+  }
+
+  Future<void> deleteCustomRecurringBlock(String id) async {
+    final blocks = await getCustomRecurringBlocks();
+    blocks.removeWhere((b) => b.id == id);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_keyCustomBlocks, blocks.map((b) => jsonEncode(b.toJson())).toList());
+  }
+
   Future<TimeAuditResult> calculateWeeklyAudit(List<calendar.Event> weeklyEvents) async {
     final prefs = await SharedPreferences.getInstance();
     await _autoResetIfNewWeek(prefs);
@@ -152,12 +249,18 @@ class TimeAuditService {
       urgentHours += u.hours;
     }
 
+    final customList = await getCustomRecurringBlocks();
+    double customHours = 0.0;
+    for (final c in customList) {
+      customHours += c.hoursPerWeek;
+    }
+
     // Default estimate if user hasn't synced rituals to calendar yet: assume at least 3.5h/day of peak work for 5 days = 17.5h
     if (peakWorkHours == 0.0 && weeklyEvents.isNotEmpty) {
       peakWorkHours = 17.5;
     }
 
-    double freeHours = 168.0 - (sleepHours + calendarHours + urgentHours + peakWorkHours);
+    double freeHours = 168.0 - (sleepHours + calendarHours + urgentHours + peakWorkHours + customHours);
     if (freeHours < 0) freeHours = 0.0;
 
     String assessment;
@@ -176,9 +279,11 @@ class TimeAuditService {
       calendarHours: calendarHours,
       urgentHours: urgentHours,
       peakWorkHours: peakWorkHours,
+      customRecurringHours: customHours,
       freeHours: freeHours,
       brutalAssessment: assessment,
       urgentOverrides: urgentList,
+      customRecurringBlocks: customList,
     );
   }
 }

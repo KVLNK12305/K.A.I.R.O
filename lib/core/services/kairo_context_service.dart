@@ -12,6 +12,7 @@ class SystemicDossier {
   final bool isStreakBroken;
   final double freeHours168;
   final String timeAuditAssessment;
+  final String recurringCommitmentsSummary;
   final bool isCrucibleActive;
   final int crucibleTimesTriggered;
   final String crucibleCommitment;
@@ -31,6 +32,7 @@ class SystemicDossier {
     required this.isStreakBroken,
     required this.freeHours168,
     required this.timeAuditAssessment,
+    required this.recurringCommitmentsSummary,
     required this.isCrucibleActive,
     required this.crucibleTimesTriggered,
     required this.crucibleCommitment,
@@ -81,6 +83,7 @@ class SystemicDossier {
 2. PSYCHOSOMATIC & BANDWIDTH:
 - Body/Mind Scan Today: $stressStr
 - 168-Hour Time Audit: ${freeHours168.toStringAsFixed(1)} free hours/week remaining ($timeAuditAssessment)
+- Fixed Recurring Commitments: $recurringCommitmentsSummary
 
 3. PEAK TASK EXECUTION TODAY ($completedPeaksCount/$totalPeaksCount completed | Dominant drag: $dominantFailureReason):
 $peaksListStr
@@ -166,11 +169,16 @@ class KairoContextService {
 
     final burnTodayStr = todayExpense != null ? '\$${todayExpense.toStringAsFixed(2)}' : 'N/A';
 
+    final recurringStr = audit.customRecurringBlocks.isNotEmpty
+        ? audit.customRecurringBlocks.map((b) => '${b.title} (${b.hoursPerWeek}h/wk - ${b.category})').join(' | ')
+        : 'None logged';
+
     return SystemicDossier(
       streakDay: streakDay,
       isStreakBroken: isStreakBroken,
       freeHours168: audit.freeHours,
       timeAuditAssessment: audit.brutalAssessment,
+      recurringCommitmentsSummary: recurringStr,
       isCrucibleActive: isCrucibleActive,
       crucibleTimesTriggered: crucibleTimesTriggered,
       crucibleCommitment: crucibleCommitment,

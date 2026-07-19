@@ -349,7 +349,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const SizedBox(height: 12),
 
-            // Legacy manual Google Auth Button
+            // Google Calendar & Tasks Auth Button (Direct OAuth)
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -361,21 +361,28 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   }
                 },
                 icon: Icon(
-                  user == null ? Icons.login : Icons.logout,
+                  user == null ? Icons.calendar_month_outlined : Icons.check_circle_outline,
                   size: 18,
-                  color: Colors.white54,
+                  color: user == null ? AppTheme.warning : const Color(0xFF43A047),
                 ),
                 label: Text(
-                  user == null ? "MANUAL GOOGLE SIGN-IN (LEGACY)" : "DISCONNECT LEGACY GOOGLE",
-                  style: const TextStyle(
-                    color: Colors.white54,
+                  user == null
+                      ? "CONNECT GOOGLE CALENDAR & TASKS (DAILY DRIVER SYNC)"
+                      : "CALENDAR CONNECTED: ${user.email} (TAP TO DISCONNECT)",
+                  style: TextStyle(
+                    color: user == null ? AppTheme.warning : const Color(0xFF43A047),
                     fontSize: 11,
-                    letterSpacing: 1,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white12),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(
+                    color: user == null
+                        ? AppTheme.warning.withValues(alpha: 0.4)
+                        : const Color(0xFF43A047).withValues(alpha: 0.4),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
