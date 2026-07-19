@@ -334,15 +334,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   size: 18,
                   color: Colors.white,
                 ),
-                label: Text(
-                  clerkUser == null
-                      ? "SIGN IN WITH GOOGLE VIA CLERK (INSTANT)"
-                      : "DISCONNECT CLERK GOOGLE SESSION",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    clerkUser == null
+                        ? "SIGN IN WITH GOOGLE VIA CLERK"
+                        : "DISCONNECT CLERK SESSION",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
               ),
@@ -365,15 +368,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   size: 18,
                   color: user == null ? AppTheme.warning : const Color(0xFF43A047),
                 ),
-                label: Text(
-                  user == null
-                      ? "CONNECT GOOGLE CALENDAR & TASKS (DAILY DRIVER SYNC)"
-                      : "CALENDAR CONNECTED: ${user.email} (TAP TO DISCONNECT)",
-                  style: TextStyle(
-                    color: user == null ? AppTheme.warning : const Color(0xFF43A047),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    user == null
+                        ? "CONNECT GOOGLE CALENDAR & TASKS"
+                        : "CONNECTED: ${user.email} (TAP TO DISCONNECT)",
+                    style: TextStyle(
+                      color: user == null ? AppTheme.warning : const Color(0xFF43A047),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
                 style: OutlinedButton.styleFrom(

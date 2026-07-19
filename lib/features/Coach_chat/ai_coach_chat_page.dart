@@ -578,9 +578,9 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
                     return Align(
                       alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        constraints: const BoxConstraints(maxWidth: 280),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
                         decoration: BoxDecoration(
                           color: msg.isUser ? Colors.white : Colors.white.withAlpha(26),
                           borderRadius: BorderRadius.circular(12),
@@ -685,9 +685,9 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
                   Container(
                     padding: EdgeInsets.only(
                       left: 8,
-                      right: 16,
-                      top: 16,
-                      bottom: MediaQuery.of(context).viewInsets.bottom == 0 ? 96 : 16,
+                      right: 12,
+                      top: 8,
+                      bottom: MediaQuery.of(context).viewInsets.bottom == 0 ? 80 : 8,
                     ),
                     color: const Color(0xFF0A0A0A),
                     child: Row(children: [

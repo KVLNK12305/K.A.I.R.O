@@ -226,12 +226,11 @@ class _WeeklyAutopsyPageState extends ConsumerState<WeeklyAutopsyPage> {
                         ),
                         const SizedBox(height: 20),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _buildMetricStat("PEAK RATE", "${(_selectedAutopsy!.peakExecutionRate * 100).toStringAsFixed(0)}%"),
-                            _buildMetricStat("AVG STRESS", "${_selectedAutopsy!.averageStressScore.toStringAsFixed(0)}%"),
-                            _buildMetricStat("DEEP WORK", "${_selectedAutopsy!.wakatimeTotalHours.toStringAsFixed(1)}h"),
-                            _buildMetricStat("PRS LOGGED", "${_selectedAutopsy!.githubPrCount}"),
+                            Expanded(child: _buildMetricStat("PEAK RATE", "${(_selectedAutopsy!.peakExecutionRate * 100).toStringAsFixed(0)}%")),
+                            Expanded(child: _buildMetricStat("AVG STRESS", "${_selectedAutopsy!.averageStressScore.toStringAsFixed(0)}%")),
+                            Expanded(child: _buildMetricStat("DEEP WORK", "${_selectedAutopsy!.wakatimeTotalHours.toStringAsFixed(1)}h")),
+                            Expanded(child: _buildMetricStat("PRS LOGGED", "${_selectedAutopsy!.githubPrCount}")),
                           ],
                         ),
                       ],
@@ -311,7 +310,7 @@ class _WeeklyAutopsyPageState extends ConsumerState<WeeklyAutopsyPage> {
             children: [
               Icon(icon, color: borderColor, size: 18),
               const SizedBox(width: 8),
-              Text(title, style: TextStyle(color: borderColor, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              Flexible(child: Text(title, style: TextStyle(color: borderColor, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5), overflow: TextOverflow.ellipsis)),
             ],
           ),
           const SizedBox(height: 10),
