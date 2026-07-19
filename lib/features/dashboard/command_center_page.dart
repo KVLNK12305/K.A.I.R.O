@@ -16,6 +16,7 @@ import '../profile/profile_page.dart';
 import '../wardrobe/wardrobe_page.dart';
 import 'settings_page.dart';
 import 'memory_graph_view.dart';
+import 'weekly_autopsy_page.dart';
 import '../spirituality/daily_shloka_dialog.dart';
 import '../../Nav/smooth_page_route.dart';
 import '../../core/theme/app_theme.dart';
@@ -221,6 +222,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               // DAILY SHLOKA BANNER
               const DailyShlokaBanner(),
               const SizedBox(height: 16),
+
+              // WEEKLY AUTOPSY BANNER
+              _buildWeeklyAutopsyBanner(context),
 
               // 168-HOUR BANDWIDTH CARD
               _build168HourCard(context, ref),
@@ -602,6 +606,52 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildWeeklyAutopsyBanner(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.push(context, SmoothPageRoute(page: const WeeklyAutopsyPage())),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161616),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF2A2A2A)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF222222),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.gavel, color: Colors.amber, size: 20),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "WEEKLY AUTOPSY — SYSTEMIC CRITIQUE",
+                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    "Synthesize your 7-day Power Score & brutalist AI verdict.",
+                    style: TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 14),
+          ],
+        ),
+      ),
     );
   }
 
