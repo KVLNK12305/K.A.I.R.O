@@ -20,6 +20,8 @@ import 'core/models/project.dart';
 import 'core/models/gita_shloka.dart';
 import 'core/models/decision_log.dart';
 import 'core/models/weekly_autopsy.dart';
+import 'core/models/focus_session.dart';
+import 'core/models/sleep_log.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/streak_service.dart';
 import 'core/services/google_api_service.dart';
@@ -85,6 +87,8 @@ Future<void> main() async {
     GitaShlokaSchema,
     DecisionLogSchema,
     WeeklyAutopsySchema,
+    FocusSessionSchema,
+    SleepLogSchema,
   ], directory: dir.path);
 
   runApp(const ProviderScope(child: MyApp()));

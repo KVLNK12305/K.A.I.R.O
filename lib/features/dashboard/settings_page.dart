@@ -11,6 +11,8 @@ import '../../core/services/time_audit_service.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
 import '../crucible/crucible_provider.dart';
+import '../../core/services/backup_export_service.dart';
+import '../../main.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -380,6 +382,75 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                   child: const Text("SAVE CONFIGURATION", style: TextStyle(letterSpacing: 1, fontWeight: FontWeight.bold)),
                 ),
+              ),
+              const SizedBox(height: 32),
+              const Divider(color: AppTheme.border),
+              const SizedBox(height: 16),
+              const Text(
+                "SYSTEM BACKUP & DOSSIER EXPORT",
+                style: TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final file = await BackupExportService(isar).exportFullSystemJson();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("System JSON Exported: ${file.path.split('/').last}"),
+                                backgroundColor: const Color(0xFF00E676),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Export error: $e"), backgroundColor: Colors.red));
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.data_object, color: Color(0xFF00E676), size: 16),
+                      label: const Text("JSON BACKUP", style: TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: const Color(0xFF00E676).withValues(alpha: 0.4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final file = await BackupExportService(isar).exportSystemDossierPdf();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Executive PDF Created: ${file.path.split('/').last}"),
+                                backgroundColor: Colors.indigoAccent,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("PDF error: $e"), backgroundColor: Colors.red));
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.picture_as_pdf, color: Colors.indigoAccent, size: 16),
+                      label: const Text("PDF DOSSIER", style: TextStyle(color: Colors.indigoAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.indigoAccent.withValues(alpha: 0.4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
               const Divider(color: AppTheme.border),
