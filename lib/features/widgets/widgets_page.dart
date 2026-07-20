@@ -8,6 +8,8 @@ import 'cards/liar_detector_widget.dart';
 import 'cards/quote_prism_widget.dart';
 import 'cards/decision_journal_widget.dart';
 import 'cards/discipline_heatmap_widget.dart';
+import 'cards/focus_timer_widget.dart';
+import 'cards/sleep_intelligence_widget.dart';
 import 'providers/widget_preferences_provider.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -71,6 +73,18 @@ class _WidgetsPageState extends ConsumerState<WidgetsPage> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 110), // clearance for bottom dock
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  // Full width Focus Engine Pomodoro
+                  if (visible.contains('focus_timer')) ...[
+                    const FocusTimerWidget(),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Full width Sleep & Recovery Intelligence
+                  if (visible.contains('sleep_intelligence')) ...[
+                    const SleepIntelligenceWidget(),
+                    const SizedBox(height: 16),
+                  ],
+
                   // Full width Streak Flame
                   if (visible.contains('streak_flame')) ...[
                     const StreakFlameWidget(),
@@ -183,6 +197,8 @@ class _WidgetsPageState extends ConsumerState<WidgetsPage> {
                       _widgetCheckbox(ref, 'quote_prism', 'Quote Prism (Gita Shloka)', prefs.visibleWidgets.contains('quote_prism')),
                       _widgetCheckbox(ref, 'decision_journal', 'Decision Journal Pipeline', prefs.visibleWidgets.contains('decision_journal')),
                       _widgetCheckbox(ref, 'discipline_heatmap', 'Discipline Heatmap Matrix', prefs.visibleWidgets.contains('discipline_heatmap')),
+                      _widgetCheckbox(ref, 'focus_timer', 'Focus Engine (Pomodoro Radar)', prefs.visibleWidgets.contains('focus_timer')),
+                      _widgetCheckbox(ref, 'sleep_intelligence', 'Sleep & Recovery Intelligence', prefs.visibleWidgets.contains('sleep_intelligence')),
                       const SizedBox(height: 16),
                     ],
                   ),

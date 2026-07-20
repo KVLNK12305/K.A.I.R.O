@@ -20,6 +20,7 @@ import 'weekly_autopsy_page.dart';
 import '../spirituality/daily_shloka_dialog.dart';
 import '../../Nav/smooth_page_route.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/services/focus_timer_service.dart';
 
 class CommandCenterPage extends ConsumerStatefulWidget {
   const CommandCenterPage({super.key});
@@ -171,6 +172,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
 
                   // 168-HOUR BANDWIDTH CARD (Sleek Linear/Notion style)
                   _build168HourCard(context, ref),
+
+                  _buildActiveFocusBanner(ref),
 
                   const SizedBox(height: 24),
 
@@ -557,6 +560,124 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActiveFocusBanner(WidgetRef ref) {
+    final timerState = ref.watch(focusTimerProvider);
+    if (!timerState.isRunning) return const SizedBox.shrink();
+
+    final minutes = timerState.secondsRemaining ~/ 60;
+    final seconds = timerState.secondsRemaining % 60;
+    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF141414),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: timerState.isPaused ? Colors.amber.withValues(alpha: 0.5) : const Color(0xFF00E676).withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: timerState.isPaused ? Colors.amber.withValues(alpha: 0.15) : const Color(0xFF00E676).withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                timerState.isPaused ? Icons.pause : Icons.timer,
+                color: timerState.isPaused ? Colors.amber : const Color(0xFF00E676),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        timeStr,
+                        style: TextStyle(
+                          color: timerState.isPaused ? Colors.amber : const Color(0xFF00E676),
+                          fontSize: 20,
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (timerState.distractionCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${timerState.distractionCount} DISTRACTIONS',
+                            style: const TextStyle(color: Colors.redAccent, fontSize: 8, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    timerState.activeSession?.title ?? 'Deep Work Block',
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                if (timerState.isPaused) {
+                  ref.read(focusTimerProvider.notifier).resumeSession();
+                } else {
+                  ref.read(focusTimerProvider.notifier).pauseSession();
+                }
+              },
+              icon: Icon(timerState.isPaused ? Icons.play_arrow : Icons.pause, color: Colors.white, size: 20),
+              tooltip: timerState.isPaused ? 'Resume' : 'Pause',
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final completed = await ref.read(focusTimerProvider.notifier).completeSession();
+                if (context.mounted && completed != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Focus Block Logged: ${completed.actualDurationMinutes}m (${completed.distractionCount} distractions)',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      backgroundColor: const Color(0xFF141414),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00E676),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'DONE',
+                style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -15,6 +15,8 @@ class WidgetPreferences {
       'quote_prism',
       'decision_journal',
       'discipline_heatmap',
+      'focus_timer',
+      'sleep_intelligence',
     },
   });
 
@@ -46,6 +48,8 @@ class WidgetPreferencesNotifier extends StateNotifier<WidgetPreferences> {
         'quote_prism',
         'decision_journal',
         'discipline_heatmap',
+        'focus_timer',
+        'sleep_intelligence',
       ]).toSet(),
     );
   }
