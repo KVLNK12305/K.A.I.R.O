@@ -177,6 +177,33 @@ class NotificationService {
     );
   }
 
+  Future<void> showAccountabilityNukeAlert({
+    required String goalTitle,
+    required String reason,
+    String? contactEmail,
+  }) async {
+    if (!_initialized) await init();
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'kairo_accountability_nuke',
+        'Accountability Nuke Alerts',
+        channelDescription: 'Automated accountability alerts when Liar goals or Crucibles fail',
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+        color: Color(0xFFFF0000),
+      ),
+    );
+    final contactStr = contactEmail != null && contactEmail.isNotEmpty ? ' Alerted: $contactEmail.' : '';
+    await _notifications.show(
+      300,
+      "K.A.I.R.O — 🚨 ACCOUNTABILITY NUKE TRIGGERED",
+      'Goal "$goalTitle" breached ($reason).$contactStr Protocol activated.',
+      details,
+    );
+  }
+
   Future<void> cancelAll() async {
     await _notifications.cancelAll();
   }

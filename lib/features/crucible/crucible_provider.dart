@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/crucible_state.dart';
+import '../../core/services/accountability_service.dart';
 import '../../main.dart';
 
 class CrucibleNotifier extends StateNotifier<CrucibleState> {
@@ -8,6 +9,9 @@ class CrucibleNotifier extends StateNotifier<CrucibleState> {
   }
 
   Future<void> _load() async {
+    // Run accountability audit first to check if Crucible needs to be triggered
+    await AccountabilityService(isar).checkSystemAndTriggerIfNeeded();
+
     var c = await isar.crucibleStates.get(1);
     if (c == null) {
       c = CrucibleState();
