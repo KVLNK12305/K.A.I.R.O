@@ -10,6 +10,8 @@ import '../../core/models/chat_message.dart';
 import '../../core/services/ai_service.dart';
 import '../../core/constants/ai_prompts.dart';
 import 'providers/kairo_context_provider.dart';
+import '../../core/services/graph_service.dart';
+import '../../main.dart';
 
 class AiCoachChatPage extends ConsumerStatefulWidget {
   const AiCoachChatPage({super.key});
@@ -339,6 +341,7 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
         });
         _scrollToBottom();
         _saveHistory();
+        await GraphService(isar).autoSynthesizeEdgesFromChat("$textToSend\n$response");
       }
     } on AiServiceException catch (e) {
       // BUG FIX: Don't save error messages into history — show as snackbar
