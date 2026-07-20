@@ -114,9 +114,14 @@ class DisciplineHeatmapWidget extends ConsumerWidget {
                     Text(
                       "DISCIPLINE HEATMAP (90-DAY MATRIX)",
                       style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 2),
-                    Text("Execution density & habit momentum over time", style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    Text(
+                      "Execution density & habit momentum over time",
+                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -182,10 +187,14 @@ class DisciplineHeatmapWidget extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Text("Less ", style: TextStyle(color: Colors.white38, fontSize: 10)),
                           ...List.generate(5, (l) => Container(
