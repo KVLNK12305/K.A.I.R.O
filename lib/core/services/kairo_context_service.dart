@@ -6,6 +6,8 @@ import '../models/crucible_state.dart';
 import '../models/decision_log.dart';
 import 'streak_service.dart';
 import 'time_audit_service.dart';
+import 'sleep_intelligence_service.dart';
+import 'focus_timer_service.dart';
 
 class SystemicDossier {
   final int streakDay;
@@ -26,6 +28,8 @@ class SystemicDossier {
   final List<String> pendingDecisionsSummary;
   final String wakatimeStats;
   final String financeBurnToday;
+  final String sleepAndRecoverySummary;
+  final String focusEngineSummary;
 
   SystemicDossier({
     required this.streakDay,
@@ -46,6 +50,8 @@ class SystemicDossier {
     required this.pendingDecisionsSummary,
     required this.wakatimeStats,
     required this.financeBurnToday,
+    required this.sleepAndRecoverySummary,
+    required this.focusEngineSummary,
   });
 
   String toFormattedPromptContext() {
@@ -96,7 +102,11 @@ $decisionsStr
 
 6. OUTPUT & BURN RATE TODAY:
 - Deep Work (WakaTime Today): $wakatimeStats
+- Focus Engine (Pomodoro Radar): $focusEngineSummary
 - Financial Burn Rate Today: $financeBurnToday
+
+7. SLEEP & RECOVERY INTELLIGENCE:
+- $sleepAndRecoverySummary
 ==================================================
 ''';
   }
@@ -173,6 +183,16 @@ class KairoContextService {
         ? audit.customRecurringBlocks.map((b) => '${b.title} (${b.hoursPerWeek}h/wk - ${b.category})').join(' | ')
         : 'None logged';
 
+    // 8. Sleep Correlation & Focus Hours
+    final sleepReport = await SleepIntelligenceService(isar).calculateCorrelation();
+    final todayLog = await SleepIntelligenceService(isar).getTodayLog();
+    final sleepStr = todayLog != null
+        ? 'Today logged: ${todayLog.hoursSlept}h (Quality ${todayLog.qualityRating}/5). Insight: ${sleepReport.correlationInsight}'
+        : 'Today unlogged. Insight: ${sleepReport.correlationInsight}';
+
+    final focusHours = await FocusService(isar).getTodayTotalFocusHours();
+    final focusStr = '${focusHours.toStringAsFixed(1)} hours logged today via Focus Engine.';
+
     return SystemicDossier(
       streakDay: streakDay,
       isStreakBroken: isStreakBroken,
@@ -192,6 +212,8 @@ class KairoContextService {
       pendingDecisionsSummary: decisionsSummary,
       wakatimeStats: wakatimeStats,
       financeBurnToday: burnTodayStr,
+      sleepAndRecoverySummary: sleepStr,
+      focusEngineSummary: focusStr,
     );
   }
 }
