@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import '../../../main.dart';
 import '../../core/models/task.dart';
+import '../dashboard/providers/task_provider.dart';
+import '../dashboard/providers/ms_todo_provider.dart';
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -64,7 +66,8 @@ class EnergyEconomyState {
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
-  EnergyEconomyNotifier()
+  final Ref ref;
+  EnergyEconomyNotifier(this.ref)
       : super(const EnergyEconomyState(isLoading: true)) {
     _load();
   }
@@ -108,12 +111,81 @@ class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
       isLoading: false,
       error: null,
     );
+    try {
+      ref.invalidate(taskProvider);
+    } catch (_) {}
+  }
+
+  Future<void> syncPeakTaskToMsTodo(Task task) async {
+    try {
+      final msTodoState = ref.read(msTodoProvider);
+      if (!msTodoState.isAuthenticated || msTodoState.lists.isEmpty) return;
+      final listId = msTodoState.lists.first.id;
+      final isPeak = task.energySlot == EnergySlot.peak1 || task.energySlot == EnergySlot.peak2;
+      final prefix = task.energySlot == EnergySlot.peak1
+          ? "⚡ PEAK 1: "
+          : (task.energySlot == EnergySlot.peak2 ? "⚡ PEAK 2: " : "");
+
+      final cleanTaskTitle = task.title
+          .replaceAll('⚡ PEAK 1: ', '')
+          .replaceAll('⚡ PEAK 2: ', '')
+          .trim();
+
+      bool found = false;
+      for (final list in msTodoState.lists) {
+        for (final msTask in list.tasks) {
+          final cleanMsTitle = msTask.title
+              .replaceAll('⚡ PEAK 1: ', '')
+              .replaceAll('⚡ PEAK 2: ', '')
+              .trim();
+
+          if (!msTask.isCompleted &&
+              (cleanMsTitle.toLowerCase() == cleanTaskTitle.toLowerCase() ||
+                  msTask.title.contains(cleanTaskTitle) ||
+                  cleanTaskTitle.contains(cleanMsTitle))) {
+            found = true;
+            await ref.read(msTodoProvider.notifier).updateTask(
+              list.id,
+              msTask.id,
+              title: isPeak ? "$prefix$cleanTaskTitle" : cleanTaskTitle,
+              dueDate: isPeak ? DateTime.now() : null,
+              clearDueDate: !isPeak,
+              importance: isPeak ? 'high' : 'normal',
+              isMyDay: isPeak,
+            );
+            break;
+          }
+        }
+        if (found) break;
+      }
+
+      if (!found && isPeak && !task.isCompleted && !task.isFailed) {
+        await ref.read(msTodoProvider.notifier).createTask(
+          listId,
+          "$prefix$cleanTaskTitle",
+          importance: 'high',
+          dueDate: DateTime.now(),
+          isMyDay: true,
+        );
+      }
+    } catch (_) {}
+  }
+
+  Future<void> syncAllActivePeaksToMsTodo() async {
+    for (final t in [...state.peak1Tasks, ...state.peak2Tasks]) {
+      if (!t.isCompleted && !t.isFailed) {
+        await syncPeakTaskToMsTodo(t);
+      }
+    }
   }
 
   Future<void> addTask(String title, String category, EnergySlot slot) async {
     final task = Task(title, category)..energySlot = slot;
     await isar.writeTxn(() async => await isar.tasks.put(task));
     await _load();
+    if (slot == EnergySlot.peak1 || slot == EnergySlot.peak2) {
+      await syncPeakTaskToMsTodo(task);
+    }
   }
 
   Future<void> completeTask(int taskId) async {
@@ -125,6 +197,23 @@ class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
     task.failureEtiology = FailureEtiology.none;
     await isar.writeTxn(() async => await isar.tasks.put(task));
     await _load();
+
+    try {
+      final msTodoState = ref.read(msTodoProvider);
+      if (msTodoState.isAuthenticated) {
+        for (final list in msTodoState.lists) {
+          for (final msTask in list.tasks) {
+            if (!msTask.isCompleted &&
+                (msTask.title.contains(task.title) ||
+                    task.title.contains(msTask.title
+                        .replaceAll('⚡ PEAK 1: ', '')
+                        .replaceAll('⚡ PEAK 2: ', '')))) {
+              ref.read(msTodoProvider.notifier).completeTask(list.id, msTask.id);
+            }
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> failTask(int taskId, FailureEtiology etiology) async {
@@ -149,6 +238,7 @@ class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
     task.energySlot = newSlot;
     await isar.writeTxn(() async => await isar.tasks.put(task));
     await _load();
+    await syncPeakTaskToMsTodo(task);
   }
 
   Future<void> deleteTask(int taskId) async {
@@ -170,5 +260,5 @@ class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
 
 final energyEconomyProvider =
     StateNotifierProvider<EnergyEconomyNotifier, EnergyEconomyState>((ref) {
-  return EnergyEconomyNotifier();
+  return EnergyEconomyNotifier(ref);
 });

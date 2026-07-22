@@ -72,6 +72,25 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
 
     GoogleApiService().syncPeakTasksToCalendar(p1, p2);
 
+    final msTodoState = ref.read(msTodoProvider);
+    if (msTodoState.isAuthenticated && msTodoState.lists.isNotEmpty) {
+      final listId = msTodoState.lists.first.id;
+      ref.read(msTodoProvider.notifier).createTask(
+        listId,
+        "⚡ PEAK 1: $p1",
+        importance: 'high',
+        dueDate: DateTime.now(),
+        isMyDay: true,
+      );
+      ref.read(msTodoProvider.notifier).createTask(
+        listId,
+        "⚡ PEAK 2: $p2",
+        importance: 'high',
+        dueDate: DateTime.now(),
+        isMyDay: true,
+      );
+    }
+
     widget.onPassedGauntlet();
   }
 
