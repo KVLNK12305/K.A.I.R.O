@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../energy_economy/energy_provider.dart';
+import '../../energy_economy/energy_economy_page.dart';
 
 /// "Energy Arc" — Samsung-inspired battery arc gauges showing
 /// Peak 1 / Peak 2 / Recovery task completion status.
@@ -54,29 +55,48 @@ class _EnergyArcWidgetState extends ConsumerState<EnergyArcWidget>
     final recPct = recTotal > 0 ? recDone / recTotal : 0.0;
 
     return _WidgetCard(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const EnergyEconomyPage()),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           // Header
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                const Icon(Icons.bolt_rounded, color: Color(0xFFFFA726), size: 16),
-                const SizedBox(width: 6),
-                const Text(
-                  'ENERGY ARC',
-                  style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 9,
-                    letterSpacing: 2,
-                    fontWeight: FontWeight.w700,
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.bolt_rounded, color: Color(0xFFFFA726), size: 16),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'ENERGY ARC',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 9,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 6),
+              const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("FULL LEDGER", style: TextStyle(color: Color(0xFFFFA726), fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Color(0xFFFFA726)),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 12),
 
@@ -296,11 +316,12 @@ class _EnergyArcPainter extends CustomPainter {
 
 class _WidgetCard extends StatelessWidget {
   final Widget child;
-  const _WidgetCard({required this.child});
+  final VoidCallback? onTap;
+  const _WidgetCard({required this.child, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final container = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
@@ -318,6 +339,16 @@ class _WidgetCard extends StatelessWidget {
         ],
       ),
       child: child,
+    );
+
+    if (onTap == null) return container;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: container,
+      ),
     );
   }
 }

@@ -39,14 +39,14 @@ class _SleepIntelligenceWidgetState extends ConsumerState<SleepIntelligenceWidge
                 child: Row(
                   children: [
                     Icon(Icons.bedtime_rounded, color: Colors.indigoAccent.shade100, size: 16),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     const Expanded(
                       child: Text(
                         'SLEEP & RECOVERY INTELLIGENCE',
                         style: TextStyle(
                           color: Colors.white54,
                           fontSize: 9,
-                          letterSpacing: 2,
+                          letterSpacing: 1.5,
                           fontWeight: FontWeight.w700,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -55,18 +55,22 @@ class _SleepIntelligenceWidgetState extends ConsumerState<SleepIntelligenceWidge
                   ],
                 ),
               ),
+              const SizedBox(width: 6),
               todayLogAsync.when(
                 data: (log) => log != null
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00E676).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.4)),
-                        ),
-                        child: Text(
-                          'LOGGED: ${log.hoursSlept}h (Q${log.qualityRating})',
-                          style: const TextStyle(color: Color(0xFF00E676), fontSize: 9, fontWeight: FontWeight.bold),
+                    ? FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E676).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.4)),
+                          ),
+                          child: Text(
+                            'LOGGED: ${log.hoursSlept}h (Q${log.qualityRating})',
+                            style: const TextStyle(color: Color(0xFF00E676), fontSize: 8, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       )
                     : const SizedBox.shrink(),
@@ -91,7 +95,7 @@ class _SleepIntelligenceWidgetState extends ConsumerState<SleepIntelligenceWidge
                         report.averageHoursSlept < 6.5 ? Colors.redAccent : const Color(0xFF00E676),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: _buildMetricBox(
                         'QUALITY INDEX',
@@ -99,7 +103,7 @@ class _SleepIntelligenceWidgetState extends ConsumerState<SleepIntelligenceWidge
                         Colors.indigoAccent.shade100,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: _buildMetricBox(
                         'TARGET BED',
@@ -142,9 +146,12 @@ class _SleepIntelligenceWidgetState extends ConsumerState<SleepIntelligenceWidge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'QUICK LOG LAST NIGHT:',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+              Expanded(
+                child: Text(
+                  'QUICK LOG LAST NIGHT:',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (_isLogging)
                 TextButton(
@@ -252,17 +259,24 @@ class _SleepIntelligenceWidgetState extends ConsumerState<SleepIntelligenceWidge
 
   Widget _buildMetricBox(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
         color: const Color(0xFF0B0B0E),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white10),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+          ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 8, letterSpacing: 1, fontWeight: FontWeight.bold)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(label, style: const TextStyle(color: Colors.white38, fontSize: 8, letterSpacing: 0.5, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );

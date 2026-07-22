@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:app_links/app_links.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../energy_economy/energy_provider.dart';
 
 class MsTodoSubTask {
   final String id;
@@ -165,6 +166,7 @@ class MsTodoState {
 }
 
 class MsTodoNotifier extends StateNotifier<MsTodoState> {
+  final Ref ref;
   // ─── CONFIGURATION ───
   static String get _clientId => dotenv.env['AZURE_CLIENT_ID'] ?? 'YOUR_AZURE_CLIENT_ID';
   static String get _tenantId => 'consumers';
@@ -178,7 +180,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
   late final AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
 
-  MsTodoNotifier() : super(const MsTodoState()) {
+  MsTodoNotifier(this.ref) : super(const MsTodoState()) {
     _appLinks = AppLinks();
     _init();
   }
@@ -342,6 +344,8 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
     String importance = 'normal',
     String? body,
     bool clearBody = false,
+    bool isMyDay = false,
+    List<String>? categories,
   }) {
     final map = <String, dynamic>{
       'title': title,
@@ -349,12 +353,26 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
     };
 
     if (dueDate != null) {
+      final dateStr = '${dueDate.year.toString().padLeft(4, '0')}-${dueDate.month.toString().padLeft(2, '0')}-${dueDate.day.toString().padLeft(2, '0')}T00:00:00';
       map['dueDateTime'] = {
-        'dateTime': dueDate.toUtc().toIso8601String().substring(0, 19),
+        'dateTime': dateStr,
         'timeZone': 'UTC',
       };
     } else if (clearDueDate) {
       map['dueDateTime'] = null;
+    }
+
+    if (isMyDay) {
+      map['categories'] = ['My Day', 'Peak'];
+      map['extensions'] = [
+        {
+          '@odata.type': 'microsoft.graph.openTypeExtension',
+          'extensionName': 'Microsoft.Todo.MyDay',
+          'isMyDay': true,
+        }
+      ];
+    } else if (categories != null && categories.isNotEmpty) {
+      map['categories'] = categories;
     }
 
     if (reminderDateTime != null && isReminderOn) {
@@ -391,6 +409,8 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
     bool isReminderOn = false,
     String importance = 'normal',
     String? body,
+    bool isMyDay = false,
+    List<String>? categories,
   }) async {
     if (_client == null || !state.isAuthenticated) return;
     
@@ -421,6 +441,8 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
         isReminderOn: isReminderOn,
         importance: importance,
         body: body,
+        isMyDay: isMyDay,
+        categories: categories,
       );
 
       final res = await _client!.post(
@@ -460,6 +482,8 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
     String importance = 'normal',
     String? body,
     bool clearBody = false,
+    bool isMyDay = false,
+    List<String>? categories,
   }) async {
     if (_client == null || !state.isAuthenticated) return;
 
@@ -499,6 +523,8 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
         importance: importance,
         body: body,
         clearBody: clearBody,
+        isMyDay: isMyDay,
+        categories: categories,
       );
 
       final res = await _client!.patch(
@@ -527,6 +553,19 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
   Future<void> completeTask(String listId, String taskId) async {
     if (_client == null || !state.isAuthenticated) return;
 
+    // Find task title before removing for sync
+    String? taskTitle;
+    for (final l in state.lists) {
+      if (l.id == listId) {
+        for (final t in l.tasks) {
+          if (t.id == taskId) {
+            taskTitle = t.title;
+            break;
+          }
+        }
+      }
+    }
+
     // Optimistic remove
     final updatedLists = state.lists.map((l) {
       if (l.id == listId) {
@@ -535,6 +574,28 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
       return l;
     }).toList();
     state = state.copyWith(lists: updatedLists);
+
+    if (taskTitle != null) {
+      try {
+        final cleanTitle = taskTitle
+            .replaceAll('⚡ PEAK 1: ', '')
+            .replaceAll('⚡ PEAK 2: ', '')
+            .trim();
+        final energyState = ref.read(energyEconomyProvider);
+        final allEnergyTasks = [
+          ...energyState.peak1Tasks,
+          ...energyState.peak2Tasks,
+          ...energyState.recoveryTasks,
+        ];
+        for (final t in allEnergyTasks) {
+          if (t.title == cleanTitle ||
+              t.title.contains(cleanTitle) ||
+              cleanTitle.contains(t.title)) {
+            ref.read(energyEconomyProvider.notifier).completeTask(t.id);
+          }
+        }
+      } catch (_) {}
+    }
 
     try {
       final res = await _client!.patch(
@@ -632,5 +693,5 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
 }
 
 final msTodoProvider = StateNotifierProvider<MsTodoNotifier, MsTodoState>((ref) {
-  return MsTodoNotifier();
+  return MsTodoNotifier(ref);
 });

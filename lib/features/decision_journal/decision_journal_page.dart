@@ -339,7 +339,7 @@ class _NewDecisionDialogState extends ConsumerState<_NewDecisionDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
-              initialValue: _reviewDays,
+              value: _reviewDays,
               dropdownColor: const Color(0xFF242424),
               style: const TextStyle(color: Colors.white, fontSize: 12),
               decoration: const InputDecoration(labelText: "Review Due In", labelStyle: TextStyle(color: Colors.white54)),
@@ -429,7 +429,7 @@ class _ReviewDecisionDialogState extends ConsumerState<_ReviewDecisionDialog> {
           const Text("Final Verdict:", style: TextStyle(color: Colors.white70, fontSize: 12)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            initialValue: _verdict,
+            value: _verdict,
             dropdownColor: const Color(0xFF242424),
             style: const TextStyle(color: Colors.white, fontSize: 13),
             items: const [

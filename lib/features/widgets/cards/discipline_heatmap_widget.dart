@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:intl/intl.dart';
-import '../../../../main.dart';
-import '../../../../core/models/task.dart';
-import '../../../../core/models/psychosomatic_scan.dart';
-import '../../../../core/models/daily_metric.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../../../main.dart';
+import '../../../core/models/task.dart';
+import '../../../core/models/psychosomatic_scan.dart';
+import '../../../core/models/daily_metric.dart';
+import '../../../core/theme/app_theme.dart';
 
 final heatmapGridProvider = FutureProvider.autoDispose<Map<DateTime, int>>((ref) async {
   final now = DateTime.now();

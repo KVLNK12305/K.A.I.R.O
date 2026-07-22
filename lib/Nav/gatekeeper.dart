@@ -92,8 +92,8 @@ class Gatekeeper extends ConsumerWidget {
       }
     }
 
-    // 2. Check Morning Enforcer (05:00 - 12:00)
-    if (hour >= 5 && hour < 12) {
+    // 2. Check Morning Enforcer (05:00 - 18:00)
+    if (hour >= 5 && hour < 18) {
       final needsMorningEnforcement = ref.watch(energyEconomyProvider.select(
         (s) => !s.isLoading && !s.hasAssignedPeaksToday,
       ));
