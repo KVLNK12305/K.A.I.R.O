@@ -7,6 +7,8 @@ import 'providers/finance_provider.dart';
 import 'providers/github_provider.dart';
 import 'providers/wakatime_provider.dart';
 import '../energy_economy/energy_provider.dart';
+import '../energy_economy/energy_economy_page.dart';
+import '../../core/models/task.dart';
 import '../energy_economy/providers/time_audit_provider.dart';
 import '../../core/services/time_audit_service.dart';
 import '../../core/services/alarm_service.dart';
@@ -17,10 +19,11 @@ import '../wardrobe/wardrobe_page.dart';
 import 'settings_page.dart';
 import 'memory_graph_view.dart';
 import 'weekly_autopsy_page.dart';
-import '../spirituality/daily_shloka_dialog.dart';
 import '../../Nav/smooth_page_route.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/focus_timer_service.dart';
+
+import '../widgets/cards/daily_24h_allocation_widget.dart';
 
 class CommandCenterPage extends ConsumerStatefulWidget {
   const CommandCenterPage({super.key});
@@ -57,6 +60,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     final githubState = ref.watch(githubPRsProvider);
     final wakatimeState = ref.watch(wakatimeProvider);
     final financeState = ref.watch(financeMetricsProvider);
+    final energyState = ref.watch(energyEconomyProvider);
 
     ref.listen(commandCenterProvider, (previous, current) {
       if (current is AsyncData<String> && !_scratchpadSynced) {
@@ -119,8 +123,8 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                           _buildNavIcon(Icons.checkroom_outlined, 'Wardrobe Check', () {
                             Navigator.push(context, SmoothPageRoute(page: const WardrobePage()));
                           }),
-                          _buildNavIcon(Icons.auto_stories_outlined, 'Daily Shloka', () {
-                            DailyShlokaDialog.showOnDemand(context);
+                          _buildNavIcon(Icons.gavel_rounded, 'Weekly Autopsy', () {
+                            Navigator.push(context, SmoothPageRoute(page: const WeeklyAutopsyPage()));
                           }, color: Colors.amber),
                           _buildNavIcon(Icons.settings_outlined, 'System Config', () {
                             Navigator.push(context, SmoothPageRoute(page: const SettingsPage()));
@@ -143,37 +147,17 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 delegate: SliverChildListDelegate([
                   const SizedBox(height: 8),
 
-                  // HUD QUICK STATUS ROW (Autopsy & Shloka side-by-side)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildHudTile(
-                          icon: Icons.gavel_rounded,
-                          iconColor: Colors.amber,
-                          title: "WEEKLY AUTOPSY",
-                          subtitle: "Systemic 7-Day Critique",
-                          onTap: () => Navigator.push(context, SmoothPageRoute(page: const WeeklyAutopsyPage())),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildHudTile(
-                          icon: Icons.auto_stories_rounded,
-                          iconColor: const Color(0xFF4DB6AC),
-                          title: "DAILY SHLOKA",
-                          subtitle: "Gita Wisdom Check",
-                          onTap: () => DailyShlokaDialog.showOnDemand(context),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
+                  // DAILY 24H AUDIT & GOOGLE CALENDAR CLASSES WIDGET
+                  const Daily24hAllocationWidget(),
 
                   // 168-HOUR BANDWIDTH CARD (Sleek Linear/Notion style)
                   _build168HourCard(context, ref),
 
                   _buildActiveFocusBanner(ref),
+
+                  const SizedBox(height: 16),
+
+                  _buildTodayPeaksSection(context, ref, energyState),
 
                   const SizedBox(height: 24),
 
@@ -938,6 +922,198 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     );
   }
 
+  Widget _buildTodayPeaksSection(BuildContext context, WidgetRef ref, EnergyEconomyState energyState) {
+    final peaks = [...energyState.peak1Tasks, ...energyState.peak2Tasks];
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EnergyEconomyPage()),
+            ),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      "ENERGY GAUNTLET • TODAY'S PEAKS",
+                      style: TextStyle(
+                        color: AppTheme.warning,
+                        fontSize: 10,
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("FULL LEDGER", style: TextStyle(color: AppTheme.warning, fontSize: 8, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.bolt_rounded, size: 14, color: AppTheme.warning),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (peaks.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.white38),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "No peak tasks assigned for today. Complete the morning check to assign.",
+                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: peaks.map((task) {
+                final isPeak1 = task.energySlot == EnergySlot.peak1;
+                final isDone = task.isCompleted;
+                final isFailed = task.isFailed;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B1B1B),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDone
+                          ? const Color(0xFF00E676).withValues(alpha: 0.3)
+                          : isFailed
+                              ? Colors.redAccent.withValues(alpha: 0.3)
+                              : Colors.white.withValues(alpha: 0.06),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          if (!isDone) {
+                            ref.read(energyEconomyProvider.notifier).completeTask(task.id);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Icon(
+                          isDone
+                              ? Icons.check_circle_rounded
+                              : isFailed
+                                  ? Icons.cancel_rounded
+                                  : Icons.circle_outlined,
+                          size: 20,
+                          color: isDone
+                              ? const Color(0xFF00E676)
+                              : isFailed
+                                  ? Colors.redAccent
+                                  : Colors.white38,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (isPeak1 ? AppTheme.warning : const Color(0xFF6C63FF)).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    isPeak1 ? "PEAK 1" : "PEAK 2",
+                                    style: TextStyle(
+                                      color: isPeak1 ? AppTheme.warning : const Color(0xFF6C63FF),
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                if (isDone) ...[
+                                  const SizedBox(width: 6),
+                                  const Text("COMPLETED", style: TextStyle(color: Color(0xFF00E676), fontSize: 8, fontWeight: FontWeight.bold)),
+                                ] else if (isFailed) ...[
+                                  const SizedBox(width: 6),
+                                  const Text("FAILED", style: TextStyle(color: Colors.redAccent, fontSize: 8, fontWeight: FontWeight.bold)),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              task.title,
+                              style: TextStyle(
+                                color: isDone || isFailed ? Colors.white38 : Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                decoration: isDone || isFailed ? TextDecoration.lineThrough : null,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!isDone && !isFailed) ...[
+                        Tooltip(
+                          message: "Start Focus Session",
+                          child: IconButton(
+                            icon: const Icon(Icons.timer_outlined, size: 16, color: Colors.amber),
+                            onPressed: () {
+                              ref.read(focusTimerProvider.notifier).startSession(task.title, peakTaskId: task.id.toString());
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Focus timer started for: ${task.title}"),
+                                  backgroundColor: Colors.amber,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(6),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionBtn({
     required String label,
     required IconData icon,
@@ -1076,7 +1252,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 const Text("Category:", style: TextStyle(color: Colors.white70, fontSize: 11)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  initialValue: category,
+                  value: category,
                   dropdownColor: const Color(0xFF242424),
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                   decoration: const InputDecoration(
