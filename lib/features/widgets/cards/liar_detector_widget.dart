@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'bento_card.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../liars_chart/liars_chart_provider.dart';
 
 /// "Liar Detector" — Apple/Samsung sci-fi polygraph waveform widget showing
@@ -38,10 +40,12 @@ class _LiarDetectorWidgetState extends ConsumerState<LiarDetectorWidget>
     final anyLiar = goals.any((g) => g.liarsChartActive);
     final totalGoals = goals.length;
 
-    final statusColor = anyLiar ? const Color(0xFFFF1744) : const Color(0xFF00E676);
+    final statusColor = anyLiar ? AppTheme.coralRed : AppTheme.inkBlack;
     final statusText = anyLiar ? 'DISCONNECTED LEVER DETECTED' : 'TRUTH LEVERS ALIGNED';
 
-    return _WidgetCard(
+    return BentoCard(
+      backgroundColor: AppTheme.pastelPink,
+      borderColor: Colors.black.withValues(alpha: 0.12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -55,7 +59,7 @@ class _LiarDetectorWidgetState extends ConsumerState<LiarDetectorWidget>
                   children: [
                     Icon(
                       anyLiar ? Icons.warning_amber_rounded : Icons.graphic_eq_rounded,
-                      color: statusColor,
+                      color: AppTheme.inkBlack,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
@@ -64,10 +68,10 @@ class _LiarDetectorWidgetState extends ConsumerState<LiarDetectorWidget>
                         'LIAR DETECT MATRIX',
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 9,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w700,
+                          color: AppTheme.inkBlack,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
@@ -78,16 +82,15 @@ class _LiarDetectorWidgetState extends ConsumerState<LiarDetectorWidget>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
+                  color: AppTheme.inkBlack,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.4), width: 0.5),
                 ),
                 child: Text(
                   anyLiar ? 'ALERT' : 'VERIFIED',
                   style: TextStyle(
-                    color: statusColor,
+                    color: anyLiar ? AppTheme.coralRed : AppTheme.pastelGreen,
                     fontSize: 9,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                     fontFamily: 'monospace',
                     letterSpacing: 1,
                   ),
@@ -125,19 +128,19 @@ class _LiarDetectorWidgetState extends ConsumerState<LiarDetectorWidget>
                 Text(
                   statusText,
                   style: TextStyle(
-                    color: statusColor.withValues(alpha: 0.9),
+                    color: anyLiar ? AppTheme.coralRed : AppTheme.inkBlack,
                     fontSize: 9,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w900,
                     letterSpacing: 1,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Text(
                   '$totalGoals GOALS TRACKED',
-                  style: const TextStyle(
-                    color: Colors.white38,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w600,
+                  style: TextStyle(
+                    color: AppTheme.inkBlack.withValues(alpha: 0.6),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],

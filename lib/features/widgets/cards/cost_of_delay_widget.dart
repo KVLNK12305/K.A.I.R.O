@@ -97,7 +97,8 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
     final isStagnant = _wakaTime?.isStagnantDebugging ?? false;
 
     return BentoCard(
-      borderColor: isRisk ? AppTheme.warning.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.08),
+      backgroundColor: AppTheme.pastelPink,
+      borderColor: isRisk ? AppTheme.coralRed : Colors.black.withValues(alpha: 0.15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -111,18 +112,18 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
                   children: [
                     Icon(
                       isRisk ? Icons.warning_amber_rounded : Icons.trending_up_rounded,
-                      color: isRisk ? AppTheme.warning : const Color(0xFF00E676),
+                      color: AppTheme.inkBlack,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
+                    const Expanded(
                       child: Text(
                         'TELEMETRY & COST OF DELAY',
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: isRisk ? AppTheme.warning : Colors.white70,
+                          color: AppTheme.inkBlack,
                           fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -134,15 +135,15 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (isRisk ? AppTheme.warning : const Color(0xFF00E676)).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
+                  color: AppTheme.inkBlack,
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   isRisk ? 'PRE-MORTEM RISK' : 'ON TRACK',
                   style: TextStyle(
-                    color: isRisk ? AppTheme.warning : const Color(0xFF00E676),
+                    color: isRisk ? AppTheme.coralRed : AppTheme.pastelGreen,
                     fontSize: 9,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w900,
                     letterSpacing: 1,
                   ),
                 ),
@@ -160,7 +161,7 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
                   title: 'PREDICTED SCORE',
                   value: '${forecastScore.toStringAsFixed(0)}/100',
                   subtitle: 'Sun Forecast',
-                  accentColor: isRisk ? AppTheme.warning : const Color(0xFF00E676),
+                  accentColor: isRisk ? AppTheme.coralRed : const Color(0xFF008844),
                 ),
               ),
               const SizedBox(width: 12),
@@ -170,7 +171,7 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
                   title: 'COST OF DELAY',
                   value: '\$${loss.toStringAsFixed(0)}',
                   subtitle: '$uncompletedCount Peak Tasks Open',
-                  accentColor: loss > 0 ? AppTheme.warning : Colors.white70,
+                  accentColor: loss > 0 ? AppTheme.coralRed : AppTheme.inkBlack,
                 ),
               ),
             ],
@@ -182,21 +183,17 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isStagnant
-                  ? AppTheme.warning.withValues(alpha: 0.1)
-                  : Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(6),
+              color: AppTheme.cardWhite,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isStagnant
-                    ? AppTheme.warning.withValues(alpha: 0.3)
-                    : Colors.white10,
+                color: isStagnant ? AppTheme.coralRed : Colors.black.withValues(alpha: 0.08),
               ),
             ),
             child: Row(
               children: [
                 Icon(
                   isStagnant ? Icons.bug_report_rounded : Icons.code_rounded,
-                  color: isStagnant ? AppTheme.warning : Colors.white54,
+                  color: isStagnant ? AppTheme.coralRed : AppTheme.inkBlack,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
@@ -204,9 +201,9 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
                   child: Text(
                     _wakaTime?.stagnationWarning ?? 'Loading WakaTime telemetry...',
                     style: TextStyle(
-                      color: isStagnant ? AppTheme.warning : Colors.white60,
+                      color: isStagnant ? AppTheme.coralRed : AppTheme.inkBlack.withValues(alpha: 0.8),
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -216,10 +213,10 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
 
           const SizedBox(height: 12),
 
-          // Action Button
+          // Action Button in Punch Coral Red
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
+            child: ElevatedButton.icon(
               onPressed: () async {
                 var crucible = await isar.crucibleStates.get(1);
                 crucible ??= CrucibleState();
@@ -236,16 +233,15 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
                 ),
               ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: isRisk ? AppTheme.warning.withValues(alpha: 0.6) : Colors.white24,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                backgroundColor: isRisk ? AppTheme.warning.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.coralRed,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
@@ -261,11 +257,11 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
     required Color accentColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white10),
+        color: AppTheme.cardWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,11 +270,11 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white38,
+            style: TextStyle(
+              color: AppTheme.inkBlack.withValues(alpha: 0.5),
               fontSize: 9,
               letterSpacing: 1.2,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 4),
@@ -288,8 +284,8 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: accentColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 2),
@@ -297,7 +293,11 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
             subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white54, fontSize: 10),
+            style: TextStyle(
+              color: AppTheme.inkBlack.withValues(alpha: 0.7),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

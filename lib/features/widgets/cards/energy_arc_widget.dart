@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'bento_card.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../energy_economy/energy_provider.dart';
 import '../../energy_economy/energy_economy_page.dart';
 
@@ -54,7 +56,9 @@ class _EnergyArcWidgetState extends ConsumerState<EnergyArcWidget>
     final peak2Pct = peak2Total > 0 ? peak2Done / peak2Total : 0.0;
     final recPct = recTotal > 0 ? recDone / recTotal : 0.0;
 
-    return _WidgetCard(
+    return BentoCard(
+      backgroundColor: AppTheme.pastelBlue,
+      borderColor: Colors.black.withValues(alpha: 0.12),
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const EnergyEconomyPage()),
@@ -70,16 +74,16 @@ class _EnergyArcWidgetState extends ConsumerState<EnergyArcWidget>
               Expanded(
                 child: Row(
                   children: [
-                    const Icon(Icons.bolt_rounded, color: Color(0xFFFFA726), size: 16),
+                    const Icon(Icons.bolt_rounded, color: AppTheme.inkBlack, size: 16),
                     const SizedBox(width: 6),
                     const Expanded(
                       child: Text(
                         'ENERGY ARC',
                         style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 9,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w700,
+                          color: AppTheme.inkBlack,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w900,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

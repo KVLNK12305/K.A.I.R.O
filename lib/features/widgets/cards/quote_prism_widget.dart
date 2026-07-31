@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../main.dart';
 import '../../../core/models/gita_shloka.dart';
 
@@ -104,132 +105,140 @@ class _QuotePrismWidgetState extends ConsumerState<QuotePrismWidget>
               ],
             ),
             child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F0F15),
-                borderRadius: BorderRadius.circular(18.5),
-              ),
-              child: quotesAsync.when(
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24.0),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white24, strokeWidth: 2),
-                    ),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.cardWhite,
+              borderRadius: BorderRadius.circular(18.5),
+            ),
+            child: quotesAsync.when(
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: AppTheme.inkBlack, strokeWidth: 2),
                   ),
                 ),
-                error: (_, _) => const Center(
-                  child: Text('—', style: TextStyle(color: Colors.white24)),
-                ),
-                data: (shlokas) {
-                  if (shlokas.isEmpty) return const SizedBox();
-                  final quote = shlokas[_currentIndex % shlokas.length];
+              ),
+              error: (_, _) => const Center(
+                child: Text('—', style: TextStyle(color: AppTheme.inkBlack)),
+              ),
+              data: (shlokas) {
+                if (shlokas.isEmpty) return const SizedBox();
+                final quote = shlokas[_currentIndex % shlokas.length];
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.auto_awesome_rounded,
-                                  color: Color(0xFFFFD700),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                const Expanded(
-                                  child: Text(
-                                    'QUOTE PRISM • WISDOM',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 9,
-                                      letterSpacing: 2,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.auto_awesome_rounded,
+                                color: AppTheme.inkBlack,
+                                size: 16,
+                              ),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'QUOTE PRISM • WISDOM',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: AppTheme.inkBlack,
+                                    fontSize: 10,
+                                    letterSpacing: 1.5,
+                                    fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Text(
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.inkBlack,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
                             'CH ${quote.chapter}:${quote.verse}',
                             style: const TextStyle(
-                              color: Color(0xFFFFD700),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
+                              color: AppTheme.pastelAmber,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
                               fontFamily: 'monospace',
-                              letterSpacing: 1,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Sanskrit verse
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 600),
-                        child: Text(
-                          quote.slok,
-                          key: ValueKey(quote.slok),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            height: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(height: 0.5, color: Colors.white10),
-                      const SizedBox(height: 12),
+                      ],
+                    ),
+                        const SizedBox(height: 14),
 
-                      // English translation
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 600),
-                        child: Text(
-                          '"${quote.translation}"',
-                          key: ValueKey(quote.translation),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 11,
-                            height: 1.5,
-                            fontStyle: FontStyle.italic,
+                        // Sanskrit verse
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 600),
+                          child: Text(
+                            quote.slok,
+                            key: ValueKey(quote.slok),
+                            style: const TextStyle(
+                              color: AppTheme.inkBlack,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 12),
+                        Container(height: 0.5, color: Colors.black.withValues(alpha: 0.1)),
+                        const SizedBox(height: 12),
 
-                      // Hint
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'TAP TO ROTATE',
-                          style: TextStyle(
-                            color: Colors.white24,
-                            fontSize: 7,
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.w600,
+                        // English translation
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 600),
+                          child: Text(
+                            '"${quote.translation}"',
+                            key: ValueKey(quote.translation),
+                            style: TextStyle(
+                              color: AppTheme.inkBlack.withValues(alpha: 0.8),
+                              fontSize: 12,
+                              height: 1.5,
+                              fontWeight: FontWeight.w600,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        const SizedBox(height: 10),
+
+                        // Hint
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'TAP TO ROTATE',
+                            style: TextStyle(
+                              color: AppTheme.inkBlack.withValues(alpha: 0.4),
+                              fontSize: 8,
+                              letterSpacing: 1.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          );
-        },
-      ),
-    );
+            );
+          },
+        ),
+      );
   }
 }

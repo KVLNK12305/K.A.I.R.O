@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'bento_card.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../energy_economy/energy_provider.dart';
 
 /// "Task Pulse" — Apple Weather / Widget inspired horizontal progress bar
@@ -52,7 +54,9 @@ class _TaskPulseWidgetState extends ConsumerState<TaskPulseWidget>
     final completed = allTasks.where((t) => t.isCompleted).length;
     final pct = total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
 
-    return _WidgetCard(
+    return BentoCard(
+      backgroundColor: AppTheme.pastelGreen,
+      borderColor: Colors.black.withValues(alpha: 0.12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -64,8 +68,8 @@ class _TaskPulseWidgetState extends ConsumerState<TaskPulseWidget>
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.check_circle_outline_rounded,
-                      color: Color(0xFF00E676),
+                      Icons.check_circle_rounded,
+                      color: AppTheme.inkBlack,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
@@ -74,10 +78,10 @@ class _TaskPulseWidgetState extends ConsumerState<TaskPulseWidget>
                         'TASK PULSE',
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 9,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w700,
+                          color: AppTheme.inkBlack,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
@@ -85,14 +89,21 @@ class _TaskPulseWidgetState extends ConsumerState<TaskPulseWidget>
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                total == 0 ? 'NO TASKS' : '$completed OF $total',
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'monospace',
-                  letterSpacing: 1,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppTheme.inkBlack,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  total == 0 ? 'NO TASKS' : '$completed OF $total',
+                  style: const TextStyle(
+                    color: AppTheme.pastelGreen,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'monospace',
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
