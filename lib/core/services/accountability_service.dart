@@ -7,6 +7,7 @@ import '../models/liar_goal.dart';
 import '../models/crucible_state.dart';
 import '../models/task.dart';
 import 'notification_service.dart';
+import 'weekly_autopsy_service.dart';
 
 class AccountabilityService {
   final Isar isar;
@@ -78,6 +79,28 @@ class AccountabilityService {
           await _forceCrucibleLockdown(
             commitment: 'Execution Intervention: Complete 2 pending Peak tasks before unlock.',
             reason: reason,
+          );
+        }
+      }
+    }
+
+    // 3. Check Mid-Week Pre-Mortem Forecast (Wed / Thu)
+    if (now.weekday == DateTime.wednesday || now.weekday == DateTime.thursday) {
+      final preMortemKey = 'kairo_premortem_triggered_$todayKey';
+      if (prefs.getBool(preMortemKey) != true) {
+        final autopsyService = WeeklyAutopsyService(isar);
+        final forecast = await autopsyService.generatePreMortemForecast();
+        if (forecast.isCriticalRisk) {
+          await NotificationService().showAccountabilityNukeAlert(
+            goalTitle: 'Mid-Week Pre-Mortem Critical Risk',
+            reason: forecast.suggestedIntervention,
+          );
+          await prefs.setBool(preMortemKey, true);
+          triggeredInsights.add('⚠️ ${forecast.suggestedIntervention}');
+
+          await _forceCrucibleLockdown(
+            commitment: 'Pre-Mortem Intervention: Complete 1 Peak task to reset trajectory.',
+            reason: 'Mid-Week Pre-Mortem Critical Failure Forecast',
           );
         }
       }

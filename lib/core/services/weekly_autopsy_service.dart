@@ -134,4 +134,69 @@ Do not include markdown code block formatting (like ```json), output raw JSON on
 
     return autopsy;
   }
+
+  /// Calculates mid-week telemetry (Mon-Wed) and projects the predicted Sunday Power Score.
+  Future<PreMortemForecast> generatePreMortemForecast() async {
+    final now = DateTime.now();
+    final daysSinceMonday = (now.weekday - 1).clamp(1, 7);
+    final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: daysSinceMonday));
+
+    final scans = await isar.psychosomaticScans
+        .filter()
+        .dateBetween(weekStart, now)
+        .findAll();
+    double avgStress = 0.0;
+    if (scans.isNotEmpty) {
+      double sum = 0;
+      for (final s in scans) {
+        sum += s.stressScore;
+      }
+      avgStress = sum / scans.length;
+    }
+
+    final allTasks = await isar.tasks.where().findAll();
+    final midWeekPeakTasks = allTasks.where((t) =>
+        (t.energySlot == EnergySlot.peak1 || t.energySlot == EnergySlot.peak2) &&
+        t.createdAt.isAfter(weekStart)).toList();
+
+    double peakRate = 0.5;
+    if (midWeekPeakTasks.isNotEmpty) {
+      final completed = midWeekPeakTasks.where((t) => t.isCompleted).length;
+      peakRate = completed / midWeekPeakTasks.length;
+    }
+
+    final streakDay = await StreakService().getDayNumber();
+    final habitFactor = (streakDay / 21.0).clamp(0.0, 1.0);
+    double predictedScore = (peakRate * 100 * 0.45) + ((100 - avgStress) * 0.25) + (habitFactor * 100 * 0.30);
+    predictedScore = predictedScore.clamp(0.0, 100.0);
+
+    final isCriticalRisk = predictedScore < 45.0 || peakRate < 0.35;
+
+    return PreMortemForecast(
+      predictedSundayScore: predictedScore,
+      midWeekPeakRate: peakRate,
+      midWeekAvgStress: avgStress,
+      isCriticalRisk: isCriticalRisk,
+      suggestedIntervention: isCriticalRisk
+          ? 'CRITICAL FAILURE FORECAST: Mid-week Peak rate is ${(peakRate * 100).toStringAsFixed(0)}%. Auto-triggering Crucible Lockdown.'
+          : 'ON TRACK: Projected Sunday Power Score is ${predictedScore.toStringAsFixed(1)}/100.',
+    );
+  }
 }
+
+class PreMortemForecast {
+  final double predictedSundayScore;
+  final double midWeekPeakRate;
+  final double midWeekAvgStress;
+  final bool isCriticalRisk;
+  final String suggestedIntervention;
+
+  PreMortemForecast({
+    required this.predictedSundayScore,
+    required this.midWeekPeakRate,
+    required this.midWeekAvgStress,
+    required this.isCriticalRisk,
+    required this.suggestedIntervention,
+  });
+}
+
