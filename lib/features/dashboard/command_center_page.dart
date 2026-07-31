@@ -46,6 +46,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   bool _scratchpadSynced = false;
   bool _objectiveSynced = false;
   bool _is168Expanded = false;
+  bool _is168PercentMode = false;
 
   @override
   void initState() {
@@ -755,153 +756,254 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     final auditAsync = ref.watch(timeAuditProvider);
 
     return auditAsync.when(
-      loading: () => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF141414),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      loading: () => const BentoCard(
+        backgroundColor: AppTheme.cardWhite,
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(color: AppTheme.inkBlack, strokeWidth: 2),
+          ),
         ),
-        alignment: Alignment.center,
-        child: const CircularProgressIndicator(color: Colors.white24, strokeWidth: 2),
       ),
       error: (e, st) => const SizedBox.shrink(),
       data: (audit) {
-        return Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF141414),
-            border: Border.all(
-              color: _is168Expanded ? AppTheme.warning.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.08),
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        final totalAllocated = audit.sleepHours + audit.calendarHours + audit.peakWorkHours + audit.customRecurringHours + audit.urgentHours;
+        final capacityPercent = ((totalAllocated / 168.0) * 100).clamp(0, 100).toStringAsFixed(0);
+        final freeDisplay = _is168PercentMode
+            ? "${((audit.freeHours / 168.0) * 100).toStringAsFixed(1)}% FREE"
+            : "${audit.freeHours.toStringAsFixed(1)}h FREE";
+
+        return BentoCard(
+          backgroundColor: AppTheme.cardWhite,
+          borderColor: Colors.black.withValues(alpha: 0.12),
+          padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header & Quick Segmented Bar
-              InkWell(
-                onTap: () => setState(() => _is168Expanded = !_is168Expanded),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.timer_outlined, color: AppTheme.warning, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                "168h WEEKLY LEDGER • ${audit.freeHours.toStringAsFixed(1)}h FREE",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontFamily: 'monospace',
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Icon(
-                            _is168Expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                            color: Colors.white54,
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Sleek Segmented bar
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: SizedBox(
-                          height: 8,
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
                           child: Row(
                             children: [
+                              const Icon(Icons.timer_outlined, color: AppTheme.inkBlack, size: 16),
+                              const SizedBox(width: 8),
                               Expanded(
-                                flex: (audit.sleepHours * 10).toInt().clamp(1, 1680),
-                                child: Container(color: const Color(0xFF1E88E5)),
-                              ),
-                              Expanded(
-                                flex: (audit.calendarHours * 10).toInt().clamp(1, 1680),
-                                child: Container(color: const Color(0xFF757575)),
-                              ),
-                              Expanded(
-                                flex: (audit.peakWorkHours * 10).toInt().clamp(1, 1680),
-                                child: Container(color: AppTheme.warning),
-                              ),
-                              if (audit.customRecurringHours > 0)
-                                Expanded(
-                                  flex: (audit.customRecurringHours * 10).toInt().clamp(1, 1680),
-                                  child: Container(color: const Color(0xFF8E24AA)),
+                                child: Text(
+                                  "168h WEEKLY LEDGER • $freeDisplay",
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppTheme.inkBlack,
+                                    fontSize: 10,
+                                    fontFamily: 'monospace',
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1,
+                                  ),
                                 ),
-                              if (audit.urgentHours > 0)
-                                Expanded(
-                                  flex: (audit.urgentHours * 10).toInt().clamp(1, 1680),
-                                  child: Container(color: const Color(0xFFE53935)),
-                                ),
-                              Expanded(
-                                flex: (audit.freeHours * 10).toInt().clamp(1, 1680),
-                                child: Container(color: const Color(0xFF43A047)),
                               ),
                             ],
                           ),
                         ),
+                        Row(
+                          children: [
+                            // Percent vs Hour Toggle Pill
+                            InkWell(
+                              onTap: () => setState(() => _is168PercentMode = !_is168PercentMode),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.pastelAmber,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+                                ),
+                                child: Text(
+                                  _is168PercentMode ? "PCT %" : "HRS h",
+                                  style: const TextStyle(
+                                    color: AppTheme.inkBlack,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Capacity Pill Tag
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: (totalAllocated > 140) ? AppTheme.coralRed : AppTheme.pastelGreen,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                "$capacityPercent% USED",
+                                style: TextStyle(
+                                  color: (totalAllocated > 140) ? AppTheme.cardWhite : AppTheme.inkBlack,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            InkWell(
+                              onTap: () => setState(() => _is168Expanded = !_is168Expanded),
+                              child: Icon(
+                                _is168Expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                                color: AppTheme.inkBlack,
+                                size: 22,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    // Sleek Segmented bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(5),
+                      child: SizedBox(
+                        height: 10,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: (audit.sleepHours * 10).toInt().clamp(1, 1680),
+                              child: Container(color: const Color(0xFF1976D2)),
+                            ),
+                            Expanded(
+                              flex: (audit.calendarHours * 10).toInt().clamp(1, 1680),
+                              child: Container(color: const Color(0xFF757575)),
+                            ),
+                            Expanded(
+                              flex: (audit.peakWorkHours * 10).toInt().clamp(1, 1680),
+                              child: Container(color: AppTheme.coralRed),
+                            ),
+                            if (audit.customRecurringHours > 0)
+                              Expanded(
+                                flex: (audit.customRecurringHours * 10).toInt().clamp(1, 1680),
+                                child: Container(color: const Color(0xFF7B1FA2)),
+                              ),
+                            if (audit.urgentHours > 0)
+                              Expanded(
+                                flex: (audit.urgentHours * 10).toInt().clamp(1, 1680),
+                                child: Container(color: const Color(0xFFD32F2F)),
+                              ),
+                            Expanded(
+                              flex: (audit.freeHours * 10).toInt().clamp(1, 1680),
+                              child: Container(color: AppTheme.inkBlack),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
 
-              // Expanded Breakdown & Action Buttons
+              // Expanded Breakdown & Interactive Workflows
               if (_is168Expanded) ...[
-                const Divider(color: Color(0xFF222222), height: 1),
+                Divider(color: Colors.black.withValues(alpha: 0.1), height: 1),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        audit.brutalAssessment,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          height: 1.4,
-                          fontStyle: FontStyle.italic,
+                      // Brutal Assessment callout box
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.pastelBlue.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.auto_awesome_rounded, size: 16, color: AppTheme.inkBlack),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                audit.brutalAssessment,
+                                style: const TextStyle(
+                                  color: AppTheme.inkBlack,
+                                  fontSize: 12,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 14),
+                      // Legend items displaying Hours or Percentages
                       Wrap(
-                        spacing: 14,
+                        spacing: 12,
                         runSpacing: 8,
                         children: [
-                          _buildLegendItem("Sleep", "${audit.sleepHours.toStringAsFixed(0)}h", const Color(0xFF1E88E5)),
-                          _buildLegendItem("Calendar", "${audit.calendarHours.toStringAsFixed(1)}h", const Color(0xFF757575)),
-                          _buildLegendItem("Peak Work", "${audit.peakWorkHours.toStringAsFixed(1)}h", AppTheme.warning),
+                          _buildLegendItem(
+                            "Sleep",
+                            _is168PercentMode ? "${((audit.sleepHours / 168.0) * 100).toStringAsFixed(1)}%" : "${audit.sleepHours.toStringAsFixed(0)}h",
+                            const Color(0xFF1976D2),
+                          ),
+                          _buildLegendItem(
+                            "Calendar",
+                            _is168PercentMode ? "${((audit.calendarHours / 168.0) * 100).toStringAsFixed(1)}%" : "${audit.calendarHours.toStringAsFixed(1)}h",
+                            const Color(0xFF757575),
+                          ),
+                          _buildLegendItem(
+                            "Peak Work",
+                            _is168PercentMode ? "${((audit.peakWorkHours / 168.0) * 100).toStringAsFixed(1)}%" : "${audit.peakWorkHours.toStringAsFixed(1)}h",
+                            AppTheme.coralRed,
+                          ),
                           if (audit.customRecurringHours > 0)
-                            _buildLegendItem("Recurring/Classes", "${audit.customRecurringHours.toStringAsFixed(1)}h", const Color(0xFF8E24AA)),
+                            _buildLegendItem(
+                              "Recurring",
+                              _is168PercentMode ? "${((audit.customRecurringHours / 168.0) * 100).toStringAsFixed(1)}%" : "${audit.customRecurringHours.toStringAsFixed(1)}h",
+                              const Color(0xFF7B1FA2),
+                            ),
                           if (audit.urgentHours > 0)
-                            _buildLegendItem("Urgent", "${audit.urgentHours.toStringAsFixed(1)}h", const Color(0xFFE53935)),
-                          _buildLegendItem("Free", "${audit.freeHours.toStringAsFixed(1)}h", const Color(0xFF43A047)),
+                            _buildLegendItem(
+                              "Urgent",
+                              _is168PercentMode ? "${((audit.urgentHours / 168.0) * 100).toStringAsFixed(1)}%" : "${audit.urgentHours.toStringAsFixed(1)}h",
+                              const Color(0xFFD32F2F),
+                            ),
+                          _buildLegendItem(
+                            "Free",
+                            _is168PercentMode ? "${((audit.freeHours / 168.0) * 100).toStringAsFixed(1)}%" : "${audit.freeHours.toStringAsFixed(1)}h",
+                            AppTheme.inkBlack,
+                          ),
                         ],
                       ),
                       if (audit.customRecurringBlocks.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         const Text(
                           "FIXED RECURRING COMMITMENTS (CLASSES / LABS / COMMUTE / GYM):",
-                          style: TextStyle(color: Colors.white54, fontSize: 9, fontFamily: 'monospace', fontWeight: FontWeight.bold, letterSpacing: 1),
+                          style: TextStyle(
+                            color: AppTheme.inkBlack,
+                            fontSize: 9,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         ...audit.customRecurringBlocks.map((block) => Container(
                           margin: const EdgeInsets.only(bottom: 6),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.03),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Color(block.colorHex).withValues(alpha: 0.3)),
+                            color: Colors.grey.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -918,7 +1020,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                                     Flexible(
                                       child: Text(
                                         "${block.title} (${block.category})",
-                                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                                        style: const TextStyle(
+                                          color: AppTheme.inkBlack,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
@@ -928,11 +1034,19 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text("${block.hoursPerWeek.toStringAsFixed(1)}h/wk", style: TextStyle(color: Color(block.colorHex), fontSize: 11, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    "${block.hoursPerWeek.toStringAsFixed(1)}h/wk",
+                                    style: TextStyle(
+                                      color: Color(block.colorHex),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
                                   const SizedBox(width: 12),
                                   InkWell(
                                     onTap: () => _showCustomBlockModal(context, ref, existing: block),
-                                    child: const Icon(Icons.edit_outlined, color: Colors.white54, size: 14),
+                                    child: const Icon(Icons.edit_outlined, color: AppTheme.inkBlack, size: 14),
                                   ),
                                   const SizedBox(width: 10),
                                   InkWell(
@@ -940,7 +1054,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                                       await TimeAuditService().deleteCustomRecurringBlock(block.id);
                                       ref.invalidate(timeAuditProvider);
                                     },
-                                    child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFE53935), size: 14),
+                                    child: const Icon(Icons.delete_outline_rounded, color: AppTheme.coralRed, size: 14),
                                   ),
                                 ],
                               ),
@@ -956,7 +1070,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                             child: _buildActionBtn(
                               label: "+ RECURRING",
                               icon: Icons.class_outlined,
-                              color: const Color(0xFF8E24AA),
+                              color: const Color(0xFF7B1FA2),
                               onTap: () => _showCustomBlockModal(context, ref),
                             ),
                           ),
@@ -965,7 +1079,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                             child: _buildActionBtn(
                               label: "+ URGENT",
                               icon: Icons.notification_important_outlined,
-                              color: const Color(0xFFE53935),
+                              color: const Color(0xFFD32F2F),
                               onTap: () => _showUrgentOverrideModal(context, ref),
                             ),
                           ),
@@ -974,7 +1088,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                             child: _buildActionBtn(
                               label: "ADAPT ALARM",
                               icon: Icons.alarm_on_outlined,
-                              color: AppTheme.warning,
+                              color: AppTheme.inkBlack,
                               onTap: () async {
                                 final events = await GoogleApiService().fetchTomorrowEvents();
                                 final rec = await AlarmService().analyzeAndRecommendAlarm(events);
@@ -982,10 +1096,10 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(rec.reason),
-                                      backgroundColor: const Color(0xFF2A2A2A),
+                                      backgroundColor: AppTheme.inkBlack,
                                       action: SnackBarAction(
                                         label: "SET ALARM",
-                                        textColor: AppTheme.warning,
+                                        textColor: AppTheme.pastelAmber,
                                         onPressed: () => AlarmService().setMorningAlarm(hour: rec.hour, minute: rec.minute),
                                       ),
                                     ),
@@ -1212,12 +1326,12 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
         fit: BoxFit.scaleDown,
         child: Text(
           label,
-          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+          style: const TextStyle(color: AppTheme.inkBlack, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
         ),
       ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        side: BorderSide(color: color.withValues(alpha: 0.4)),
+        side: BorderSide(color: color.withValues(alpha: 0.6), width: 1.2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
@@ -1227,9 +1341,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
-        Text("$label: $val", style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'monospace')),
+        Text("$label: $val", style: const TextStyle(color: AppTheme.inkBlack, fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w800)),
       ],
     );
   }
