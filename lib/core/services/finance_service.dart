@@ -91,4 +91,46 @@ class FinanceService {
       rethrow;
     }
   }
+
+  /// Calculates the financial Cost of Delay based on hourly rate and uncompleted peak tasks.
+  Future<CostOfDelayMetrics> calculateCostOfDelay({
+    required double baseHourlyRate,
+    required int uncompletedPeakTasks,
+    double estimatedHoursPerTask = 2.0,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final todayExpense = prefs.getDouble(_todayKey) ?? 0.0;
+    
+    final wastedHours = uncompletedPeakTasks * estimatedHoursPerTask;
+    final financialLoss = wastedHours * baseHourlyRate;
+    final totalBurn = todayExpense + financialLoss;
+
+    return CostOfDelayMetrics(
+      uncompletedPeakTasks: uncompletedPeakTasks,
+      baseHourlyRate: baseHourlyRate,
+      wastedHours: wastedHours,
+      financialLoss: financialLoss,
+      todayExpense: todayExpense,
+      totalEffectiveBurn: totalBurn,
+    );
+  }
 }
+
+class CostOfDelayMetrics {
+  final int uncompletedPeakTasks;
+  final double baseHourlyRate;
+  final double wastedHours;
+  final double financialLoss;
+  final double todayExpense;
+  final double totalEffectiveBurn;
+
+  CostOfDelayMetrics({
+    required this.uncompletedPeakTasks,
+    required this.baseHourlyRate,
+    required this.wastedHours,
+    required this.financialLoss,
+    required this.todayExpense,
+    required this.totalEffectiveBurn,
+  });
+}
+
