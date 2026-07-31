@@ -25,6 +25,7 @@ import '../../core/services/focus_timer_service.dart';
 
 import '../widgets/cards/bento_card.dart';
 import '../widgets/cards/daily_24h_allocation_widget.dart';
+import '../widgets/cards/cost_of_delay_widget.dart';
 import '../widgets/cards/sleep_intelligence_widget.dart';
 
 class CommandCenterPage extends ConsumerStatefulWidget {
@@ -422,7 +423,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "SLEEP & RECOVERY TELEMETRY",
+              "SYSTEM TELEMETRY • CRUCIBLE & RECOVERY",
               style: TextStyle(
                 color: Colors.white54,
                 fontSize: 10,
@@ -431,12 +432,16 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 letterSpacing: 1.5,
               ),
             ),
-            Icon(Icons.bedtime_outlined, size: 14, color: Colors.white38),
+            Icon(Icons.query_stats_rounded, size: 14, color: Colors.white38),
           ],
         ),
         SizedBox(height: 12),
 
-        // Sleep & Recovery Intelligence Widget
+        // 1. Cost of Delay (Soft Rose Pink Telemetry Card)
+        CostOfDelayWidget(),
+        SizedBox(height: 12),
+
+        // 2. Sleep & Recovery Intelligence Widget
         SleepIntelligenceWidget(),
       ],
     );
