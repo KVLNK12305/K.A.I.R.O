@@ -25,12 +25,6 @@ import '../../core/services/focus_timer_service.dart';
 
 import '../widgets/cards/bento_card.dart';
 import '../widgets/cards/daily_24h_allocation_widget.dart';
-import '../widgets/cards/cost_of_delay_widget.dart';
-import '../widgets/cards/task_pulse_widget.dart';
-import '../widgets/cards/streak_flame_widget.dart';
-import '../widgets/cards/energy_arc_widget.dart';
-import '../widgets/cards/quote_prism_widget.dart';
-import '../widgets/cards/liar_detector_widget.dart';
 import '../widgets/cards/sleep_intelligence_widget.dart';
 
 class CommandCenterPage extends ConsumerStatefulWidget {
@@ -421,14 +415,14 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   }
 
   Widget _buildBentoGridSection() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              "SYSTEM TELEMETRY • BENTO DASHBOARD",
+            Text(
+              "SLEEP & RECOVERY TELEMETRY",
               style: TextStyle(
                 color: Colors.white54,
                 fontSize: 10,
@@ -437,43 +431,13 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                 letterSpacing: 1.5,
               ),
             ),
-            Icon(Icons.grid_view_rounded, size: 14, color: Colors.white.withValues(alpha: 0.3)),
+            Icon(Icons.bedtime_outlined, size: 14, color: Colors.white38),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
 
-        // 1. Cost of Delay (Full width)
-        const CostOfDelayWidget(),
-        const SizedBox(height: 12),
-
-        // 2. Interlocking Bento Row 1 (Task Pulse & Streak Flame)
-        const Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: TaskPulseWidget()),
-            SizedBox(width: 12),
-            Expanded(child: StreakFlameWidget()),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // 3. Interlocking Bento Row 2 (Energy Arc & Liar Detector)
-        const Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: EnergyArcWidget()),
-            SizedBox(width: 12),
-            Expanded(child: LiarDetectorWidget()),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // 4. Quote Prism (Full width)
-        const QuotePrismWidget(),
-        const SizedBox(height: 12),
-
-        // 5. Sleep Intelligence (Full width)
-        const SleepIntelligenceWidget(),
+        // Sleep & Recovery Intelligence Widget
+        SleepIntelligenceWidget(),
       ],
     );
   }
