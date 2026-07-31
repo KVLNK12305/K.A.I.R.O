@@ -89,21 +89,20 @@ class _StreakFlameWidgetState extends ConsumerState<StreakFlameWidget>
             mainAxisSize: MainAxisSize.min,
             children: [
               // Header
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  children: [
-                    Icon(
-                      isBroken ? Icons.heart_broken : Icons.local_fire_department,
-                      color: isBroken
-                          ? const Color(0xFFFF4444)
-                          : const Color(0xFFFF6B35),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    const Text(
+              Row(
+                children: [
+                  Icon(
+                    isBroken ? Icons.heart_broken : Icons.local_fire_department,
+                    color: isBroken
+                        ? const Color(0xFFFF4444)
+                        : const Color(0xFFFF6B35),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  const Expanded(
+                    child: Text(
                       'STREAK FLAME',
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white54,
                         fontSize: 9,
@@ -111,8 +110,8 @@ class _StreakFlameWidgetState extends ConsumerState<StreakFlameWidget>
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 

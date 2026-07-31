@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'home_widget_sync_service.dart';
 
 class StreakService {
   static final StreakService _instance = StreakService._internal();
@@ -22,6 +23,7 @@ class StreakService {
       await prefs.setString(_keyStartDate, _todayStr());
       await prefs.setStringList(_keyCompletedDays, []);
       await prefs.setBool(_keyStreakBroken, false);
+      HomeWidgetSyncService.syncStreakData();
       return;
     }
 
@@ -33,6 +35,7 @@ class StreakService {
       // The chain was broken!
       await prefs.setBool(_keyStreakBroken, true);
     }
+    HomeWidgetSyncService.syncStreakData();
   }
 
   Future<bool> isStreakBroken() async {
@@ -45,6 +48,7 @@ class StreakService {
     await prefs.setString(_keyStartDate, _todayStr());
     await prefs.setStringList(_keyCompletedDays, []);
     await prefs.setBool(_keyStreakBroken, false);
+    HomeWidgetSyncService.syncStreakData();
   }
 
   Future<int> recordDayComplete() async {
@@ -57,6 +61,7 @@ class StreakService {
       await prefs.setStringList(_keyCompletedDays, completedDays);
     }
     await prefs.setBool(_keyStreakBroken, false);
+    HomeWidgetSyncService.syncStreakData();
 
     return getDayNumberSync(prefs);
   }

@@ -47,45 +47,53 @@ class _LiarDetectorWidgetState extends ConsumerState<LiarDetectorWidget>
         mainAxisSize: MainAxisSize.min,
         children: [
           // Header
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              children: [
-                Icon(
-                  anyLiar ? Icons.warning_amber_rounded : Icons.graphic_eq_rounded,
-                  color: statusColor,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'LIAR DETECT MATRIX',
-                  style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 9,
-                    letterSpacing: 2,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.4), width: 0.5),
-                  ),
-                  child: Text(
-                    anyLiar ? 'ALERT' : 'VERIFIED',
-                    style: TextStyle(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(
+                      anyLiar ? Icons.warning_amber_rounded : Icons.graphic_eq_rounded,
                       color: statusColor,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
+                      size: 16,
                     ),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'LIAR DETECT MATRIX',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 9,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.4), width: 0.5),
+                ),
+                child: Text(
+                  anyLiar ? 'ALERT' : 'VERIFIED',
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'monospace',
+                    letterSpacing: 1,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 

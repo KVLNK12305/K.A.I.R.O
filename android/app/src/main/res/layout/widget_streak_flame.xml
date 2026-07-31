@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_bg"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <!-- Header -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="STREAK FLAME"
+        android:textColor="#8888A0"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.15" />
+
+    <!-- Center Big Number -->
+    <TextView
+        android:id="@+id/tv_streak_day"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="1"
+        android:textColor="#FF6B35"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:typeface="monospace" />
+
+    <TextView
+        android:id="@+id/tv_streak_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DAY 1 OF 21  •  0 LOGGED"
+        android:textColor="#8888A0"
+        android:textSize="9sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1" />
+
+</LinearLayout>

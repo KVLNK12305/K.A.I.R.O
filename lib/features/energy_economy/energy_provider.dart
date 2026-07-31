@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import '../../../main.dart';
 import '../../core/models/task.dart';
+import '../../core/services/home_widget_sync_service.dart';
 import '../dashboard/providers/task_provider.dart';
 import '../dashboard/providers/ms_todo_provider.dart';
 
@@ -114,6 +115,9 @@ class EnergyEconomyNotifier extends StateNotifier<EnergyEconomyState> {
     try {
       ref.invalidate(taskProvider);
     } catch (_) {}
+
+    HomeWidgetSyncService.syncTaskPulseData();
+    HomeWidgetSyncService.syncEnergyArcData();
   }
 
   Future<void> syncPeakTaskToMsTodo(Task task) async {

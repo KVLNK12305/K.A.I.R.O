@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_card_bg"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <!-- Header Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DAILY 24H AUDIT"
+            android:textColor="#8888A0"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.15" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="24H BUDGET"
+            android:textColor="#FFA726"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:typeface="monospace" />
+    </LinearLayout>
+
+    <!-- Segmented 24-hour horizontal bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="7.5"
+            android:background="@drawable/widget_fill_blue" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="match_parent" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2.0"
+            android:background="@drawable/widget_fill_purple" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="match_parent" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="4.0"
+            android:background="@drawable/widget_fill_orange" />
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="match_parent" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="10.5"
+            android:background="@drawable/widget_fill_green" />
+    </LinearLayout>
+
+    <!-- Breakdown items -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_audit_sleep"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sleep: 7.5h"
+            android:textColor="#1E88E5"
+            android:textSize="9sp"
+            android:typeface="monospace" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:text="•"
+            android:textColor="#444455"
+            android:textSize="9sp" />
+
+        <TextView
+            android:id="@+id/tv_audit_work"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Work: 4h"
+            android:textColor="#FFA726"
+            android:textSize="9sp"
+            android:typeface="monospace" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:text="•"
+            android:textColor="#444455"
+            android:textSize="9sp" />
+
+        <TextView
+            android:id="@+id/tv_audit_free"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Free: 12.5h"
+            android:textColor="#00E676"
+            android:textSize="9sp"
+            android:typeface="monospace" />
+    </LinearLayout>
+
+</LinearLayout>

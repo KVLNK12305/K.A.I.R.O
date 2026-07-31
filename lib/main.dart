@@ -28,6 +28,8 @@ import 'core/services/google_api_service.dart';
 import 'core/services/alarm_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/services/home_widget_sync_service.dart';
+
 // Create a global instance of Isar so any screen can access it easily
 late Isar isar;
 
@@ -90,6 +92,11 @@ Future<void> main() async {
     FocusSessionSchema,
     SleepLogSchema,
   ], directory: dir.path);
+
+  // 4. Sync home screen widgets
+  HomeWidgetSyncService.syncAllWidgets().catchError((e) {
+    debugPrint("Notice: Initial widget sync error: $e");
+  });
 
   runApp(const ProviderScope(child: MyApp()));
 }
