@@ -1,86 +1,92 @@
 # K.A.I.R.O
 
-Knowledge • Ascension • Introspection • Resilience • Overcoming
+> **Knowledge • Ascension • Introspection • Resilience • Overcoming**
 
-K.A.I.R.O is a comprehensive Flutter-based "Life OS" and productivity application. It goes beyond simple task management to provide a holistic suite of tools for self-improvement, brutal introspection, memory tracking, and daily progression.
+K.A.I.R.O is a modern, high-performance Flutter-based **Life OS** and personal command center. Built around a **Neo-Pastel Editorial Bento Design System**, it combines telemetry metrics, time-audit ledgers, focus modes, and native Android home screen widgets for brutal self-accountability and progression.
 
-## Core Features & Modules
+---
 
-The application is heavily modularized into distinct philosophical and functional areas:
+## 🎨 Neo-Pastel Editorial Bento Design System
 
-- **Dashboard / Command Center**: The main hub for daily tracking, inbox management, and a memory graph view.
-- **Psychosomatic Scan**: A tool to log and track physical and mental states over time.
-- **Brutalist Review**: Unfiltered, direct self-reviews and reflections to foster extreme accountability.
-- **Liar's Chart (Goals)**: A mechanism to confront personal deceptions and track hard goals.
-- **Crucible State**: A deep-focus or intense working mode tracker.
-- **Spirituality (Gita Service)**: Daily Bhagavad Gita shlokas with offline caching.
-- **Energy Economy**: Tracking personal energy as a resource.
-- **Wardrobe (Clothing Item)**: Managing and tracking daily wear.
-- **Coach Chat**: An AI-powered interaction layer.
-- **Integrations**: Supports GitHub PR tracking, Wakatime coding stats, Google APIs, and Finance tracking.
+The UI follows modern sports/editorial magazine aesthetics—curated color blocks, crisp ink-black headers, high-contrast badges, and dynamic micro-animations:
 
-## Architecture & Tech Stack
+| Token | Color Hex | Visual Role |
+| :--- | :--- | :--- |
+| `AppTheme.pastelPink` | `#F7C5DD` | Soft Rose Pink — Cost of Delay & Operator Identity |
+| `AppTheme.pastelBlue` | `#8DC0FA` | Sky Blue — WakaTime & Real-Time Clock Banner |
+| `AppTheme.pastelGreen` | `#C7F3C6` | Mint Green — Task Pulse & Digital Wardrobe Launcher |
+| `AppTheme.pastelAmber` | `#FAD168` | Honey Amber — Today's Expense & Demographics Seeding |
+| `AppTheme.coralRed` | `#FF5232` | Punch Coral Red — Primary CTA Buttons & Alert Badges |
+| `AppTheme.inkBlack` | `#0F0F12` | Deep Crisp Ink Black — High-Contrast Headers & Typography |
+| `AppTheme.cardWhite` | `#FFFFFF` | Pure White — 168h Weekly Ledger & System Cards |
 
-- **Framework**: Flutter (Material 3 UI, Target Platforms: Android, iOS, Web, Windows, macOS, Linux)
-- **Language**: Dart SDK `^3.10.1`
-- **Local Database**: [Isar](https://isar.dev/) for high-performance on-device storage of all core models (Tasks, Metrics, Goals, Shlokas, Graph Nodes, etc.)
-- **State Management**: [Riverpod](https://riverpod.dev/) for predictable, reactive state.
-- **API & Networking**: standard `http` package with dedicated service classes for external integrations (GitHub, WakaTime, etc.).
+---
+
+## ⚡ Core Modules & Features
+
+- **Command Center Dashboard**:
+  - **168h Weekly Ledger**: High-contrast time audit tile with interactive **Hour (`[HRS h]`) vs Percentage (`[PCT %]`)** allocation toggle, live capacity gauge (`% USED`), and custom recurring block manager.
+  - **Crucible Cost of Delay**: Soft Rose Pink card tracking financial cost-of-inaction with instant Lockdown mode.
+  - **Sleep & Recovery Intelligence**: Sleep duration, quality index, and morning alarm recommendations.
+  - **Primary Anchor & Objective**: Define single non-negotiable daily objectives and energy peaks.
+  - **Terminal Scratchpad**: Instant markdown brain dump with automated local state sync.
+  - **GitHub & WakaTime Telemetry**: Real-time pull request pipeline tracking and coding stat counters.
+
+- **System Profile & Identity**:
+  - Live real-time clock & date banner.
+  - Clerk Auth Zero-Config & Google OAuth identity synchronization.
+  - Demographics & Hostility seeding forms with hourly rate calculation.
+
+- **Native Android Home Screen AppWidgets**:
+  - `DailyAuditWidgetProvider`: Live 168h free hours & time budget.
+  - `TaskPulseWidgetProvider`: Live daily completion & peak task metrics.
+  - `StreakFlameWidgetProvider`: 21-day discipline ring & particle animation.
+  - `EnergyArcWidgetProvider`: Triple energy economy gauge (Peak 1, Peak 2, Recovery).
+  - `QuotePrismWidgetProvider`: Bhagavad Gita shlokas with Sanskrit transliteration.
+
+---
+
+## 🛠️ Architecture & Tech Stack
+
+- **Framework**: Flutter (Material 3 UI, Target Platforms: Android, iOS, Web, Desktop)
+- **Database**: [Isar](https://isar.dev/) on-device database for lightning-fast offline storage
+- **State Management**: [Riverpod](https://riverpod.dev/) for reactive state flow
+- **Home Widgets**: `home_widget` plugin with Kotlin AppWidget providers
+- **Networking**: `http` with OAuth integrations (Google, GitHub, Clerk)
 
 ### Project Structure
 
 ```text
 lib/
-  main.dart                      # App entry point & Isar initialization
-  Nav/
-    splash_screen.dart           # Initial loading & branding
-    main_scaffold.dart           # Bottom navigation shell
-    gatekeeper.dart              # Authentication & state gateway
-    smooth_page_route.dart       # Custom transition routing
+  main.dart                      # App entry point & Isar database init
+  Nav/                           # Routing & Scaffold Navigation
   core/
-    models/                      # Isar Collections (Task, LiarGoal, GitaShloka, etc.)
-    services/                    # External and Internal services (Gita, GitHub, Graph)
-    theme/                       # App-wide theming
+    models/                      # Isar Collections (Task, GitaShloka, SleepLog, etc.)
+    services/                    # HomeWidgetSyncService, TimeAuditService, AlarmService
+    theme/                       # AppTheme Neo-Pastel design tokens
   features/
-    dashboard/                   # Command Center, Inbox, Memory Graph
-    brutalist_review/            # Honest self-reflection UI
-    psychosomatic/               # Mind/body scan UI
-    liars_chart/                 # Goal tracking UI
-    spirituality/                # Gita/spiritual features
-    wardrobe/                    # Clothing tracking
-    Coach_chat/                  # AI coaching
-    profile/                     # User profile & stats
+    dashboard/                   # Command Center Page & 168h Weekly Ledger
+    profile/                     # System Profile & Demographics
+    widgets/                     # Bento Card Deck & Native AppWidget Providers
+      cards/                     # BentoCard, StreakFlame, CostOfDelay, SleepIntelligence
+    energy_economy/              # Energy economy & task pulse providers
 ```
 
-## Getting Started
+---
 
-### 1. Prerequisites
+## 🚀 Getting Started
 
-- Flutter SDK installed and configured.
-- Dart SDK (included with Flutter).
-
-### 2. Install Dependencies
-
+### 1. Install Dependencies
 ```bash
 flutter pub get
 ```
 
-### 3. Generate Isar Code
-
-Because the app uses Isar, you must generate the `.g.dart` files for the models anytime they change:
-
+### 2. Generate Isar Code
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-### 4. Run the App
-
+### 3. Run App
 ```bash
 flutter run
 ```
-
-## Development & Roadmap
-
-- **Data Connectivity**: Connecting mock/UI views to the underlying Isar database collections (e.g., Memory Nodes, Tasks, Crucible State).
-- **Service Integration**: Finalizing OAuth and token flows for GitHub, WakaTime, and Google API services.
-- **AI Integration**: Replacing mock coach flows with real on-device or cloud LLM inference.
