@@ -12,6 +12,15 @@ class AppTheme {
   static const Color accent = Color(0xFFFFFF00); // Piercing Yellow
   static const Color border = Color(0xFF333333); // Harsh Border Gray
 
+  // ─── NEO-PASTEL COLOR-BLOCK PALETTE ───
+  static const Color pastelPink = Color(0xFFF7C5DD);
+  static const Color pastelBlue = Color(0xFF8DC0FA);
+  static const Color pastelGreen = Color(0xFFC7F3C6);
+  static const Color pastelAmber = Color(0xFFFAD168);
+  static const Color coralRed = Color(0xFFFF5232);
+  static const Color inkBlack = Color(0xFF0F0F12);
+  static const Color cardWhite = Color(0xFFFFFFFF);
+
   static ThemeData get brutalist => ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: background,

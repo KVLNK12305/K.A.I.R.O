@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'bento_card.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/services/sleep_intelligence_service.dart';
 import '../../../main.dart';
 
@@ -20,13 +22,9 @@ class _SleepIntelligenceWidgetState extends ConsumerState<SleepIntelligenceWidge
     final reportAsync = ref.watch(sleepIntelligenceProvider);
     final todayLogAsync = ref.watch(todaySleepLogProvider);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
+    return BentoCard(
+      backgroundColor: AppTheme.pastelBlue,
+      borderColor: Colors.black.withValues(alpha: 0.12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -38,16 +36,16 @@ class _SleepIntelligenceWidgetState extends ConsumerState<SleepIntelligenceWidge
               Expanded(
                 child: Row(
                   children: [
-                    Icon(Icons.bedtime_rounded, color: Colors.indigoAccent.shade100, size: 16),
+                    const Icon(Icons.bedtime_rounded, color: AppTheme.inkBlack, size: 16),
                     const SizedBox(width: 6),
                     const Expanded(
                       child: Text(
                         'SLEEP & RECOVERY INTELLIGENCE',
                         style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 9,
+                          color: AppTheme.inkBlack,
+                          fontSize: 10,
                           letterSpacing: 1.5,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w900,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

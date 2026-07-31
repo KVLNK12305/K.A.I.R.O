@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'bento_card.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/services/streak_service.dart';
 
 /// Provider that fetches streak data.
@@ -62,20 +64,22 @@ class _StreakFlameWidgetState extends ConsumerState<StreakFlameWidget>
   Widget build(BuildContext context) {
     final streakAsync = ref.watch(streakDataProvider);
 
-    return _WidgetCard(
+    return BentoCard(
+      backgroundColor: AppTheme.pastelAmber,
+      borderColor: Colors.black.withValues(alpha: 0.12),
       child: streakAsync.when(
         loading: () => const Center(
           child: SizedBox(
             width: 24,
             height: 24,
             child: CircularProgressIndicator(
-              color: Colors.white24,
+              color: AppTheme.inkBlack,
               strokeWidth: 2,
             ),
           ),
         ),
         error: (_, _) => const Center(
-          child: Text('—', style: TextStyle(color: Colors.white24)),
+          child: Text('—', style: TextStyle(color: AppTheme.inkBlack)),
         ),
         data: (data) {
           final dayNumber = data['dayNumber'] as int;
@@ -94,8 +98,8 @@ class _StreakFlameWidgetState extends ConsumerState<StreakFlameWidget>
                   Icon(
                     isBroken ? Icons.heart_broken : Icons.local_fire_department,
                     color: isBroken
-                        ? const Color(0xFFFF4444)
-                        : const Color(0xFFFF6B35),
+                        ? AppTheme.coralRed
+                        : AppTheme.inkBlack,
                     size: 16,
                   ),
                   const SizedBox(width: 6),
@@ -104,10 +108,10 @@ class _StreakFlameWidgetState extends ConsumerState<StreakFlameWidget>
                       'STREAK FLAME',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 9,
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.w700,
+                        color: AppTheme.inkBlack,
+                        fontSize: 10,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
