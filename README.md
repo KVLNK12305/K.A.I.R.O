@@ -6,9 +6,22 @@ K.A.I.R.O is a modern, high-performance Flutter-based **Life OS** and personal c
 
 ---
 
+## 📸 Screenshots & Demos
+*(Screenshots and GIFs coming soon once the UI stabilizes during the 60-90 day validation period.)*
+
+---
+
+## 🎯 Why I Built K.A.I.R.O
+
+Most productivity apps focus on tracking endless lists of tasks. Very few focus on the reality that **you get 168 hours every week**. I built K.A.I.R.O around the concept of a **168h Weekly Ledger**—a system that forces you to confront exactly where those hours go. It's less about ticking boxes and more about understanding capacity, energy, and the true cost of inaction. It's designed to be a system I actually want to open every morning.
+
+---
+
 ## 🎨 Neo-Pastel Editorial Bento Design System
 
-The UI follows modern sports/editorial magazine aesthetics—curated color blocks, crisp ink-black headers, high-contrast badges, and dynamic micro-animations:
+The UI follows modern sports/editorial magazine aesthetics—curated color blocks, crisp ink-black headers, high-contrast badges, and dynamic micro-animations.
+
+**Design Philosophy:** Create an interface that feels responsive, alive, and highly premium, using a curated color palette instead of standard generic colors.
 
 | Token | Color Hex | Visual Role |
 | :--- | :--- | :--- |
@@ -25,8 +38,8 @@ The UI follows modern sports/editorial magazine aesthetics—curated color block
 ## ⚡ Core Modules & Features
 
 - **Command Center Dashboard**:
-  - **168h Weekly Ledger**: High-contrast time audit tile with interactive **Hour (`[HRS h]`) vs Percentage (`[PCT %]`)** allocation toggle, live capacity gauge (`% USED`), and custom recurring block manager.
-  - **Crucible Cost of Delay**: Soft Rose Pink card tracking financial cost-of-inaction with instant Lockdown mode.
+  - **168h Weekly Ledger (The Centerpiece)**: High-contrast time audit tile with interactive **Hour (`[HRS h]`) vs Percentage (`[PCT %]`)** allocation toggle, live capacity gauge (`% USED`), and custom recurring block manager.
+  - **Crucible Cost of Delay**: Calculates the financial impact of procrastination using an estimated hourly rate and missed productive time, with an instant Lockdown mode.
   - **Sleep & Recovery Intelligence**: Sleep duration, quality index, and morning alarm recommendations.
   - **Primary Anchor & Objective**: Define single non-negotiable daily objectives and energy peaks.
   - **Terminal Scratchpad**: Instant markdown brain dump with automated local state sync.
@@ -35,18 +48,19 @@ The UI follows modern sports/editorial magazine aesthetics—curated color block
 - **System Profile & Identity**:
   - Live real-time clock & date banner.
   - Clerk Auth Zero-Config & Google OAuth identity synchronization.
-  - Demographics & Hostility seeding forms with hourly rate calculation.
+  - **User Baseline & Rate Calculation**: Forms to establish baseline metrics and calculate estimated hourly rates.
 
 - **Native Android Home Screen AppWidgets**:
   - `DailyAuditWidgetProvider`: Live 168h free hours & time budget.
   - `TaskPulseWidgetProvider`: Live daily completion & peak task metrics.
   - `StreakFlameWidgetProvider`: 21-day discipline ring & particle animation.
-  - `EnergyArcWidgetProvider`: Triple energy economy gauge (Peak 1, Peak 2, Recovery).
+  - **Energy Gauge Widget (`EnergyArcWidgetProvider`)**: Visualizes daily energy capacity across primary peaks and recovery periods.
   - `QuotePrismWidgetProvider`: Bhagavad Gita shlokas with Sanskrit transliteration.
 
 ---
 
 ## 🛠️ Architecture & Tech Stack
+*(Architecture diagram coming soon)*
 
 - **Framework**: Flutter (Material 3 UI, Target Platforms: Android, iOS, Web, Desktop)
 - **Database**: [Isar](https://isar.dev/) on-device database for lightning-fast offline storage
@@ -90,3 +104,21 @@ dart run build_runner build --delete-conflicting-outputs
 ```bash
 flutter run
 ```
+
+---
+
+## 🗺️ Roadmap
+- [ ] **Stage 1 (Current): Private Validation**. 60-90 days of daily dogfooding. Validating the 168h ledger and core workflows.
+- [ ] **Stage 2: Portfolio Public**. Clean up the repo, document the architecture, ensure widget reliability, and finalize UI.
+- [ ] **Stage 3: Product (Optional)**. Consider CI/CD, Privacy Policy, Licensing, and potential Play Store release if it moves beyond a personal tool.
+
+---
+
+## ⚠️ Known Limitations
+- The app is currently in Stage 1 validation. The architecture, data models, and UI are subject to frequent changes.
+- Syncing and telemetry features are tailored to the current operator's environment and may require configuration to work elsewhere.
+
+---
+
+## 📄 License
+This project is currently for personal use. License will be determined prior to the Stage 2 public release.
