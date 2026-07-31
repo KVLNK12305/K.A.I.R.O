@@ -23,6 +23,7 @@ import '../../Nav/smooth_page_route.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/focus_timer_service.dart';
 
+import '../widgets/cards/bento_card.dart';
 import '../widgets/cards/daily_24h_allocation_widget.dart';
 import '../widgets/cards/cost_of_delay_widget.dart';
 import '../widgets/cards/task_pulse_widget.dart';
@@ -169,13 +170,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   const SizedBox(height: 24),
 
                   // PRIMARY WORKSPACE: THE OBJECTIVE
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF141414),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                    ),
+                  BentoCard(
+                    backgroundColor: AppTheme.pastelPink,
+                    borderColor: Colors.black.withValues(alpha: 0.12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -185,14 +182,14 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                             const Text(
                               "PRIMARY ANCHOR • TODAY'S OBJECTIVE",
                               style: TextStyle(
-                                color: AppTheme.warning,
+                                color: AppTheme.inkBlack,
                                 fontSize: 10,
                                 fontFamily: 'monospace',
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
                                 letterSpacing: 1.5,
                               ),
                             ),
-                            Icon(Icons.adjust_rounded, size: 14, color: AppTheme.warning.withValues(alpha: 0.7)),
+                            Icon(Icons.adjust_rounded, size: 14, color: AppTheme.coralRed),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -202,18 +199,18 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                             ref.read(objectiveProvider.notifier).updateObjective(val);
                           },
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.inkBlack,
                             fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w800,
                             letterSpacing: -0.3,
                             height: 1.3,
                           ),
                           decoration: InputDecoration(
                             hintText: "Define your single non-negotiable objective today...",
                             hintStyle: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.25),
+                              color: AppTheme.inkBlack.withValues(alpha: 0.4),
                               fontSize: 18,
-                              fontWeight: FontWeight.normal,
+                              fontWeight: FontWeight.w600,
                             ),
                             border: InputBorder.none,
                             isDense: true,
@@ -317,10 +314,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                             Icons.terminal_rounded,
                             "WakaTime Today",
                             hours,
-                            const Color(0xFF64B5F6),
+                            AppTheme.inkBlack,
+                            bgColor: AppTheme.pastelBlue,
                           ),
-                          loading: () => _buildLoadingCard("WakaTime Today"),
-                          error: (err, stack) => _buildMetricCard(Icons.error_outline, "WakaTime Today", "Offline", Colors.redAccent),
+                          loading: () => _buildLoadingCard("WakaTime Today", bgColor: AppTheme.pastelBlue),
+                          error: (err, stack) => _buildMetricCard(Icons.error_outline, "WakaTime Today", "Offline", AppTheme.coralRed, bgColor: AppTheme.pastelBlue),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -330,10 +328,11 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                             Icons.attach_money_rounded,
                             "Today's Expense",
                             "\$${metrics.todayExpense.toStringAsFixed(2)}",
-                            const Color(0xFF81C784),
+                            AppTheme.inkBlack,
+                            bgColor: AppTheme.pastelAmber,
                           ),
-                          loading: () => _buildLoadingCard("Today's Expense"),
-                          error: (err, stack) => _buildMetricCard(Icons.account_balance_wallet_outlined, "Today's Expense", "N/A", Colors.white38),
+                          loading: () => _buildLoadingCard("Today's Expense", bgColor: AppTheme.pastelAmber),
+                          error: (err, stack) => _buildMetricCard(Icons.account_balance_wallet_outlined, "Today's Expense", "N/A", AppTheme.inkBlack, bgColor: AppTheme.pastelAmber),
                         ),
                       ),
                     ],
@@ -530,28 +529,44 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     );
   }
 
-  Widget _buildMetricCard(IconData icon, String title, String value, Color accentColor) {
+  Widget _buildMetricCard(IconData icon, String title, String value, Color accentColor, {Color? bgColor}) {
+    final effectiveBg = bgColor ?? AppTheme.cardWhite;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        color: effectiveBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: accentColor),
+              Icon(icon, size: 16, color: AppTheme.inkBlack),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w600)),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppTheme.inkBlack,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+            style: const TextStyle(
+              color: AppTheme.inkBlack,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -559,13 +574,13 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     );
   }
 
-  Widget _buildLoadingCard(String title) {
+  Widget _buildLoadingCard(String title, {Color? bgColor}) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        color: bgColor ?? AppTheme.cardWhite,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
