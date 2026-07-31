@@ -10,6 +10,7 @@ import '../energy_economy/energy_provider.dart';
 import '../profile/providers/profile_provider.dart';
 import '../dashboard/providers/task_provider.dart';
 import 'brutalist_provider.dart';
+import '../../core/services/delusion_filter_service.dart';
 import '../../core/theme/app_theme.dart';
 class BrutalistReviewPage extends ConsumerStatefulWidget {
   final bool showBackButton;
@@ -33,6 +34,9 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
   final Map<int, int> _taskProgress = {};
   final Map<int, bool> _taskIntents = {};
 
+  DelusionAnalysis _highlightDelusion = DelusionAnalysis(hasDelusion: false, phraseDetected: '', suggestedRewrite: '', severityScore: 0.0);
+  DelusionAnalysis _cowardiceDelusion = DelusionAnalysis(hasDelusion: false, phraseDetected: '', suggestedRewrite: '', severityScore: 0.0);
+
   static const int _ventLimit = 300;
   static const Color _bloodRed = AppTheme.warning;
   static const Color _dimWhite = AppTheme.secondary;
@@ -45,6 +49,20 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
     super.initState();
     _ventController.addListener(() {
       setState(() => _ventChars = _ventController.text.length);
+    });
+
+    _highlightController.addListener(() {
+      final analysis = DelusionFilterService.analyze(_highlightController.text);
+      if (analysis.hasDelusion != _highlightDelusion.hasDelusion || analysis.phraseDetected != _highlightDelusion.phraseDetected) {
+        setState(() => _highlightDelusion = analysis);
+      }
+    });
+
+    _cowardiceDescController.addListener(() {
+      final analysis = DelusionFilterService.analyze(_cowardiceDescController.text);
+      if (analysis.hasDelusion != _cowardiceDelusion.hasDelusion || analysis.phraseDetected != _cowardiceDelusion.phraseDetected) {
+        setState(() => _cowardiceDelusion = analysis);
+      }
     });
   }
 
@@ -298,6 +316,10 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                     maxLines: 2,
                     locked: isLocked,
                   ),
+                  if (_highlightDelusion.hasDelusion) ...[
+                    const SizedBox(height: 8),
+                    _buildDelusionWarningBanner(_highlightDelusion, _highlightController),
+                  ],
 
                   const SizedBox(height: 36),
 
@@ -321,6 +343,10 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
                       locked: isLocked,
                       accentColor: _bloodRed,
                     ),
+                    if (_cowardiceDelusion.hasDelusion) ...[
+                      const SizedBox(height: 8),
+                      _buildDelusionWarningBanner(_cowardiceDelusion, _cowardiceDescController),
+                    ],
                   ],
 
                   const SizedBox(height: 36),
@@ -930,4 +956,70 @@ class _BrutalistReviewPageState extends ConsumerState<BrutalistReviewPage> {
       ),
     );
   }
+
+  Widget _buildDelusionWarningBanner(DelusionAnalysis analysis, TextEditingController controller) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: _bloodRed.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _bloodRed.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.gavel_rounded, color: _bloodRed, size: 14),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'DELUSION FILTER: Passive phrase detected ("${analysis.phraseDetected}")',
+                  style: TextStyle(
+                    color: _bloodRed,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: () {
+              controller.text = analysis.suggestedRewrite;
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_fix_high, size: 12, color: Colors.white70),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      'CONVERT TO ACTIVE OWNERSHIP: "${analysis.suggestedRewrite}"',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
