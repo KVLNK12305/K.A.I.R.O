@@ -159,11 +159,11 @@ class _StreakFlameWidgetState extends ConsumerState<StreakFlameWidget>
                         : 'DAY $dayNumber OF 21  •  $completed LOGGED',
                     style: TextStyle(
                       color: isBroken
-                          ? const Color(0xFFFF4444).withValues(alpha: 0.7)
-                          : Colors.white38,
-                      fontSize: 9,
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.w600,
+                          ? AppTheme.coralRed
+                          : AppTheme.inkBlack.withValues(alpha: 0.8),
+                      fontSize: 10,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -199,7 +199,7 @@ class _StreakRingPainter extends CustomPainter {
 
     // Background ring
     final bgPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
+      ..color = Colors.black.withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
@@ -279,7 +279,7 @@ class _StreakRingPainter extends CustomPainter {
     // Cracked lines when broken
     if (isBroken) {
       final crackPaint = Paint()
-        ..color = const Color(0xFFFF4444).withValues(alpha: 0.3 + pulseValue * 0.2)
+        ..color = AppTheme.coralRed.withValues(alpha: 0.4 + pulseValue * 0.2)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1;
       final rng = math.Random(7);
@@ -299,9 +299,9 @@ class _StreakRingPainter extends CustomPainter {
       text: TextSpan(
         text: '$dayNumber',
         style: TextStyle(
-          color: isBroken ? const Color(0xFFFF4444) : Colors.white,
+          color: isBroken ? AppTheme.coralRed : AppTheme.inkBlack,
           fontSize: 28,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
           fontFamily: 'monospace',
         ),
       ),
@@ -321,9 +321,9 @@ class _StreakRingPainter extends CustomPainter {
       text: TextSpan(
         text: isBroken ? 'RESET' : 'of 21',
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.3),
+          color: isBroken ? AppTheme.coralRed : AppTheme.inkBlack.withValues(alpha: 0.6),
           fontSize: 10,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w800,
           letterSpacing: 1,
         ),
       ),
