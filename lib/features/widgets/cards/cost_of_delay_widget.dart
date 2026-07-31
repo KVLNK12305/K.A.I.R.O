@@ -169,7 +169,7 @@ class _CostOfDelayWidgetState extends ConsumerState<CostOfDelayWidget> {
               Expanded(
                 child: _buildMetricTile(
                   title: 'COST OF DELAY',
-                  value: '\$${loss.toStringAsFixed(0)}',
+                  value: '₹${loss.toStringAsFixed(0)}',
                   subtitle: '$uncompletedCount Peak Tasks Open',
                   accentColor: loss > 0 ? AppTheme.coralRed : AppTheme.inkBlack,
                 ),
