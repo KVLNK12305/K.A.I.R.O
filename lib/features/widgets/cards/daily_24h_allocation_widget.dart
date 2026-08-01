@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/services/wellbeing_service.dart';
 import '../../../features/dashboard/providers/task_provider.dart';
 
 class Daily24hAllocationWidget extends ConsumerStatefulWidget {
@@ -14,6 +15,34 @@ class Daily24hAllocationWidget extends ConsumerStatefulWidget {
 
 class _Daily24hAllocationWidgetState extends ConsumerState<Daily24hAllocationWidget> {
   bool _isExpanded = false;
+  bool _hasUsagePermission = false;
+  double _screenTimeHours = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadScreenTime();
+  }
+
+  Future<void> _loadScreenTime() async {
+    final hasPerm = await WellbeingService.checkUsagePermission();
+    setState(() => _hasUsagePermission = hasPerm);
+    if (hasPerm) {
+      final hours = await WellbeingService.getDailyScreenTime();
+      setState(() => _screenTimeHours = hours);
+    }
+  }
+
+  Future<void> _requestPermission() async {
+    final opened = await WellbeingService.requestUsagePermission();
+    if (opened) {
+      // Small delay to allow user to return, ideally we'd use WidgetsBindingObserver
+      // to refresh on app resume, but this is a quick manual refresh option.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please grant Usage Access and return.')),
+      );
+    }
+  }
 
   String _formatDuration(double hoursDouble, {Duration? durationObj}) {
     final totalMinutes = durationObj != null ? durationObj.inMinutes : (hoursDouble * 60).round();
@@ -58,7 +87,10 @@ class _Daily24hAllocationWidgetState extends ConsumerState<Daily24hAllocationWid
     // Assumptions for 24h baseline budget
     const double sleepHours = 7.5;
     const double peakWorkHours = 4.0;
-    double remainingFreeHours = (24.0 - (sleepHours + classHours + peakWorkHours)).clamp(0.0, 24.0);
+    
+    // Calculate remaining free hours after accounting for screen time
+    double activeHours = sleepHours + classHours + peakWorkHours + _screenTimeHours;
+    double remainingFreeHours = (24.0 - activeHours).clamp(0.0, 24.0);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -144,6 +176,11 @@ class _Daily24hAllocationWidgetState extends ConsumerState<Daily24hAllocationWid
                             flex: (peakWorkHours * 10).toInt(),
                             child: Container(color: AppTheme.warning),
                           ),
+                          if (_screenTimeHours > 0)
+                            Expanded(
+                              flex: (_screenTimeHours * 10).toInt().clamp(1, 240),
+                              child: Container(color: AppTheme.coralRed),
+                            ),
                           Expanded(
                             flex: (remainingFreeHours * 10).toInt().clamp(1, 240),
                             child: Container(color: const Color(0xFF43A047)),
@@ -172,10 +209,72 @@ class _Daily24hAllocationWidgetState extends ConsumerState<Daily24hAllocationWid
                       _buildLegendItem("Sleep", _formatDuration(sleepHours), const Color(0xFF1E88E5)),
                       _buildLegendItem("Classes/Events", _formatDuration(classHours), const Color(0xFF8E24AA)),
                       _buildLegendItem("Peak Work", _formatDuration(peakWorkHours), AppTheme.warning),
+                      if (_hasUsagePermission) 
+                        _buildLegendItem("Screen Time", _formatDuration(_screenTimeHours), AppTheme.coralRed),
                       _buildLegendItem("Free Hours", _formatDuration(remainingFreeHours), const Color(0xFF43A047)),
                     ],
                   ),
                   const SizedBox(height: 16),
+                  if (!_hasUsagePermission) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.coralRed.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.coralRed.withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, color: AppTheme.coralRed, size: 16),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "SCREEN TIME TRACKING DISABLED",
+                                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "Grant Usage Access to K.A.I.R.O to deduct live screen time from your Free Hours budget.",
+                            style: TextStyle(color: Colors.white70, fontSize: 11),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 32,
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _requestPermission,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.coralRed,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              ),
+                              child: const Text("Grant Usage Access", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            height: 32,
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: _loadScreenTime,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              ),
+                              child: const Text("I've Granted It - Refresh", style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   const Text(
                     "TODAY'S CLASSES & CALENDAR EVENTS:",
                     style: TextStyle(

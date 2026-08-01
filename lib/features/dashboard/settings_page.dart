@@ -368,6 +368,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await FinanceService().importAndParseCSV();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ivy Wallet CSV Imported!"), backgroundColor: Colors.green));
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.file_upload_outlined, color: Colors.white),
+                  label: const Text("MANUAL CSV IMPORT", style: TextStyle(color: Colors.white, letterSpacing: 1)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
               const SizedBox(height: 48),
 
               SizedBox(

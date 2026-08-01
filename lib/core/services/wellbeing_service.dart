@@ -43,4 +43,37 @@ class WellbeingService {
       debugPrint('Unknown error setting Focus Mode: $e');
     }
   }
+
+  /// Checks if the app has permission to access Usage Stats (Screen Time).
+  static Future<bool> checkUsagePermission() async {
+    try {
+      final bool granted = await _channel.invokeMethod('checkUsagePermission') ?? false;
+      return granted;
+    } catch (e) {
+      debugPrint('Error checking usage permission: $e');
+      return false;
+    }
+  }
+
+  /// Opens the Android settings for the user to grant Usage Access if not already granted.
+  static Future<bool> requestUsagePermission() async {
+    try {
+      final bool opened = await _channel.invokeMethod('requestUsagePermission') ?? false;
+      return opened;
+    } catch (e) {
+      debugPrint('Error requesting usage permission: $e');
+      return false;
+    }
+  }
+
+  /// Fetches the total daily screen time in hours for today.
+  static Future<double> getDailyScreenTime() async {
+    try {
+      final double hours = await _channel.invokeMethod('getDailyScreenTime') ?? 0.0;
+      return hours;
+    } catch (e) {
+      debugPrint('Error fetching screen time: $e');
+      return 0.0;
+    }
+  }
 }
