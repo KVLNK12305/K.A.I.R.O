@@ -3,7 +3,10 @@
     android:minWidth="250dp"
     android:minHeight="100dp"
     android:updatePeriodMillis="1800000"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
     android:initialLayout="@layout/widget_task_pulse"
+    android:previewLayout="@layout/widget_task_pulse"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen">
 </appwidget-provider>

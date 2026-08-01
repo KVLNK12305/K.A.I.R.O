@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import '../../main.dart';
 import '../models/focus_session.dart';
+import 'wellbeing_service.dart';
 
 class FocusTimerState {
   final FocusSession? activeSession;
@@ -77,6 +78,7 @@ class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBi
       distractionCount: 0,
     );
 
+    WellbeingService.setFocusMode(true);
     _timer = Timer.periodic(const Duration(seconds: 1), _onTick);
   }
 
@@ -123,12 +125,14 @@ class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBi
       await isar.focusSessions.put(session);
     });
 
+    WellbeingService.setFocusMode(false);
     state = const FocusTimerState();
     return session;
   }
 
   void cancelSession() {
     _timer?.cancel();
+    WellbeingService.setFocusMode(false);
     state = const FocusTimerState();
   }
 }

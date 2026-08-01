@@ -349,9 +349,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 child: OutlinedButton.icon(
                   onPressed: () async {
                     try {
-                      await FinanceService().importAndParseCSV();
+                      await FinanceService().syncFromKairoNode();
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ivy Wallet CSV Parsed!"), backgroundColor: Colors.green));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Synced with K.A.I.R.O Node!"), backgroundColor: Colors.green));
                       }
                     } catch (e) {
                       if (context.mounted) {
@@ -359,8 +359,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       }
                     }
                   },
-                  icon: const Icon(Icons.upload_file, color: Colors.white),
-                  label: const Text("IMPORT IVY WALLET CSV", style: TextStyle(color: Colors.white, letterSpacing: 1)),
+                  icon: const Icon(Icons.sync, color: Colors.white),
+                  label: const Text("SYNC K.A.I.R.O NODE", style: TextStyle(color: Colors.white, letterSpacing: 1)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),

@@ -22,6 +22,7 @@ import 'weekly_autopsy_page.dart';
 import '../../Nav/smooth_page_route.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/focus_timer_service.dart';
+import 'package:android_intent_plus/android_intent.dart';
 
 import '../widgets/cards/bento_card.dart';
 import '../widgets/cards/daily_24h_allocation_widget.dart';
@@ -323,9 +324,22 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                           data: (metrics) => _buildMetricCard(
                             Icons.attach_money_rounded,
                             "Today's Expense",
-                            "\$${metrics.todayExpense.toStringAsFixed(2)}",
+                            "₹${metrics.todayExpense.toStringAsFixed(2)}",
                             AppTheme.inkBlack,
                             bgColor: AppTheme.pastelAmber,
+                            onTap: () async {
+                              final intent = AndroidIntent(
+                                action: 'android.intent.action.MAIN',
+                                category: 'android.intent.category.LAUNCHER',
+                                package: 'com.ivy.wallet',
+                                componentName: 'com.ivy.wallet.RootActivity',
+                              );
+                              try {
+                                await intent.launch();
+                              } catch (e) {
+                                debugPrint("Could not launch Ivy Wallet: $e");
+                              }
+                            },
                           ),
                           loading: () => _buildLoadingCard("Today's Expense", bgColor: AppTheme.pastelAmber),
                           error: (err, stack) => _buildMetricCard(Icons.account_balance_wallet_outlined, "Today's Expense", "N/A", AppTheme.inkBlack, bgColor: AppTheme.pastelAmber),
@@ -499,10 +513,12 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
     );
   }
 
-  Widget _buildMetricCard(IconData icon, String title, String value, Color accentColor, {Color? bgColor}) {
+  Widget _buildMetricCard(IconData icon, String title, String value, Color accentColor, {Color? bgColor, VoidCallback? onTap}) {
     final effectiveBg = bgColor ?? AppTheme.cardWhite;
-    return Container(
-      padding: const EdgeInsets.all(14),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: effectiveBg,
         borderRadius: BorderRadius.circular(14),
@@ -541,8 +557,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildLoadingCard(String title, {Color? bgColor}) {
     return Container(
@@ -1091,7 +1108,9 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
   }
 
   Widget _buildTodayPeaksSection(BuildContext context, WidgetRef ref, EnergyEconomyState energyState) {
-    final peaks = [...energyState.peak1Tasks, ...energyState.peak2Tasks];
+    final allPeaks = [...energyState.peak1Tasks, ...energyState.peak2Tasks];
+    final peaks = allPeaks.where((t) => !t.isCompleted).toList();
+    final completedPeaks = allPeaks.where((t) => t.isCompleted).toList();
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -1154,7 +1173,7 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "No peak tasks assigned for today. Complete the morning check to assign.",
+                      "No active peak tasks right now. Great job!",
                       style: TextStyle(color: Colors.white54, fontSize: 11),
                     ),
                   ),
@@ -1276,6 +1295,50 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
                   ),
                 );
               }).toList(),
+            ),
+          if (completedPeaks.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: const Color(0xFF1B1B1B),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+                      builder: (context) {
+                        return Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text("COMPLETED PEAKS", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                              const SizedBox(height: 16),
+                              Flexible(
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: completedPeaks.length,
+                                  itemBuilder: (context, index) {
+                                    final task = completedPeaks[index];
+                                    return ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      leading: const Icon(Icons.check_circle_rounded, color: Color(0xFF00E676)),
+                                      title: Text(task.title, style: const TextStyle(color: Colors.white70, decoration: TextDecoration.lineThrough)),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    );
+                  },
+                  icon: const Icon(Icons.history_rounded, size: 16, color: Colors.white54),
+                  label: Text("View Completed (${completedPeaks.length})", style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                ),
+              ),
             ),
         ],
       ),

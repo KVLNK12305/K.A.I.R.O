@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 
 class FinanceMetrics {
   final double todayExpense;
@@ -23,72 +24,47 @@ class FinanceService {
     return FinanceMetrics(todayExpense: today, monthExpense: month);
   }
 
-  Future<void> importAndParseCSV() async {
+  Future<void> syncFromKairoNode() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-      );
+      final appDir = await getApplicationSupportDirectory();
+      final file = File('${appDir.path}/kairo_node_expenses.csv');
+      
+      if (!await file.exists()) return;
+      
+      final csvString = await file.readAsString();
+      final List<List<dynamic>> rows = const CsvToListConverter(eol: '\n').convert(csvString);
+      if (rows.length <= 1) return; // Only header
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final csvString = await file.readAsString();
-        
-        final List<List<dynamic>> rows = const CsvToListConverter(eol: '\n').convert(csvString);
-        if (rows.isEmpty) return;
+      double todayTotal = 0.0;
+      double monthTotal = 0.0;
+      
+      final now = DateTime.now();
+      final todayStr = DateFormat('yyyy-MM-dd').format(now);
+      final monthStr = DateFormat('yyyy-MM').format(now);
 
-        final headers = rows.first.map((e) => e.toString().toLowerCase()).toList();
-        
-        // Find indices
-        int typeIdx = headers.indexWhere((h) => h.contains('type'));
-        int amountIdx = headers.indexWhere((h) => h.contains('amount'));
-        int dateIdx = headers.indexWhere((h) => h.contains('date'));
+      for (int i = 1; i < rows.length; i++) {
+        final row = rows[i];
+        if (row.length < 3) continue;
 
-        if (amountIdx == -1 || dateIdx == -1) {
-          throw const FormatException('Invalid CSV: Could not locate "amount" and "date" columns in file header.');
+        final date = row[0].toString();
+        final amountStr = row[2].toString().replaceAll(RegExp(r'[^0-9.]'), '');
+        final amount = double.tryParse(amountStr) ?? 0.0;
+
+        if (date.startsWith(todayStr)) {
+          todayTotal += amount;
         }
-        if (typeIdx == -1) {
-          debugPrint("Notice: No 'type' column found in CSV. Assuming all entries with valid amounts are expenses.");
+        if (date.startsWith(monthStr)) {
+          monthTotal += amount;
         }
-
-        double todayTotal = 0.0;
-        double monthTotal = 0.0;
-        
-        final now = DateTime.now();
-        final todayStr = DateFormat('yyyy-MM-dd').format(now);
-        final monthStr = DateFormat('yyyy-MM').format(now);
-
-        for (int i = 1; i < rows.length; i++) {
-          final row = rows[i];
-          if (row.length <= amountIdx || row.length <= dateIdx || (typeIdx != -1 && row.length <= typeIdx)) continue;
-
-          if (typeIdx != -1) {
-            final type = row[typeIdx].toString().toLowerCase();
-            if (!type.contains('expense')) continue; // Only count expenses
-          }
-
-          final date = row[dateIdx].toString(); // Assuming format contains yyyy-MM-dd
-          final amountStr = row[amountIdx].toString().replaceAll(RegExp(r'[^0-9.]'), '');
-          final amount = double.tryParse(amountStr) ?? 0.0;
-
-          if (date.startsWith(todayStr) || date.contains(todayStr)) {
-            todayTotal += amount;
-          }
-          if (date.startsWith(monthStr) || date.contains(monthStr)) {
-            monthTotal += amount;
-          }
-        }
-
-        // Cache the results
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setDouble(_todayKey, todayTotal);
-        await prefs.setDouble(_monthKey, monthTotal);
-        
-        debugPrint("Parsed Ivy Wallet: Today=\$todayTotal, Month=\$monthTotal");
       }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_todayKey, todayTotal);
+      await prefs.setDouble(_monthKey, monthTotal);
+      
+      debugPrint("Synced from KAIRO Node: Today=\$todayTotal, Month=\$monthTotal");
     } catch (e) {
-      debugPrint("Error parsing Ivy Wallet CSV: $e");
-      rethrow;
+      debugPrint("Error syncing from KAIRO Node CSV: $e");
     }
   }
 
