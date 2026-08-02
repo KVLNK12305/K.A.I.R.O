@@ -177,13 +177,15 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
+        child: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
                 'THE MORNING ENFORCER',
                 style: TextStyle(
                   color: Colors.white54,
@@ -358,6 +360,8 @@ class _MorningEnforcerPageState extends ConsumerState<MorningEnforcerPage> {
                 ),
               ),
             ],
+          ),
+        ),
           ),
         ),
       ),
