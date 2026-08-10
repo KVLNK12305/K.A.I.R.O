@@ -8,5 +8,10 @@
     android:initialLayout="@layout/widget_energy_arc"
     android:previewLayout="@layout/widget_energy_arc"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen">
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_energy_arc_desc"
+    android:minResizeWidth="150dp"
+    android:minResizeHeight="80dp"
+    android:maxResizeWidth="500dp"
+    android:maxResizeHeight="500dp">
 </appwidget-provider>

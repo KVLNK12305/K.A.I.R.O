@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_card_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="@dimen/widget_padding">
 
     <!-- Header Row -->
     <LinearLayout
@@ -20,10 +20,9 @@
             android:text="TASK PULSE"
             android:textColor="#8888A0"
             android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.15" />
+            android:textStyle="bold" />
 
-        <View
+        <FrameLayout
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_weight="1" />
@@ -35,8 +34,7 @@
             android:text="0 OF 0"
             android:textColor="#FFFFFF"
             android:textSize="11sp"
-            android:textStyle="bold"
-            android:typeface="monospace" />
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- Progress Bar Container -->
@@ -65,8 +63,7 @@
             android:layout_height="wrap_content"
             android:text="P1: 0/0"
             android:textColor="#FFA726"
-            android:textSize="9sp"
-            android:typeface="monospace" />
+            android:textSize="9sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -83,8 +80,7 @@
             android:layout_height="wrap_content"
             android:text="P2: 0/0"
             android:textColor="#26C6DA"
-            android:textSize="9sp"
-            android:typeface="monospace" />
+            android:textSize="9sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -101,8 +97,7 @@
             android:layout_height="wrap_content"
             android:text="REC: 0/0"
             android:textColor="#AB47BC"
-            android:textSize="9sp"
-            android:typeface="monospace" />
+            android:textSize="9sp" />
     </LinearLayout>
 
 </LinearLayout>

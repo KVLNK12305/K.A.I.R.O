@@ -8,5 +8,10 @@
     android:initialLayout="@layout/widget_quote_prism"
     android:previewLayout="@layout/widget_quote_prism"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen">
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_quote_desc"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="110dp"
+    android:maxResizeWidth="500dp"
+    android:maxResizeHeight="500dp">
 </appwidget-provider>

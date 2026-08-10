@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_quote_desc">A daily dose of wisdom from the Bhagavad Gita.</string>
+    <string name="widget_daily_audit_desc">Track your 24-hour time allocation.</string>
+    <string name="widget_streak_flame_desc">Keep your habit streaks burning.</string>
+    <string name="widget_energy_arc_desc">Monitor your daily energy levels.</string>
+    <string name="widget_task_pulse_desc">Quick overview of your active tasks.</string>
+</resources>

@@ -8,5 +8,10 @@
     android:initialLayout="@layout/widget_daily_audit"
     android:previewLayout="@layout/widget_daily_audit"
     android:resizeMode="horizontal|vertical"
-    android:widgetCategory="home_screen">
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_daily_audit_desc"
+    android:minResizeWidth="200dp"
+    android:minResizeHeight="80dp"
+    android:maxResizeWidth="500dp"
+    android:maxResizeHeight="500dp">
 </appwidget-provider>

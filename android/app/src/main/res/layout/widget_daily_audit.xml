@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_card_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="@dimen/widget_padding">
 
     <!-- Header Row -->
     <LinearLayout
@@ -20,10 +20,9 @@
             android:text="DAILY 24H AUDIT"
             android:textColor="#8888A0"
             android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.15" />
+            android:textStyle="bold" />
 
-        <View
+        <FrameLayout
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_weight="1" />
@@ -34,8 +33,7 @@
             android:text="24H BUDGET"
             android:textColor="#FFA726"
             android:textSize="9sp"
-            android:textStyle="bold"
-            android:typeface="monospace" />
+            android:textStyle="bold" />
     </LinearLayout>
 
     <!-- Segmented 24-hour horizontal bar -->
@@ -46,37 +44,37 @@
         android:layout_marginBottom="10dp"
         android:orientation="horizontal">
 
-        <View
+        <ImageView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="7.5"
             android:background="@drawable/widget_fill_blue" />
 
-        <View
+        <FrameLayout
             android:layout_width="2dp"
             android:layout_height="match_parent" />
 
-        <View
+        <ImageView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="2.0"
             android:background="@drawable/widget_fill_purple" />
 
-        <View
+        <FrameLayout
             android:layout_width="2dp"
             android:layout_height="match_parent" />
 
-        <View
+        <ImageView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="4.0"
             android:background="@drawable/widget_fill_orange" />
 
-        <View
+        <FrameLayout
             android:layout_width="2dp"
             android:layout_height="match_parent" />
 
-        <View
+        <ImageView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="10.5"
@@ -96,8 +94,7 @@
             android:layout_height="wrap_content"
             android:text="Sleep: 7.5h"
             android:textColor="#1E88E5"
-            android:textSize="9sp"
-            android:typeface="monospace" />
+            android:textSize="9sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -114,8 +111,7 @@
             android:layout_height="wrap_content"
             android:text="Work: 4h"
             android:textColor="#FFA726"
-            android:textSize="9sp"
-            android:typeface="monospace" />
+            android:textSize="9sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -132,8 +128,7 @@
             android:layout_height="wrap_content"
             android:text="Free: 12.5h"
             android:textColor="#00E676"
-            android:textSize="9sp"
-            android:typeface="monospace" />
+            android:textSize="9sp" />
     </LinearLayout>
 
 </LinearLayout>

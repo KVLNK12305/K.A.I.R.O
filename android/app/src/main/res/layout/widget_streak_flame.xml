@@ -4,9 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_card_bg"
-    android:gravity="center_horizontal"
+    android:gravity="center"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="@dimen/widget_padding">
 
     <!-- Header -->
     <TextView
@@ -15,8 +15,7 @@
         android:text="STREAK FLAME"
         android:textColor="#8888A0"
         android:textSize="10sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.15" />
+        android:textStyle="bold" />
 
     <!-- Center Big Number -->
     <TextView
@@ -27,17 +26,16 @@
         android:text="1"
         android:textColor="#FF6B35"
         android:textSize="32sp"
-        android:textStyle="bold"
-        android:typeface="monospace" />
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/tv_streak_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:text="DAY 1 OF 21  •  0 LOGGED"
         android:textColor="#8888A0"
         android:textSize="9sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.1" />
+        android:textStyle="bold" />
 
 </LinearLayout>
