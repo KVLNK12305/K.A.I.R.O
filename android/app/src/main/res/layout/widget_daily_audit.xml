@@ -17,9 +17,11 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="DAILY 24H AUDIT"
-            android:textColor="#8888A0"
-            android:textSize="10sp"
+            android:textColor="@color/widget_text_muted"
+            android:textSize="11sp"
+            android:letterSpacing="0.1"
             android:textStyle="bold" />
 
         <FrameLayout
@@ -30,9 +32,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="24H BUDGET"
-            android:textColor="#FFA726"
-            android:textSize="9sp"
+            android:textColor="@color/vibrant_orange"
+            android:textSize="10sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -92,9 +95,10 @@
             android:id="@+id/tv_audit_sleep"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="Sleep: 7.5h"
-            android:textColor="#1E88E5"
-            android:textSize="9sp" />
+            android:textColor="@color/vibrant_blue"
+            android:textSize="10sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -109,9 +113,10 @@
             android:id="@+id/tv_audit_work"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="Work: 4h"
-            android:textColor="#FFA726"
-            android:textSize="9sp" />
+            android:textColor="@color/vibrant_orange"
+            android:textSize="10sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -126,9 +131,10 @@
             android:id="@+id/tv_audit_free"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="Free: 12.5h"
-            android:textColor="#00E676"
-            android:textSize="9sp" />
+            android:textColor="@color/vibrant_green"
+            android:textSize="10sp" />
     </LinearLayout>
 
 </LinearLayout>

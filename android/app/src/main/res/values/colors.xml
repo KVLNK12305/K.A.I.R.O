@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget Vibrant Aesthetic Colors -->
+    <color name="widget_bg_dark">#181824</color>
+    <color name="widget_text_primary">#FFFFFF</color>
+    <color name="widget_text_secondary">#B0B0C0</color>
+    <color name="widget_text_muted">#8888A0</color>
+
+    <color name="vibrant_orange">#FF4B4B</color>
+    <color name="vibrant_blue">#1CB0F6</color>
+    <color name="vibrant_purple">#CE82FF</color>
+    <color name="vibrant_green">#58CC02</color>
+    <color name="vibrant_yellow">#FFD700</color>
+    <color name="vibrant_cyan">#26C6DA</color>
+
+    <!-- Progress Track Backgrounds (Subtle translucent versions of the vibrant colors) -->
+    <color name="track_bg_dark">#2A2A38</color>
+</resources>

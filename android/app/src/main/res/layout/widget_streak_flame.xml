@@ -12,9 +12,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
         android:text="STREAK FLAME"
-        android:textColor="#8888A0"
-        android:textSize="10sp"
+        android:textColor="@color/widget_text_muted"
+        android:textSize="11sp"
+        android:letterSpacing="0.1"
         android:textStyle="bold" />
 
     <!-- Center Big Number -->
@@ -22,20 +24,21 @@
         android:id="@+id/tv_streak_day"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
+        android:fontFamily="sans-serif-black"
         android:text="1"
-        android:textColor="#FF6B35"
-        android:textSize="32sp"
-        android:textStyle="bold" />
+        android:textColor="@color/vibrant_orange"
+        android:textSize="44sp" />
 
     <TextView
         android:id="@+id/tv_streak_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
+        android:fontFamily="sans-serif-medium"
         android:text="DAY 1 OF 21  •  0 LOGGED"
-        android:textColor="#8888A0"
-        android:textSize="9sp"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="10sp"
         android:textStyle="bold" />
 
 </LinearLayout>

@@ -17,9 +17,11 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="TASK PULSE"
-            android:textColor="#8888A0"
-            android:textSize="10sp"
+            android:textColor="@color/widget_text_muted"
+            android:textSize="11sp"
+            android:letterSpacing="0.1"
             android:textStyle="bold" />
 
         <FrameLayout
@@ -31,9 +33,10 @@
             android:id="@+id/tv_task_summary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="0 OF 0"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -61,9 +64,10 @@
             android:id="@+id/tv_peak1_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="P1: 0/0"
-            android:textColor="#FFA726"
-            android:textSize="9sp" />
+            android:textColor="@color/vibrant_orange"
+            android:textSize="10sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -78,9 +82,10 @@
             android:id="@+id/tv_peak2_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="P2: 0/0"
-            android:textColor="#26C6DA"
-            android:textSize="9sp" />
+            android:textColor="@color/vibrant_cyan"
+            android:textSize="10sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -95,9 +100,10 @@
             android:id="@+id/tv_recovery_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:text="REC: 0/0"
-            android:textColor="#AB47BC"
-            android:textSize="9sp" />
+            android:textColor="@color/vibrant_purple"
+            android:textSize="10sp" />
     </LinearLayout>
 
 </LinearLayout>
