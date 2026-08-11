@@ -209,6 +209,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
       } catch (e) {
         // Token might be revoked or invalid JSON
         prefs.remove(_credentialsKey);
+        if (!mounted) return;
         state = state.copyWith(isAuthenticated: false, error: 'Session expired. Please log in again.');
       }
     }
@@ -259,6 +260,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
         throw Exception('Could not launch Microsoft login.');
       }
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -273,9 +275,11 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
       _linkSubscription?.cancel();
       _grant = null;
 
+      if (!mounted) return;
       state = state.copyWith(isAuthenticated: true, isLoading: false, clearError: true);
       await fetchTasks();
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isAuthenticated: false, isLoading: false, error: 'Login failed: ${e.toString()}');
     }
   }
@@ -301,6 +305,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
       final rawLists = listData['value'] as List;
 
       if (rawLists.isEmpty) {
+        if (!mounted) return;
         state = state.copyWith(lists: [], isLoading: false);
         return;
       }
@@ -327,8 +332,10 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
         allLists.add(MsTodoList(id: listId, name: listName, tasks: tasks));
       }
 
+      if (!mounted) return;
       state = state.copyWith(lists: allLists, isLoading: false);
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
       // Optionally handle specific revoked/expired errors here if auto-refresh fails
     }
@@ -688,6 +695,7 @@ class MsTodoNotifier extends StateNotifier<MsTodoState> {
     await prefs.remove(_credentialsKey);
     _client?.close();
     _client = null;
+    if (!mounted) return;
     state = const MsTodoState();
   }
 }

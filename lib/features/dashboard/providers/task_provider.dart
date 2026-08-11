@@ -62,6 +62,8 @@ class TaskNotifier extends StateNotifier<DashboardState> {
       gEvents = await _googleApi.fetchTodayEvents();
     }
 
+    if (!mounted) return;
+
     state = state.copyWith(
       isarTasks: tasksFromDB,
       googleTasks: gTasks,

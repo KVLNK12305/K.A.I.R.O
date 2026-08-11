@@ -15,15 +15,20 @@ class AuthNotifier extends StateNotifier<GoogleSignInAccount?> {
   }
 
   Future<void> _init() async {
-    state = await _apiService.signInSilently();
+    final account = await _apiService.signInSilently();
+    if (!mounted) return;
+    state = account;
   }
 
   Future<void> login() async {
-    state = await _apiService.signIn();
+    final account = await _apiService.signIn();
+    if (!mounted) return;
+    state = account;
   }
 
   Future<void> logout() async {
     await _apiService.signOut();
+    if (!mounted) return;
     state = null;
   }
 }
@@ -40,15 +45,20 @@ class ClerkAuthNotifier extends StateNotifier<ClerkUser?> {
   }
 
   Future<void> _init() async {
-    state = await _clerkService.initSilently();
+    final user = await _clerkService.initSilently();
+    if (!mounted) return;
+    state = user;
   }
 
   Future<void> signInWithGoogle(BuildContext context) async {
-    state = await _clerkService.signInWithGoogle(context);
+    final user = await _clerkService.signInWithGoogle(context);
+    if (!mounted) return;
+    state = user;
   }
 
   Future<void> signOut() async {
     await _clerkService.signOut();
+    if (!mounted) return;
     state = null;
   }
 }
