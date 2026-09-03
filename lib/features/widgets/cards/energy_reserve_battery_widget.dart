@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../energy_economy/energy_provider.dart';
 import '../../energy_economy/energy_economy_page.dart';
 import '../../psychosomatic/psychosomatic_provider.dart';
-import '../../../Nav/smooth_page_route.dart';
+import 'package:kairo/Nav/smooth_page_route.dart';
 import 'bento_card.dart';
 
 class EnergyReserveBatteryWidget extends ConsumerWidget {

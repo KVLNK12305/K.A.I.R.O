@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/models/decision_log.dart';
 import '../../decision_journal/providers/decision_journal_provider.dart';
 import '../../decision_journal/decision_journal_page.dart';
-import '../../../Nav/smooth_page_route.dart';
+import 'package:kairo/Nav/smooth_page_route.dart';
 import 'bento_card.dart';
 
 class DecisionRetrospectiveWidget extends ConsumerWidget {
