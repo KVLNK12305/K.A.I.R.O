@@ -11,6 +11,7 @@ import '../../core/services/ai_service.dart';
 import '../../core/constants/ai_prompts.dart';
 import 'providers/kairo_context_provider.dart';
 import '../../core/services/graph_service.dart';
+import '../../core/theme/app_theme.dart';
 import '../../main.dart';
 
 class AiCoachChatPage extends ConsumerStatefulWidget {
@@ -276,6 +277,12 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
   }
 
   // ─── Chat ─────────────────────────────────────────────────────────
+
+  void _requestRealityCheckBriefing() {
+    if (_isLoading) return;
+    _controller.text = "Execute an immediate Executive Reality Briefing. Review my current live dossier (energy bandwidth, stress scan, open peaks, pending decisions, and time audit). Give me an unfiltered 3-part assessment: 1. Current Nervous System & Energy State, 2. Open Vulnerabilities / Unclosed Loops, 3. The single non-negotiable directive I must execute right now.";
+    _sendMessage();
+  }
 
   void _sendMessage() async {
     if ((_controller.text.trim().isEmpty && _attachedFile == null) || _isLoading) return;
@@ -571,6 +578,44 @@ class _AiCoachChatPageState extends ConsumerState<AiCoachChatPage> {
               ),
             )
           : Column(children: [
+              // EXECUTIVE REALITY BRIEFING PROACTIVE BANNER
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161618),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.cyan.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.radar_rounded, size: 16, color: AppTheme.cyan),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        "Instant Reality Check from live system metrics",
+                        style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.cyan,
+                        foregroundColor: Colors.black,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      onPressed: _isLoading ? null : _requestRealityCheckBriefing,
+                      child: const Text(
+                        "BRIEF ME",
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,

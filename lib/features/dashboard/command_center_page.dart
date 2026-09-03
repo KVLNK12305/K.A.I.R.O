@@ -28,6 +28,8 @@ import '../widgets/cards/bento_card.dart';
 import '../widgets/cards/daily_24h_allocation_widget.dart';
 import '../widgets/cards/cost_of_delay_widget.dart';
 import '../widgets/cards/sleep_intelligence_widget.dart';
+import '../widgets/cards/energy_reserve_battery_widget.dart';
+import '../widgets/cards/decision_retrospective_widget.dart';
 
 class CommandCenterPage extends ConsumerStatefulWidget {
   const CommandCenterPage({super.key});
@@ -151,6 +153,14 @@ class _CommandCenterPageState extends ConsumerState<CommandCenterPage> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   const SizedBox(height: 8),
+
+                  // LIVE GLANCEABLE ENERGY & COGNITIVE RESERVE BATTERY
+                  const EnergyReserveBatteryWidget(),
+
+                  const SizedBox(height: 12),
+
+                  // DECISION PREDICTION RETROSPECTIVE (Honesty loop)
+                  const DecisionRetrospectiveWidget(),
 
                   // DAILY 24H AUDIT & GOOGLE CALENDAR CLASSES WIDGET
                   const Daily24hAllocationWidget(),

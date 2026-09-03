@@ -93,7 +93,12 @@ Future<void> main() async {
     SleepLogSchema,
   ], directory: dir.path);
 
-  // 4. Sync home screen widgets
+  // 4. Schedule situational contextual notifications based on live DB state
+  NotificationService().scheduleContextualNotifications(isar).catchError((e) {
+    debugPrint("Notice: Contextual notification scheduling error: $e");
+  });
+
+  // 5. Sync home screen widgets
   HomeWidgetSyncService.syncAllWidgets().catchError((e) {
     debugPrint("Notice: Initial widget sync error: $e");
   });
