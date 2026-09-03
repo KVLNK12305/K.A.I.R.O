@@ -77,7 +77,7 @@ class AiService {
 
   Future<String> _chatDirectlyWithGroq(List<Map<String, dynamic>> messages) async {
     final apiKey = dotenv.env['GROQ_API_KEY'] ?? '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';
-    String model = dotenv.env['MODEL'] ?? 'llama-3.3-70b-versatile';
+    String model = dotenv.env['MODEL'] ?? 'qwen/qwen3.8-27b';
 
     // Auto-detect vision
     for (final msg in messages) {
