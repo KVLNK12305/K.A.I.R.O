@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../core/theme/kairo_design_system.dart';
 
 class FloatingCommandDock extends StatelessWidget {
   final int currentIndex;
@@ -13,41 +14,42 @@ class FloatingCommandDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0A0A0A).withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildNavItem(0, Icons.grid_view_rounded, 'HUB'),
-              const SizedBox(width: 6),
-              _buildNavItem(1, Icons.all_inbox_rounded, 'INBOX'),
-              const SizedBox(width: 6),
-              _buildNavItem(2, Icons.monitor_heart_outlined, 'BODY'),
-              const SizedBox(width: 6),
-              _buildNavItem(3, Icons.show_chart_rounded, 'TRUTH'),
-              const SizedBox(width: 6),
-              _buildNavItem(4, Icons.psychology_outlined, 'COACH'),
-              const SizedBox(width: 6),
-              _buildNavItem(5, Icons.widgets_rounded, 'DECK'),
-            ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(KairoTheme.radiusLg),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0C0C0C).withValues(alpha: 0.90),
+              borderRadius: BorderRadius.circular(KairoTheme.radiusLg),
+              border: Border.all(color: KairoTheme.borderActive, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildNavItem(0, Icons.adjust_rounded, 'TODAY'),
+                const SizedBox(width: 4),
+                _buildNavItem(1, Icons.hourglass_bottom_rounded, 'TIME'),
+                const SizedBox(width: 4),
+                _buildNavItem(2, Icons.account_balance_wallet_outlined, 'MONEY'),
+                const SizedBox(width: 4),
+                _buildNavItem(3, Icons.shield_outlined, 'WORK'),
+                const SizedBox(width: 4),
+                _buildNavItem(4, Icons.explore_outlined, 'REVIEW'),
+              ],
+            ),
           ),
         ),
       ),
@@ -60,36 +62,38 @@ class FloatingCommandDock extends StatelessWidget {
       onTap: () => onItemSelected(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutQuart,
         padding: EdgeInsets.symmetric(
           horizontal: isSelected ? 12 : 8,
-          vertical: 12,
+          vertical: 8,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2A2A2A) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? KairoTheme.surfaceElevated : Colors.transparent,
+          borderRadius: BorderRadius.circular(KairoTheme.radiusMd),
+          border: isSelected ? Border.all(color: KairoTheme.borderActive, width: 1) : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 18,
-              color: isSelected ? Colors.white : Colors.white38,
+              size: 16,
+              color: isSelected ? KairoTheme.textPrimary : KairoTheme.textMuted,
             ),
             if (isSelected) ...[
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: KairoTheme.textPrimary,
                   fontSize: 10,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'monospace',
                   letterSpacing: 1,
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),

@@ -22,6 +22,14 @@ import 'core/models/decision_log.dart';
 import 'core/models/weekly_autopsy.dart';
 import 'core/models/focus_session.dart';
 import 'core/models/sleep_log.dart';
+import 'core/models/commitment.dart';
+import 'core/models/daily_plan.dart';
+import 'core/models/financial_event.dart';
+import 'core/models/account.dart';
+import 'core/models/report.dart';
+import 'core/models/weekly_roulette.dart';
+import 'core/models/core_observation.dart';
+import 'core/models/workout_session.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/streak_service.dart';
 import 'core/services/google_api_service.dart';
@@ -72,8 +80,19 @@ Future<void> main() async {
   // 2. Find a safe, secure folder on your phone to save the database file
   final dir = await getApplicationDocumentsDirectory();
 
-  // 3. Open the database — all schemas including the new ruthless feature collections
+  // 3. Open the database — includes V2 schemas and legacy schemas for clean migration
   isar = await Isar.open([
+    // V2 Core Schemas
+    CommitmentSchema,
+    DailyPlanSchema,
+    FinancialEventSchema,
+    AccountSchema,
+    ReportSchema,
+    WeeklyRouletteSchema,
+    CoreObservationSchema,
+    WorkoutSessionSchema,
+
+    // Legacy schemas preserved for non-breaking migration
     TaskSchema,
     DailyMetricSchema,
     ClothingItemSchema,
@@ -92,6 +111,7 @@ Future<void> main() async {
     FocusSessionSchema,
     SleepLogSchema,
   ], directory: dir.path);
+
 
   // 4. Schedule situational contextual notifications based on live DB state
   NotificationService().scheduleContextualNotifications(isar).catchError((e) {

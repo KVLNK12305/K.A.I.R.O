@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import '../features/dashboard/command_center_page.dart';
-import '../features/dashboard/inbox_page.dart';
-import '../features/psychosomatic/psychosomatic_page.dart';
-import '../features/liars_chart/liars_chart_page.dart';
-import '../features/Coach_chat/ai_coach_chat_page.dart';
-import '../features/widgets/widgets_page.dart';
-import '../features/spirituality/daily_shloka_dialog.dart';
-import '../core/services/gita_service.dart';
-import '../core/theme/app_theme.dart';
-import '../main.dart';
+import '../features/today/today_page.dart';
+import '../features/mirror/mirror_page.dart';
+import '../features/finance/finance_page.dart';
+import '../features/order/order_page.dart';
+import '../features/roulette/roulette_page.dart';
+import '../core/theme/kairo_design_system.dart';
 import 'floating_command_dock.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -23,55 +19,18 @@ class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
   bool _isDockVisible = true;
 
-  final List<Widget> _pages = [
-    const CommandCenterPage(),
-    const InboxPage(),
-    const PsychosomaticPage(),
-    const LiarsChartPage(),
-    const AiCoachChatPage(),
-    const WidgetsPage(),
+  final List<Widget> _pages = const [
+    TodayPage(),
+    MirrorPage(),
+    FinancePage(),
+    OrderPage(),
+    RoulettePage(),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    // Trigger the daily shloka check after the first frame renders
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showDailyShloka();
-    });
-  }
-
-  Future<void> _showDailyShloka() async {
-    final gitaService = GitaService(isar);
-
-    // If cache is empty, start fetching in the background
-    final cacheReady = await gitaService.isCacheReady();
-    if (!cacheReady) {
-      // Start background fetch — don't await it, let it run silently
-      gitaService.fetchAndCacheAllShlokas();
-    }
-
-    // Check if we've already shown the shloka today
-    final alreadyShown = await gitaService.hasShownToday();
-    if (alreadyShown) return;
-
-    // Get today's shloka from the cache
-    final shloka = await gitaService.getDailyShloka();
-    if (shloka == null) return; // Cache not populated yet — will show tomorrow
-
-    // Brief delay so the dashboard loads first
-    await Future.delayed(const Duration(milliseconds: 1500));
-
-    if (!mounted) return;
-
-    await DailyShlokaDialog.show(context, shloka);
-    await gitaService.markShownToday();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: KairoTheme.background,
       body: NotificationListener<UserScrollNotification>(
         onNotification: (notification) {
           if (notification.direction == ScrollDirection.reverse && _isDockVisible) {
