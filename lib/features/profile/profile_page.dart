@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
+import '../../core/theme/kairo_design_system.dart';
+import '../../core/services/wellbeing_service.dart';
+import '../../core/services/backup_export_service.dart';
+import '../../core/providers/wakatime_provider.dart';
+import '../../core/providers/github_provider.dart';
 import '../wardrobe/wardrobe_page.dart';
+import '../workout/workout_page.dart';
 import '../../Nav/smooth_page_route.dart';
-import '../../core/theme/app_theme.dart';
-import '../widgets/cards/bento_card.dart';
-import '../widgets/cards/discipline_heatmap_widget.dart';
+import '../../main.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -24,8 +29,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _identityCtrl = TextEditingController();
   final _rateCtrl = TextEditingController();
   final _ageCtrl = TextEditingController();
+  final _wakatimeKeyCtrl = TextEditingController();
+  final _githubTokenCtrl = TextEditingController();
+  final _groqApiKeyCtrl = TextEditingController();
 
   bool _isInit = false;
+  bool _hasUsagePerm = false;
+  bool _hasDndPerm = false;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -33,6 +44,26 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) setState(() => _now = DateTime.now());
     });
+    _loadTelemetryConfigs();
+  }
+
+  Future<void> _loadTelemetryConfigs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _wakatimeKeyCtrl.text = prefs.getString('wakatime_key') ?? '';
+        _githubTokenCtrl.text = prefs.getString('github_token') ?? '';
+        _groqApiKeyCtrl.text = prefs.getString('groq_api_key') ?? '';
+      });
+    }
+    final usage = await WellbeingService.checkUsagePermission();
+    final dnd = await WellbeingService.checkDndPermission();
+    if (mounted) {
+      setState(() {
+        _hasUsagePerm = usage;
+        _hasDndPerm = dnd;
+      });
+    }
   }
 
   @override
@@ -41,9 +72,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (!_isInit) {
       final profile = ref.read(profileProvider);
       _identityCtrl.text = profile.coreIdentity;
-      _rateCtrl.text = profile.baseHourlyRate > 0
-          ? profile.baseHourlyRate.toStringAsFixed(2)
-          : '';
+      _rateCtrl.text = profile.baseHourlyRate > 0 ? profile.baseHourlyRate.toStringAsFixed(2) : '';
       _ageCtrl.text = profile.age > 0 ? profile.age.toString() : '';
       _isInit = true;
     }
@@ -55,27 +84,105 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     _identityCtrl.dispose();
     _rateCtrl.dispose();
     _ageCtrl.dispose();
+    _wakatimeKeyCtrl.dispose();
+    _githubTokenCtrl.dispose();
+    _groqApiKeyCtrl.dispose();
     super.dispose();
   }
 
   void _saveDemographics() {
-    final rate = double.tryParse(_rateCtrl.text) ?? 0.0;
-    final age = int.tryParse(_ageCtrl.text) ?? 0;
+    final rate = double.tryParse(_rateCtrl.text.trim()) ?? 0.0;
+    final age = int.tryParse(_ageCtrl.text.trim()) ?? 0;
 
-    ref
-        .read(profileProvider.notifier)
-        .updateDemographics(
-          coreIdentity: _identityCtrl.text,
-          baseHourlyRate: rate,
-          age: age,
-        );
+    ref.read(profileProvider.notifier).updateDemographics(
+      coreIdentity: _identityCtrl.text.trim(),
+      baseHourlyRate: rate,
+      age: age,
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Demographics Locked In.'),
-        backgroundColor: Colors.green,
+        content: Text('Operator Demographics Updated.'),
+        backgroundColor: KairoTheme.surfaceElevated,
+        behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _saveWakaTimeKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('wakatime_key', _wakatimeKeyCtrl.text.trim());
+    ref.invalidate(wakatimeProvider);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('WakaTime API Key Saved.'),
+          backgroundColor: KairoTheme.surfaceElevated,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveGitHubToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('github_token', _githubTokenCtrl.text.trim());
+    ref.invalidate(githubPRsProvider);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('GitHub Personal Access Token Saved.'),
+          backgroundColor: KairoTheme.surfaceElevated,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveGroqApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('groq_api_key', _groqApiKeyCtrl.text.trim());
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Groq AI API Key Saved.'),
+          backgroundColor: KairoTheme.surfaceElevated,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportBackup(bool isMarkdown) async {
+    setState(() => _isExporting = true);
+    try {
+      final exportService = BackupExportService(isar);
+      final file = isMarkdown
+          ? await exportService.exportSystemDossierMarkdown()
+          : await exportService.exportFullSystemJson();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Export saved: ${file.path.split('/').last}"),
+            backgroundColor: KairoTheme.surfaceElevated,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Export failed: $e"),
+            backgroundColor: KairoTheme.warning,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
   }
 
   @override
@@ -83,376 +190,430 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final timeString = DateFormat('HH:mm:ss').format(_now);
     final dateString = DateFormat('EEEE, MMMM d, yyyy').format(_now);
     final user = ref.watch(authProvider);
-    final clerkUser = ref.watch(clerkAuthProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: KairoTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: KairoTheme.textPrimary, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
-          "SYSTEM PROFILE",
+          "OPERATOR DOSSIER & CONFIG",
           style: TextStyle(
-            letterSpacing: 2,
+            letterSpacing: 1.5,
             fontSize: 12,
             fontWeight: FontWeight.w900,
-            color: AppTheme.cardWhite,
+            fontFamily: 'monospace',
+            color: KairoTheme.textPrimary,
           ),
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(KairoTheme.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Time & Date Clock Banner (Pastel Blue Bento Card)
-            BentoCard(
-              backgroundColor: AppTheme.pastelBlue,
-              borderColor: Colors.black.withValues(alpha: 0.12),
+            // 1. Digital Clock & Epoch Banner
+            KairoCard(
               child: Center(
                 child: Column(
                   children: [
                     Text(
                       timeString,
                       style: const TextStyle(
-                        fontSize: 44,
+                        fontSize: 40,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 2,
                         fontFamily: 'monospace',
-                        color: AppTheme.inkBlack,
+                        color: KairoTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: KairoTheme.xs),
                     Text(
                       dateString.toUpperCase(),
-                      style: TextStyle(
-                        color: AppTheme.inkBlack.withValues(alpha: 0.7),
-                        letterSpacing: 2,
+                      style: const TextStyle(
+                        color: KairoTheme.textMuted,
+                        letterSpacing: 1.5,
                         fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'monospace',
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: KairoTheme.lg),
 
-            // 2. Identity & Clerk Auth Card (Pastel Pink Bento Card)
-            BentoCard(
-              backgroundColor: AppTheme.pastelPink,
-              borderColor: Colors.black.withValues(alpha: 0.12),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: AppTheme.inkBlack,
-                    backgroundImage: (clerkUser?.photoUrl != null || user?.photoUrl != null)
-                        ? NetworkImage(clerkUser?.photoUrl ?? user!.photoUrl!)
-                        : null,
-                    child: (clerkUser?.photoUrl == null && user?.photoUrl == null)
-                        ? const Icon(
-                            Icons.person_rounded,
-                            size: 26,
-                            color: AppTheme.pastelPink,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                clerkUser?.displayName.toUpperCase() ??
-                                    user?.displayName?.toUpperCase() ??
-                                    "OFFLINE OPERATOR",
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1,
-                                  color: AppTheme.inkBlack,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (clerkUser != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.inkBlack,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  "CLERK VERIFIED",
-                                  style: TextStyle(
-                                    color: AppTheme.pastelAmber,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          clerkUser?.email ??
-                              user?.email ??
-                              "Zero-Config Local Auth • Tap below to connect Cloud",
-                          style: TextStyle(
-                            color: AppTheme.inkBlack.withValues(alpha: 0.7),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            // 2. Operator Identity & Core Demographics
+            KairoSectionHeader(
+              title: "OPERATOR DEMOGRAPHICS",
+              padding: const EdgeInsets.only(bottom: KairoTheme.sm),
             ),
-            const SizedBox(height: 16),
-
-            // 3. Discipline Heatmap Section
-            const DisciplineHeatmapWidget(),
-            const SizedBox(height: 20),
-
-            // 4. Demographics & Hostility Seeding (Pastel Amber Bento Card)
-            BentoCard(
-              backgroundColor: AppTheme.pastelAmber,
-              borderColor: Colors.black.withValues(alpha: 0.12),
+            KairoCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "DEMOGRAPHICS & HOSTILITY SEEDING",
-                        style: TextStyle(
-                          color: AppTheme.inkBlack,
-                          fontSize: 10,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      Icon(Icons.shield_outlined, size: 14, color: AppTheme.inkBlack),
-                    ],
+                  _buildTextInput(
+                    label: "CORE OPERATOR IDENTITY",
+                    hint: "e.g. Systems Architect & Relentless Builder",
+                    controller: _identityCtrl,
                   ),
-                  const SizedBox(height: 14),
-                  _buildInputField(
-                    'CORE IDENTITY',
-                    'e.g. A relentless builder',
-                    _identityCtrl,
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: KairoTheme.md),
                   Row(
                     children: [
                       Expanded(
-                        child: _buildInputField(
-                          'BASE HOURLY RATE (\$)',
-                          'Value (e.g. 150)',
-                          _rateCtrl,
+                        child: _buildTextInput(
+                          label: "BASE HOURLY RATE (\$)",
+                          hint: "e.g. 150",
+                          controller: _rateCtrl,
                           keyboardType: TextInputType.number,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: KairoTheme.md),
                       Expanded(
-                        child: _buildInputField(
-                          'AGE',
-                          'Existential Tracking',
-                          _ageCtrl,
+                        child: _buildTextInput(
+                          label: "AGE (CHRONO)",
+                          hint: "e.g. 24",
+                          controller: _ageCtrl,
                           keyboardType: TextInputType.number,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.coralRed,
-                        foregroundColor: AppTheme.cardWhite,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: _saveDemographics,
-                      child: const Text(
-                        'UPDATE SECURE PROFILE',
-                        style: TextStyle(
-                          color: AppTheme.cardWhite,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: KairoTheme.lg),
+                  KairoButton(
+                    text: "LOCK DEMOGRAPHICS",
+                    isPrimary: true,
+                    onPressed: _saveDemographics,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: KairoTheme.lg),
 
-            // 5. Digital Wardrobe & External Auth Actions
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: AppTheme.pastelGreen,
-                  foregroundColor: AppTheme.inkBlack,
-                  side: BorderSide(color: Colors.black.withValues(alpha: 0.15)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // 3. Telemetry Integrations & Device Access
+            KairoSectionHeader(
+              title: "TELEMETRY & HARDWARE PERMISSIONS",
+              padding: const EdgeInsets.only(bottom: KairoTheme.sm),
+            ),
+            KairoCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Android Screen Time (Usage Access)
+                  _buildPermissionTile(
+                    title: "ANDROID USAGE STATS",
+                    subtitle: "Observed device screen time & displacement tracking",
+                    isGranted: _hasUsagePerm,
+                    onAction: () async {
+                      await WellbeingService.requestUsagePermission();
+                      final perm = await WellbeingService.checkUsagePermission();
+                      setState(() => _hasUsagePerm = perm);
+                    },
                   ),
-                ),
-                onPressed: () => Navigator.push(
-                  context,
-                  SmoothPageRoute(page: const WardrobePage()),
-                ),
-                icon: const Icon(Icons.checkroom_rounded, size: 18, color: AppTheme.inkBlack),
-                label: const Text(
-                  'OPEN DIGITAL WARDROBE',
-                  style: TextStyle(
-                    color: AppTheme.inkBlack,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                    fontSize: 11,
+                  const KairoDivider(margin: EdgeInsets.symmetric(vertical: KairoTheme.md)),
+
+                  // Android DND Policy
+                  _buildPermissionTile(
+                    title: "DO NOT DISTURB ACCESS",
+                    subtitle: "Auto-suppress notification interrupts during Peak focus",
+                    isGranted: _hasDndPerm,
+                    onAction: () async {
+                      await WellbeingService.requestDndPermission();
+                      final perm = await WellbeingService.checkDndPermission();
+                      setState(() => _hasDndPerm = perm);
+                    },
                   ),
-                ),
+                  const KairoDivider(margin: EdgeInsets.symmetric(vertical: KairoTheme.md)),
+
+                  // Google Calendar & Tasks Sync
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "GOOGLE CALENDAR & TASKS",
+                              style: TextStyle(
+                                color: KairoTheme.textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              user != null ? "Connected: ${user.email}" : "Sign in to sync calendar load",
+                              style: const TextStyle(color: KairoTheme.textMuted, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                      KairoButton(
+                        text: user != null ? "DISCONNECT" : "CONNECT",
+                        onPressed: () {
+                          if (user == null) {
+                            ref.read(authProvider.notifier).login();
+                          } else {
+                            ref.read(authProvider.notifier).logout();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const KairoDivider(margin: EdgeInsets.symmetric(vertical: KairoTheme.md)),
+
+                  // WakaTime API Key
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "WAKATIME API KEY",
+                            style: TextStyle(
+                              color: KairoTheme.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          KairoStatus(label: "IDE TELEMETRY", type: KairoStatusType.observed),
+                        ],
+                      ),
+                      const SizedBox(height: KairoTheme.xs),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _wakatimeKeyCtrl,
+                              obscureText: true,
+                              style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+                              decoration: InputDecoration(
+                                hintText: "waka_xxxxxxxx-xxxx...",
+                                hintStyle: const TextStyle(color: KairoTheme.textFaint),
+                                filled: true,
+                                fillColor: KairoTheme.surfaceElevated,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                                  borderSide: const BorderSide(color: KairoTheme.border),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: KairoTheme.sm),
+                          KairoButton(text: "SAVE", onPressed: _saveWakaTimeKey),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const KairoDivider(margin: EdgeInsets.symmetric(vertical: KairoTheme.md)),
+
+                  // GitHub Personal Access Token
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "GITHUB PERSONAL ACCESS TOKEN",
+                            style: TextStyle(
+                              color: KairoTheme.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          KairoStatus(label: "PRS & WORK", type: KairoStatusType.observed),
+                        ],
+                      ),
+                      const SizedBox(height: KairoTheme.xs),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _githubTokenCtrl,
+                              obscureText: true,
+                              style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+                              decoration: InputDecoration(
+                                hintText: "ghp_xxxxxxxxxxxx...",
+                                hintStyle: const TextStyle(color: KairoTheme.textFaint),
+                                filled: true,
+                                fillColor: KairoTheme.surfaceElevated,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                                  borderSide: const BorderSide(color: KairoTheme.border),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: KairoTheme.sm),
+                          KairoButton(text: "SAVE", onPressed: _saveGitHubToken),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const KairoDivider(margin: EdgeInsets.symmetric(vertical: KairoTheme.md)),
+
+                  // Groq AI API Key
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "GROQ AI INFERENCE API KEY",
+                              style: TextStyle(
+                                color: KairoTheme.textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'monospace',
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          KairoStatus(label: "AI AUTOPSY", type: KairoStatusType.recommended),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        "Used for weekly autopsy synthesis, pattern recognition, and root cause diagnosis via fast inference (Llama 3.3 / Qwen 2.5). Zero data sold.",
+                        style: TextStyle(color: KairoTheme.textMuted, fontSize: 10, height: 1.3),
+                      ),
+                      const SizedBox(height: KairoTheme.xs),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _groqApiKeyCtrl,
+                              obscureText: true,
+                              style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+                              decoration: InputDecoration(
+                                hintText: "gsk_xxxxxxxxxxxx...",
+                                hintStyle: const TextStyle(color: KairoTheme.textFaint),
+                                filled: true,
+                                fillColor: KairoTheme.surfaceElevated,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                                  borderSide: const BorderSide(color: KairoTheme.border),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: KairoTheme.sm),
+                          KairoButton(text: "SAVE", onPressed: _saveGroqApiKey),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: KairoTheme.lg),
 
-            // 6. Identity & Auth Service Actions (Clerk / Google)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.cardWhite,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
-              ),
+            // 4. Operator Extensions
+            const KairoSectionHeader(
+              title: "OPERATOR EXTENSIONS",
+              padding: EdgeInsets.only(bottom: KairoTheme.sm),
+            ),
+            KairoCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "CLOUD SERVICES & IDENTITY SYNC",
-                    style: TextStyle(
-                      color: AppTheme.inkBlack,
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                    ),
+                    "Secondary cognitive-load reducers and physical capacity trackers.",
+                    style: TextStyle(color: KairoTheme.textSecondary, fontSize: 12, height: 1.4),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.inkBlack,
-                        foregroundColor: AppTheme.cardWhite,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: KairoTheme.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: KairoButton(
+                          text: "CAPSULE WARDROBE",
+                          icon: Icons.checkroom_outlined,
+                          onPressed: () {
+                            Navigator.push(context, SmoothPageRoute(page: const WardrobePage()));
+                          },
                         ),
                       ),
-                      onPressed: () {
-                        if (clerkUser == null) {
-                          ref.read(clerkAuthProvider.notifier).signInWithGoogle(context);
-                        } else {
-                          ref.read(clerkAuthProvider.notifier).signOut();
-                        }
-                      },
-                      icon: Icon(
-                        clerkUser == null ? Icons.cloud_done_outlined : Icons.logout,
-                        size: 18,
-                        color: AppTheme.cardWhite,
-                      ),
-                      label: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          clerkUser == null
-                              ? "SIGN IN WITH GOOGLE VIA CLERK"
-                              : "DISCONNECT CLERK SESSION",
-                          style: const TextStyle(
-                            color: AppTheme.cardWhite,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
-                          ),
+                      const SizedBox(width: KairoTheme.sm),
+                      Expanded(
+                        child: KairoButton(
+                          text: "WORKOUT TRACKER",
+                          icon: Icons.fitness_center_rounded,
+                          onPressed: () {
+                            Navigator.push(context, SmoothPageRoute(page: const WorkoutPage()));
+                          },
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        if (user == null) {
-                          ref.read(authProvider.notifier).login();
-                        } else {
-                          ref.read(authProvider.notifier).logout();
-                        }
-                      },
-                      icon: Icon(
-                        user == null ? Icons.calendar_month_outlined : Icons.check_circle_outline,
-                        size: 18,
-                        color: user == null ? AppTheme.coralRed : const Color(0xFF2E7D32),
-                      ),
-                      label: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          user == null
-                              ? "CONNECT GOOGLE CALENDAR & TASKS"
-                              : "CONNECTED: ${user.email} (DISCONNECT)",
-                          style: TextStyle(
-                            color: user == null ? AppTheme.coralRed : const Color(0xFF2E7D32),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: user == null
-                              ? AppTheme.coralRed.withValues(alpha: 0.4)
-                              : const Color(0xFF2E7D32).withValues(alpha: 0.4),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 120), // Bottom padding for navigation dock
+            const SizedBox(height: KairoTheme.lg),
+
+            // 4. Sovereign Data Backups & Dossier Export
+            KairoSectionHeader(
+              title: "SOVEREIGN DATA EXPORT",
+              padding: const EdgeInsets.only(bottom: KairoTheme.sm),
+            ),
+            KairoCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "All data lives exclusively in local Isar storage on this device. Export full snapshots in standard open formats anytime.",
+                    style: TextStyle(color: KairoTheme.textSecondary, fontSize: 12, height: 1.4),
+                  ),
+                  const SizedBox(height: KairoTheme.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: KairoButton(
+                          text: _isExporting ? "EXPORTING..." : "EXPORT JSON",
+                          icon: Icons.data_object_rounded,
+                          onPressed: _isExporting ? () {} : () => _exportBackup(false),
+                        ),
+                      ),
+                      const SizedBox(width: KairoTheme.sm),
+                      Expanded(
+                        child: KairoButton(
+                          text: _isExporting ? "EXPORTING..." : "EXPORT MARKDOWN",
+                          icon: Icons.article_outlined,
+                          onPressed: _isExporting ? () {} : () => _exportBackup(true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 60),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInputField(
-    String label,
-    String hint,
-    TextEditingController controller, {
+  Widget _buildTextInput({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
     TextInputType? keyboardType,
   }) {
     return Column(
@@ -461,46 +622,73 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         Text(
           label,
           style: const TextStyle(
-            color: AppTheme.inkBlack,
+            color: KairoTheme.textMuted,
             fontSize: 9,
             letterSpacing: 1.2,
             fontFamily: 'monospace',
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: KairoTheme.xs),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          style: const TextStyle(
-            color: AppTheme.inkBlack,
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-          ),
+          style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(
-              color: AppTheme.inkBlack.withValues(alpha: 0.4),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+            hintStyle: const TextStyle(color: KairoTheme.textFaint),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.6),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            fillColor: KairoTheme.surfaceElevated,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
+              borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+              borderSide: const BorderSide(color: KairoTheme.border),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
+              borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+              borderSide: const BorderSide(color: KairoTheme.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppTheme.inkBlack, width: 1.5),
+              borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+              borderSide: const BorderSide(color: KairoTheme.borderActive),
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildPermissionTile({
+    required String title,
+    required String subtitle,
+    required bool isGranted,
+    required VoidCallback onAction,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: KairoTheme.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(subtitle, style: const TextStyle(color: KairoTheme.textMuted, fontSize: 10)),
+            ],
+          ),
+        ),
+        const SizedBox(width: KairoTheme.sm),
+        isGranted
+            ? const KairoStatus(label: "GRANTED", type: KairoStatusType.success)
+            : KairoButton(text: "GRANT", onPressed: onAction),
       ],
     );
   }

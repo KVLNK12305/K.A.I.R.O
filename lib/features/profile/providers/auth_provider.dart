@@ -1,11 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/services/google_api_service.dart';
-import '../../../core/services/clerk_auth_service.dart';
 
 final googleApiServiceProvider = Provider((ref) => GoogleApiService());
-final clerkAuthServiceProvider = Provider((ref) => ClerkAuthService());
 
 class AuthNotifier extends StateNotifier<GoogleSignInAccount?> {
   final GoogleApiService _apiService;
@@ -37,33 +34,4 @@ final authProvider = StateNotifierProvider<AuthNotifier, GoogleSignInAccount?>((
   return AuthNotifier(ref.read(googleApiServiceProvider));
 });
 
-class ClerkAuthNotifier extends StateNotifier<ClerkUser?> {
-  final ClerkAuthService _clerkService;
-
-  ClerkAuthNotifier(this._clerkService) : super(null) {
-    _init();
-  }
-
-  Future<void> _init() async {
-    final user = await _clerkService.initSilently();
-    if (!mounted) return;
-    state = user;
-  }
-
-  Future<void> signInWithGoogle(BuildContext context) async {
-    final user = await _clerkService.signInWithGoogle(context);
-    if (!mounted) return;
-    state = user;
-  }
-
-  Future<void> signOut() async {
-    await _clerkService.signOut();
-    if (!mounted) return;
-    state = null;
-  }
-}
-
-final clerkAuthProvider = StateNotifierProvider<ClerkAuthNotifier, ClerkUser?>((ref) {
-  return ClerkAuthNotifier(ref.read(clerkAuthServiceProvider));
-});
 
