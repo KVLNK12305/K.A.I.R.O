@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'kairo_context_service.dart';
 import '../models/task.dart';
 import '../models/liar_goal.dart';
@@ -28,7 +26,7 @@ class BackupExportService {
 
     final dataMap = {
       'metadata': {
-        'version': '2.0.0-ASCENSION',
+        'version': '2.0.0-V2',
         'exportedAt': DateTime.now().toIso8601String(),
       },
       'tasks': tasks.map((t) => {
@@ -36,7 +34,6 @@ class BackupExportService {
         'title': t.title,
         'isCompleted': t.isCompleted,
         'isFailed': t.isFailed,
-        'failureEtiology': t.failureEtiology.name,
         'createdAt': t.createdAt.toIso8601String(),
       }).toList(),
       'liarGoals': goals.map((g) => {
@@ -46,13 +43,11 @@ class BackupExportService {
         'lagLabel': g.lagMetricLabel,
         'leadHistory': g.leadHistory,
         'lagHistory': g.lagHistory,
-        'active': g.liarsChartActive,
       }).toList(),
       'scans': scans.map((s) => {
         'id': s.id,
         'date': s.date.toIso8601String(),
         'stressScore': s.stressScore,
-        'contextLabel': s.contextLabel,
       }).toList(),
       'decisions': decisions.map((d) => {
         'id': d.id,
@@ -61,24 +56,22 @@ class BackupExportService {
         'verdict': d.verdict,
         'expectedOutcome': d.expectedOutcome,
       }).toList(),
-      'memoryEdges': edges.map((e) => {
-        'id': e.id,
-        'source': '${e.sourceCollection}:${e.sourceId} (${e.sourceTitle})',
-        'target': '${e.targetCollection}:${e.targetId} (${e.targetTitle})',
-        'relation': e.relationType,
-      }).toList(),
       'focusSessions': focus.map((f) => {
         'id': f.id,
         'title': f.title,
         'durationMinutes': f.actualDurationMinutes,
-        'distractions': f.distractionCount,
         'date': f.startTime.toIso8601String(),
       }).toList(),
       'sleepLogs': sleep.map((s) => {
         'id': s.id,
         'date': s.date.toIso8601String(),
         'hours': s.hoursSlept,
-        'quality': s.qualityRating,
+      }).toList(),
+      'memoryEdges': edges.map((e) => {
+        'id': e.id,
+        'sourceId': e.sourceId,
+        'sourceCollection': e.sourceCollection,
+        'targetCollection': e.targetCollection,
       }).toList(),
     };
 
@@ -89,29 +82,15 @@ class BackupExportService {
     return file;
   }
 
-  Future<File> exportSystemDossierPdf() async {
+  Future<File> exportSystemDossierMarkdown() async {
     final dossier = await KairoContextService(isar).buildSystemicDossier();
-    final promptText = dossier.toFormattedPromptContext();
-
-    final document = PdfDocument();
-    final page = document.pages.add();
-    final font = PdfStandardFont(PdfFontFamily.courier, 10);
-
-    // Draw header & content
-    page.graphics.drawString(
-      "K.A.I.R.O. EXECUTIVE ASCENSION DOSSIER\nGenerated: ${DateTime.now().toLocal()}\n\n$promptText",
-      font,
-      bounds: Rect.fromLTWH(0, 0, page.getClientSize().width, page.getClientSize().height),
-      format: PdfStringFormat(lineSpacing: 4),
-    );
-
-    final bytes = document.saveSync();
-    document.dispose();
+    final text = dossier.toFormattedPromptContext();
 
     final dir = await getApplicationDocumentsDirectory();
-    final filename = 'kairo_executive_dossier_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final filename = 'kairo_dossier_${DateTime.now().millisecondsSinceEpoch}.md';
     final file = File('${dir.path}/$filename');
-    await file.writeAsBytes(bytes);
+    await file.writeAsString(text);
     return file;
   }
 }
+

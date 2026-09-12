@@ -176,4 +176,30 @@ class HomeWidgetSyncService {
       debugPrint('Error syncing DailyAudit: $e');
     }
   }
+
+  /// Syncs V2 Daily Peaks to Home Screen TaskPulse widget
+  static Future<void> syncDailyPeaks({
+    required String peak1,
+    required bool peak1Done,
+    required String peak2,
+    required bool peak2Done,
+  }) async {
+    try {
+      await HomeWidget.saveWidgetData<String>('peak1_title', peak1);
+      await HomeWidget.saveWidgetData<bool>('peak1_completed', peak1Done);
+      await HomeWidget.saveWidgetData<String>('peak2_title', peak2);
+      await HomeWidget.saveWidgetData<bool>('peak2_completed', peak2Done);
+      await HomeWidget.saveWidgetData<int>('task_completed', (peak1Done ? 1 : 0) + (peak2Done ? 1 : 0));
+      await HomeWidget.saveWidgetData<int>('task_total', 2);
+
+      await HomeWidget.updateWidget(
+        name: 'TaskPulseWidgetProvider',
+        androidName: 'TaskPulseWidgetProvider',
+        qualifiedAndroidName: 'com.kairo.app.widgets.TaskPulseWidgetProvider',
+      );
+    } catch (e) {
+      debugPrint('Error syncing Daily Peaks to home widget: $e');
+    }
+  }
 }
+

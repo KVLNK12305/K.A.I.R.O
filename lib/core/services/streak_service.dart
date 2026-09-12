@@ -12,7 +12,6 @@ class StreakService {
   static const String _keyStreakBroken = 'kairo_streak_broken';
 
   String _todayStr() => DateFormat('yyyy-MM-dd').format(DateTime.now());
-  String _yesterdayStr() => DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 1)));
 
   Future<void> initOrCheckStreak() async {
     final prefs = await SharedPreferences.getInstance();
@@ -27,21 +26,15 @@ class StreakService {
       return;
     }
 
-    final completedDays = prefs.getStringList(_keyCompletedDays) ?? [];
-    final today = _todayStr();
-    final yesterday = _yesterdayStr();
-
-    if (startDate != today && !completedDays.contains(yesterday) && !completedDays.contains(today)) {
-      // The chain was broken!
-      await prefs.setBool(_keyStreakBroken, true);
-    }
+    // In V2, absence is never treated as a broken-chain failure
+    await prefs.setBool(_keyStreakBroken, false);
     HomeWidgetSyncService.syncStreakData();
   }
 
   Future<bool> isStreakBroken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyStreakBroken) ?? false;
+    return false;
   }
+
 
   Future<void> resetStreak() async {
     final prefs = await SharedPreferences.getInstance();

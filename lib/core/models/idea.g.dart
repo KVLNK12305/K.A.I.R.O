@@ -27,8 +27,23 @@ const IdeaSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'title': PropertySchema(
+    r'parkingReason': PropertySchema(
       id: 2,
+      name: r'parkingReason',
+      type: IsarType.string,
+    ),
+    r'reviewAfter': PropertySchema(
+      id: 3,
+      name: r'reviewAfter',
+      type: IsarType.dateTime,
+    ),
+    r'status': PropertySchema(
+      id: 4,
+      name: r'status',
+      type: IsarType.string,
+    ),
+    r'title': PropertySchema(
+      id: 5,
       name: r'title',
       type: IsarType.string,
     )
@@ -54,6 +69,8 @@ int _ideaEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.content.length * 3;
+  bytesCount += 3 + object.parkingReason.length * 3;
+  bytesCount += 3 + object.status.length * 3;
   bytesCount += 3 + object.title.length * 3;
   return bytesCount;
 }
@@ -66,7 +83,10 @@ void _ideaSerialize(
 ) {
   writer.writeString(offsets[0], object.content);
   writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeString(offsets[2], object.title);
+  writer.writeString(offsets[2], object.parkingReason);
+  writer.writeDateTime(offsets[3], object.reviewAfter);
+  writer.writeString(offsets[4], object.status);
+  writer.writeString(offsets[5], object.title);
 }
 
 Idea _ideaDeserialize(
@@ -77,7 +97,11 @@ Idea _ideaDeserialize(
 ) {
   final object = Idea(
     content: reader.readString(offsets[0]),
-    title: reader.readString(offsets[2]),
+    parkingReason: reader.readStringOrNull(offsets[2]) ??
+        'No active commitment requires this yet.',
+    reviewAfter: reader.readDateTimeOrNull(offsets[3]),
+    status: reader.readStringOrNull(offsets[4]) ?? 'Parked',
+    title: reader.readString(offsets[5]),
   );
   object.createdAt = reader.readDateTime(offsets[1]);
   object.id = id;
@@ -96,6 +120,13 @@ P _ideaDeserializeProp<P>(
     case 1:
       return (reader.readDateTime(offset)) as P;
     case 2:
+      return (reader.readStringOrNull(offset) ??
+          'No active commitment requires this yet.') as P;
+    case 3:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 4:
+      return (reader.readStringOrNull(offset) ?? 'Parked') as P;
+    case 5:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -423,6 +454,333 @@ extension IdeaQueryFilter on QueryBuilder<Idea, Idea, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'parkingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'parkingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'parkingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'parkingReason',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'parkingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'parkingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'parkingReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'parkingReason',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'parkingReason',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> parkingReasonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'parkingReason',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> reviewAfterIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'reviewAfter',
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> reviewAfterIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'reviewAfter',
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> reviewAfterEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reviewAfter',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> reviewAfterGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'reviewAfter',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> reviewAfterLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'reviewAfter',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> reviewAfterBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'reviewAfter',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'status',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusContains(String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusMatches(String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'status',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterFilterCondition> statusIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'status',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<Idea, Idea, QAfterFilterCondition> titleEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -581,6 +939,42 @@ extension IdeaQuerySortBy on QueryBuilder<Idea, Idea, QSortBy> {
     });
   }
 
+  QueryBuilder<Idea, Idea, QAfterSortBy> sortByParkingReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parkingReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> sortByParkingReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parkingReason', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> sortByReviewAfter() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reviewAfter', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> sortByReviewAfterDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reviewAfter', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> sortByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> sortByStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.desc);
+    });
+  }
+
   QueryBuilder<Idea, Idea, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -631,6 +1025,42 @@ extension IdeaQuerySortThenBy on QueryBuilder<Idea, Idea, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Idea, Idea, QAfterSortBy> thenByParkingReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parkingReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> thenByParkingReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parkingReason', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> thenByReviewAfter() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reviewAfter', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> thenByReviewAfterDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reviewAfter', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> thenByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QAfterSortBy> thenByStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.desc);
+    });
+  }
+
   QueryBuilder<Idea, Idea, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -658,6 +1088,27 @@ extension IdeaQueryWhereDistinct on QueryBuilder<Idea, Idea, QDistinct> {
     });
   }
 
+  QueryBuilder<Idea, Idea, QDistinct> distinctByParkingReason(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'parkingReason',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QDistinct> distinctByReviewAfter() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'reviewAfter');
+    });
+  }
+
+  QueryBuilder<Idea, Idea, QDistinct> distinctByStatus(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'status', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Idea, Idea, QDistinct> distinctByTitle(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -682,6 +1133,24 @@ extension IdeaQueryProperty on QueryBuilder<Idea, Idea, QQueryProperty> {
   QueryBuilder<Idea, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<Idea, String, QQueryOperations> parkingReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'parkingReason');
+    });
+  }
+
+  QueryBuilder<Idea, DateTime?, QQueryOperations> reviewAfterProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'reviewAfter');
+    });
+  }
+
+  QueryBuilder<Idea, String, QQueryOperations> statusProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'status');
     });
   }
 
