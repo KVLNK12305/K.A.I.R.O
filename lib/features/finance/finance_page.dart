@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +7,7 @@ import '../../core/theme/kairo_design_system.dart';
 import '../../core/models/financial_event.dart';
 import '../../core/models/account.dart';
 import '../../core/services/financial_ledger_service.dart';
+import '../../core/services/finance/android_notification_adapter.dart';
 
 class FinancePage extends ConsumerStatefulWidget {
   const FinancePage({super.key});
@@ -13,8 +16,291 @@ class FinancePage extends ConsumerStatefulWidget {
   ConsumerState<FinancePage> createState() => _FinancePageState();
 }
 
-class _FinancePageState extends ConsumerState<FinancePage> {
+class _FinancePageState extends ConsumerState<FinancePage> with WidgetsBindingObserver {
   final NumberFormat _currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+  bool _isObserverGranted = false;
+  bool _isCheckingObserver = true;
+  bool _isImporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    AndroidNotificationAdapter.onPaymentNotificationCaptured = () {
+      if (mounted) _refreshAllProviders();
+    };
+    _checkObserverStatus();
+    _syncPendingNotifications();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    AndroidNotificationAdapter.onPaymentNotificationCaptured = null;
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkObserverStatus();
+      _syncPendingNotifications();
+    }
+  }
+
+  Future<void> _syncPendingNotifications() async {
+    try {
+      await ref.read(financialLedgerServiceProvider).syncAndroidNotifications();
+      _refreshAllProviders();
+    } catch (_) {}
+  }
+
+  Future<void> _checkObserverStatus() async {
+    if (!Platform.isAndroid) {
+      if (mounted) setState(() => _isCheckingObserver = false);
+      return;
+    }
+    final granted = await AndroidNotificationAdapter.isPermissionGranted();
+    if (mounted) {
+      setState(() {
+        _isObserverGranted = granted;
+        _isCheckingObserver = false;
+      });
+    }
+  }
+
+  Future<void> _showObserverDiagnosticsModal(BuildContext context) async {
+    final diags = await AndroidNotificationAdapter.getDiagnostics();
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: KairoTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(KairoTheme.radiusLg)),
+        side: BorderSide(color: KairoTheme.border, width: 1),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            final timeStr = diags.lastConnectedTime != null
+                ? DateFormat('MMM d, HH:mm:ss').format(diags.lastConnectedTime!)
+                : "NEVER";
+
+            return Padding(
+              padding: const EdgeInsets.all(KairoTheme.xl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "NOTIFICATION OBSERVER TELEMETRY",
+                        style: TextStyle(
+                          color: KairoTheme.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'monospace',
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: KairoTheme.textMuted, size: 18),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: KairoTheme.md),
+
+                  // Diagnostic Metric Badges
+                  Container(
+                    padding: const EdgeInsets.all(KairoTheme.md),
+                    decoration: BoxDecoration(
+                      color: KairoTheme.surfaceElevated,
+                      borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                      border: Border.all(color: KairoTheme.border),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildDiagRow("STATUS", diags.stateName, diags.isConnected ? KairoTheme.success : KairoTheme.warning),
+                        const SizedBox(height: 6),
+                        _buildDiagRow("CONNECTED", diags.isConnected ? "YES" : "NO", diags.isConnected ? KairoTheme.success : KairoTheme.warning),
+                        const SizedBox(height: 6),
+                        _buildDiagRow("LAST CONNECTED", timeStr, KairoTheme.textSecondary),
+                        const SizedBox(height: 6),
+                        _buildDiagRow("NOTIFICATIONS OBSERVED", "${diags.totalObserved}", KairoTheme.textPrimary),
+                        const SizedBox(height: 6),
+                        _buildDiagRow("PAYMENTS DETECTED", "${diags.totalFinancial}", KairoTheme.observed),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: KairoTheme.md),
+
+                  // Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: KairoButton(
+                          text: "REBIND LISTENER",
+                          icon: Icons.refresh,
+                          isPrimary: false,
+                          onPressed: () async {
+                            final success = await AndroidNotificationAdapter.rebindService();
+                            await _checkObserverStatus();
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    success ? "Requested Android to rebind notification listener." : "Rebind request sent.",
+                                    style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: KairoTheme.sm),
+                      Expanded(
+                        child: KairoButton(
+                          text: "OPEN SETTINGS",
+                          icon: Icons.settings,
+                          isPrimary: true,
+                          onPressed: () async {
+                            await AndroidNotificationAdapter.requestPermission();
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: KairoTheme.md),
+
+                  const Text(
+                    "RECENT EVENT AUDIT LOG",
+                    style: TextStyle(
+                      color: KairoTheme.textMuted,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Recent Event Logs
+                  SizedBox(
+                    height: 180,
+                    child: diags.recentLogs.isEmpty
+                        ? const Center(
+                            child: Text(
+                              "No notifications observed yet by the listener service.",
+                              style: TextStyle(color: KairoTheme.textFaint, fontSize: 11),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: diags.recentLogs.length,
+                            reverse: true,
+                            itemBuilder: (c, idx) {
+                              final log = diags.recentLogs[idx];
+                              final time = log['timestamp'] is int
+                                  ? DateFormat('HH:mm:ss').format(DateTime.fromMillisecondsSinceEpoch(log['timestamp'] as int))
+                                  : "";
+                              final pkg = (log['packageName'] ?? '').toString();
+                              final eventType = (log['eventType'] ?? '').toString();
+                              final kw = (log['matchedKeyword'] ?? '').toString();
+                              final isFin = log['isFinancial'] == true;
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Text(
+                                  "[$time] $pkg • $eventType ${isFin ? '[$kw]' : ''}",
+                                  style: TextStyle(
+                                    color: isFin ? KairoTheme.success : KairoTheme.textMuted,
+                                    fontSize: 9,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDiagRow(String label, String value, Color valueColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: KairoTheme.textMuted, fontSize: 9, fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+        Text(value, style: TextStyle(color: valueColor, fontSize: 10, fontFamily: 'monospace', fontWeight: FontWeight.w900)),
+      ],
+    );
+  }
+
+  Future<void> _handleCsvImport() async {
+    setState(() => _isImporting = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv', 'txt'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final content = await file.readAsString();
+        final ledger = ref.read(financialLedgerServiceProvider);
+        final ingestion = await ledger.ingestCsv(content);
+
+        _refreshAllProviders();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: KairoTheme.surfaceElevated,
+              content: Text(
+                "CSV IMPORT: ${ingestion.resolvedEventsCreated} events recorded, ${ingestion.duplicatesSkipped} duplicates skipped, ${ingestion.ignoredOrFailed} ignored.",
+                style: const TextStyle(color: KairoTheme.textPrimary, fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: KairoTheme.surfaceElevated,
+            content: Text(
+              "CSV Import failed: $e",
+              style: const TextStyle(color: KairoTheme.warning, fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  void _refreshAllProviders() {
+    final selectedMonth = ref.read(selectedMonthProvider);
+    ref.invalidate(monthlySummaryProvider(selectedMonth));
+    ref.invalidate(availableMonthsProvider);
+    ref.invalidate(financialOverviewProvider);
+    ref.invalidate(recentFinancialEventsProvider);
+  }
 
   void _showLogTransactionModal(BuildContext context, List<Account> accounts) {
     final amountCtrl = TextEditingController();
@@ -148,8 +434,8 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                       "SOURCE ACCOUNT",
                       style: TextStyle(color: KairoTheme.textMuted, fontSize: 9, fontWeight: FontWeight.w800, fontFamily: 'monospace'),
                     ),
-                    const SizedBox(height: KairoTheme.xs),
-                    DropdownButtonFormField<int>(
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<int?>(
                       initialValue: selectedSourceId,
                       dropdownColor: KairoTheme.surfaceElevated,
                       style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13, fontFamily: 'monospace'),
@@ -166,17 +452,60 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                           borderSide: const BorderSide(color: KairoTheme.border),
                         ),
                       ),
-                      items: accounts.map((a) {
-                        return DropdownMenuItem<int>(
+                      items: [
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text("Unlinked / External", style: TextStyle(color: KairoTheme.textMuted)),
+                        ),
+                        ...accounts.map((a) => DropdownMenuItem<int?>(
                           value: a.id,
                           child: Text("${a.name} (${_currencyFormat.format(a.currentBalance)})"),
-                        );
-                      }).toList(),
+                        )),
+                      ],
                       onChanged: (val) => setModalState(() => selectedSourceId = val),
                     ),
                     const SizedBox(height: KairoTheme.md),
 
-                    // Category & Merchant
+                    // Destination Account (for transfer / investment)
+                    if (selectedType == FinancialEventType.transfer || selectedType == FinancialEventType.investment) ...[
+                      const Text(
+                        "DESTINATION ACCOUNT",
+                        style: TextStyle(color: KairoTheme.textMuted, fontSize: 9, fontWeight: FontWeight.w800, fontFamily: 'monospace'),
+                      ),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<int?>(
+                        initialValue: selectedDestId,
+                        dropdownColor: KairoTheme.surfaceElevated,
+                        style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13, fontFamily: 'monospace'),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: KairoTheme.surfaceElevated,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                            borderSide: const BorderSide(color: KairoTheme.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                            borderSide: const BorderSide(color: KairoTheme.border),
+                          ),
+                        ),
+                        items: [
+                          const DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text("External Destination", style: TextStyle(color: KairoTheme.textMuted)),
+                          ),
+                          ...accounts.map((a) => DropdownMenuItem<int?>(
+                            value: a.id,
+                            child: Text(a.name),
+                          )),
+                        ],
+                        onChanged: (val) => setModalState(() => selectedDestId = val),
+                      ),
+                      const SizedBox(height: KairoTheme.md),
+                    ],
+
+                    // Category & Merchant Row
                     Row(
                       children: [
                         Expanded(
@@ -186,6 +515,8 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                             decoration: InputDecoration(
                               labelText: "CATEGORY",
                               labelStyle: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace'),
+                              hintText: "General",
+                              hintStyle: const TextStyle(color: KairoTheme.textFaint, fontSize: 12),
                               filled: true,
                               fillColor: KairoTheme.surfaceElevated,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -268,8 +599,7 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                           notes: notesCtrl.text.trim(),
                         );
 
-                        ref.invalidate(financialOverviewProvider);
-                        ref.invalidate(recentFinancialEventsProvider);
+                        _refreshAllProviders();
                         if (ctx.mounted) Navigator.pop(ctx);
                       },
                     ),
@@ -285,9 +615,12 @@ class _FinancePageState extends ConsumerState<FinancePage> {
 
   @override
   Widget build(BuildContext context) {
-    final overviewAsync = ref.watch(financialOverviewProvider);
-    final recentAsync = ref.watch(recentFinancialEventsProvider);
+    final selectedMonth = ref.watch(selectedMonthProvider);
+    final summaryAsync = ref.watch(monthlySummaryProvider(selectedMonth));
+    final availableMonthsAsync = ref.watch(availableMonthsProvider);
     final accountsFuture = ref.watch(financialLedgerServiceProvider).getAccounts();
+
+    final monthDisplayStr = DateFormat('MMMM yyyy').format(selectedMonth).toUpperCase();
 
     return Scaffold(
       backgroundColor: KairoTheme.background,
@@ -296,8 +629,9 @@ class _FinancePageState extends ConsumerState<FinancePage> {
           color: KairoTheme.textPrimary,
           backgroundColor: KairoTheme.surfaceElevated,
           onRefresh: () async {
-            ref.invalidate(financialOverviewProvider);
-            ref.invalidate(recentFinancialEventsProvider);
+            await ref.read(financialLedgerServiceProvider).syncAndroidNotifications();
+            await _checkObserverStatus();
+            _refreshAllProviders();
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -314,7 +648,7 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "CAPITAL LEDGER",
+                              "CANONICAL LEDGER",
                               style: TextStyle(
                                 color: KairoTheme.textMuted,
                                 fontSize: 10,
@@ -326,7 +660,7 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              "BURN & LIQUIDITY",
+                              "FINANCIAL HISTORY",
                               style: TextStyle(
                                 color: KairoTheme.textPrimary,
                                 fontSize: 18,
@@ -343,7 +677,7 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                         future: accountsFuture,
                         builder: (ctx, snap) {
                           return KairoButton(
-                            text: "LOG EVENT",
+                            text: "LOG",
                             icon: Icons.add,
                             isPrimary: true,
                             onPressed: () => _showLogTransactionModal(context, snap.data ?? []),
@@ -355,26 +689,128 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                 ),
               ),
 
-              // Overview Burn & Liquidity Card
+              // Ingestion Control Strip (Observer status & CSV import)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: KairoTheme.xl, vertical: KairoTheme.xs),
+                  child: Row(
+                    children: [
+                      // Observer Status Badge
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            if (Platform.isAndroid && !_isObserverGranted) {
+                              await AndroidNotificationAdapter.requestPermission();
+                              await _checkObserverStatus();
+                            } else {
+                              await _showObserverDiagnosticsModal(context);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: KairoTheme.surfaceElevated,
+                              borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                              border: Border.all(
+                                color: _isObserverGranted ? KairoTheme.success.withValues(alpha: 0.3) : KairoTheme.border,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _isCheckingObserver
+                                        ? KairoTheme.textMuted
+                                        : (_isObserverGranted ? KairoTheme.success : KairoTheme.warning),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _isCheckingObserver
+                                        ? "CHECKING OBSERVER..."
+                                        : (_isObserverGranted
+                                            ? "OBSERVER ACTIVE"
+                                            : "OBSERVER OFF (ENABLE)"),
+                                    style: TextStyle(
+                                      color: _isObserverGranted ? KairoTheme.success : KairoTheme.textMuted,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'monospace',
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: KairoTheme.sm),
+
+                      // CSV Import Button
+                      KairoButton(
+                        text: _isImporting ? "IMPORTING..." : "IMPORT CSV",
+                        icon: Icons.upload_file,
+                        isPrimary: false,
+                        onPressed: _isImporting ? null : _handleCsvImport,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Month Selector Strip
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: KairoTheme.xl, vertical: KairoTheme.sm),
-                  child: overviewAsync.when(
-                    data: (data) => _buildBurnOverviewCard(data),
+                  child: availableMonthsAsync.when(
+                    data: (months) => _buildMonthSelector(selectedMonth, months),
+                    loading: () => const SizedBox(height: 38),
+                    error: (_, _) => const SizedBox(height: 38),
+                  ),
+                ),
+              ),
+
+              // Monthly Hero Summary Card
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: KairoTheme.xl, vertical: KairoTheme.xs),
+                  child: summaryAsync.when(
+                    data: (summary) => _buildMonthlySummaryCard(summary, monthDisplayStr),
                     loading: () => const KairoCard(
                       child: SizedBox(
-                        height: 120,
+                        height: 140,
                         child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: KairoTheme.textMuted)),
                       ),
                     ),
                     error: (e, _) => KairoCard(
-                      child: Text("Finance overview error: $e", style: const TextStyle(color: KairoTheme.warning)),
+                      child: Text("Ledger error: $e", style: const TextStyle(color: KairoTheme.warning)),
                     ),
                   ),
                 ),
               ),
 
-              // On-Device Accounts List
+              // Spending Categories Breakdown (if data exists)
+              SliverToBoxAdapter(
+                child: summaryAsync.when(
+                  data: (summary) {
+                    if (!summary.hasData || summary.categoryBreakdown.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return _buildCategoryBreakdownSection(summary);
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
+                ),
+              ),
+
+              // On-Device Accounts Horizontal Strip
               SliverToBoxAdapter(
                 child: FutureBuilder<List<Account>>(
                   future: accountsFuture,
@@ -384,7 +820,7 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const KairoSectionHeader(title: "ON-DEVICE ACCOUNTS"),
+                        const KairoSectionHeader(title: "ON-DEVICE LIQUIDITY"),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: KairoTheme.xl),
                           child: SingleChildScrollView(
@@ -434,32 +870,32 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                 ),
               ),
 
-              // Transactions Stream Section Header
-              const SliverToBoxAdapter(
-                child: KairoSectionHeader(title: "RECENT TRANSACTIONS"),
+              // Transactions Stream Header
+              SliverToBoxAdapter(
+                child: KairoSectionHeader(title: "$monthDisplayStr TRANSACTIONS"),
               ),
 
-              // Transactions List
-              recentAsync.when(
-                data: (events) {
-                  if (events.isEmpty) {
+              // Transactions List for Selected Month
+              summaryAsync.when(
+                data: (summary) {
+                  if (!summary.hasData || summary.events.isEmpty) {
                     return const SliverToBoxAdapter(
                       child: KairoEmptyState(
-                        title: "NO TRANSACTIONS RECORDED",
-                        description: "Log expenses, investments, or transfers above to track capital outflow.",
+                        title: "NO TRANSACTIONS OBSERVED",
+                        description: "Import bank statement CSV or connect notification listener to record transactions.",
                       ),
                     );
                   }
                   return SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final event = events[index];
+                        final event = summary.events[index];
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: KairoTheme.xl, vertical: 3),
                           child: _buildTransactionTile(event),
                         );
                       },
-                      childCount: events.length,
+                      childCount: summary.events.length,
                     ),
                   );
                 },
@@ -474,7 +910,7 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                 error: (err, _) => SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(KairoTheme.xl),
-                    child: Text("Error loading transactions: $err", style: const TextStyle(color: KairoTheme.warning)),
+                    child: Text("Error: $err", style: const TextStyle(color: KairoTheme.warning)),
                   ),
                 ),
               ),
@@ -488,93 +924,165 @@ class _FinancePageState extends ConsumerState<FinancePage> {
     );
   }
 
-  Widget _buildBurnOverviewCard(FinancialOverview overview) {
-    return KairoCard(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "TODAY'S OUTFLOW",
-                      style: TextStyle(
-                        color: KairoTheme.textMuted,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        fontFamily: 'monospace',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _currencyFormat.format(overview.todayBurn),
-                        style: const TextStyle(
-                          color: KairoTheme.warning,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ),
-                  ],
+  Widget _buildMonthSelector(DateTime current, List<DateTime> months) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: months.map((m) {
+          final isSelected = m.year == current.year && m.month == current.month;
+          final label = DateFormat('MMM yyyy').format(m).toUpperCase();
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: ChoiceChip(
+              label: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
+                  color: isSelected ? Colors.black : KairoTheme.textMuted,
                 ),
               ),
-              Container(width: 1, height: 38, color: KairoTheme.border),
-              const SizedBox(width: KairoTheme.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "CURRENT WEEK BURN",
-                      style: TextStyle(
-                        color: KairoTheme.textMuted,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        fontFamily: 'monospace',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              selected: isSelected,
+              selectedColor: KairoTheme.textPrimary,
+              backgroundColor: KairoTheme.surfaceElevated,
+              side: BorderSide(color: isSelected ? KairoTheme.textPrimary : KairoTheme.border),
+              onSelected: (_) {
+                ref.read(selectedMonthProvider.notifier).state = m;
+              },
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildMonthlySummaryCard(MonthlyFinancialSummary summary, String monthStr) {
+    if (!summary.hasData) {
+      return KairoCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  monthStr,
+                  style: const TextStyle(
+                    color: KairoTheme.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: KairoTheme.surfaceElevated,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: KairoTheme.border),
+                  ),
+                  child: const Text(
+                    "NO DATA OBSERVED",
+                    style: TextStyle(
+                      color: KairoTheme.textMuted,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'monospace',
                     ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _currencyFormat.format(overview.weekBurn),
-                        style: const TextStyle(
-                          color: KairoTheme.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "NO TRANSACTIONS RECORDED",
+              style: TextStyle(
+                color: KairoTheme.textMuted,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'monospace',
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "No transactions observed for this month. K.A.I.R.O. does not fabricate zero totals when records are absent.",
+              style: TextStyle(color: KairoTheme.textFaint, fontSize: 11),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return KairoCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                monthStr,
+                style: const TextStyle(
+                  color: KairoTheme.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              Text(
+                "${summary.transactionCount} EVENTS",
+                style: const TextStyle(
+                  color: KairoTheme.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'monospace',
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+
+          // Primary Metric: Actual Outflow (Consumption Spending Only)
+          const Text(
+            "ACTUAL CONSUMPTION SPENDING",
+            style: TextStyle(
+              color: KairoTheme.textMuted,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'monospace',
+            ),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _currencyFormat.format(summary.totalOutflow),
+              style: const TextStyle(
+                color: KairoTheme.warning,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
           const KairoDivider(verticalMargin: KairoTheme.md),
+
+          // Secondary Financial Pillars (Inflow, Capital Allocation, Transfers)
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("MONTH OUTFLOW", style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace'), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const Text("TOTAL INFLOW", style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace'), maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 2),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
-                      child: Text(_currencyFormat.format(overview.monthBurn), style: const TextStyle(color: KairoTheme.textSecondary, fontSize: 13, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+                      child: Text(_currencyFormat.format(summary.totalInflow), style: const TextStyle(color: KairoTheme.success, fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
                     ),
                   ],
                 ),
@@ -583,12 +1091,12 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("INVESTED (MTD)", style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace'), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const Text("CAPITAL (INVESTED)", style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace'), maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 2),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
-                      child: Text(_currencyFormat.format(overview.totalInvestedMonth), style: const TextStyle(color: KairoTheme.success, fontSize: 13, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+                      child: Text(_currencyFormat.format(summary.totalCapitalAllocation), style: const TextStyle(color: KairoTheme.observed, fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
                     ),
                   ],
                 ),
@@ -597,12 +1105,12 @@ class _FinancePageState extends ConsumerState<FinancePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("LIQUID CASH", style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace'), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const Text("TRANSFERS", style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace'), maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 2),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
-                      child: Text(_currencyFormat.format(overview.totalCashBalance), style: const TextStyle(color: KairoTheme.observed, fontSize: 13, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+                      child: Text(_currencyFormat.format(summary.totalTransfers), style: const TextStyle(color: KairoTheme.inferred, fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
                     ),
                   ],
                 ),
@@ -614,23 +1122,92 @@ class _FinancePageState extends ConsumerState<FinancePage> {
     );
   }
 
+  Widget _buildCategoryBreakdownSection(MonthlyFinancialSummary summary) {
+    final sortedCategories = summary.categoryBreakdown.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final totalOutflow = summary.totalOutflow > 0 ? summary.totalOutflow : 1.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const KairoSectionHeader(title: "SPENDING BY CATEGORY"),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: KairoTheme.xl),
+          child: KairoCard(
+            padding: const EdgeInsets.all(KairoTheme.md),
+            child: Column(
+              children: sortedCategories.take(5).map((entry) {
+                final percent = ((entry.value / totalOutflow) * 100).clamp(0, 100).toInt();
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            entry.key.toUpperCase(),
+                            style: const TextStyle(
+                              color: KairoTheme.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          Text(
+                            "${_currencyFormat.format(entry.value)} ($percent%)",
+                            style: const TextStyle(
+                              color: KairoTheme.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: entry.value / totalOutflow,
+                          minHeight: 4,
+                          backgroundColor: KairoTheme.surfaceElevated,
+                          color: KairoTheme.recommended,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTransactionTile(FinancialEvent event) {
     Color typeColor = KairoTheme.warning;
     String sign = "-";
     IconData icon = Icons.arrow_outward;
+    String typeLabel = "OUTFLOW";
 
     if (event.type == FinancialEventType.inflow) {
       typeColor = KairoTheme.success;
       sign = "+";
       icon = Icons.arrow_downward;
+      typeLabel = "INFLOW";
     } else if (event.type == FinancialEventType.investment) {
       typeColor = KairoTheme.observed;
       sign = "";
       icon = Icons.trending_up;
+      typeLabel = "CAPITAL";
     } else if (event.type == FinancialEventType.transfer) {
       typeColor = KairoTheme.inferred;
       sign = "";
       icon = Icons.swap_horiz;
+      typeLabel = "TRANSFER";
     }
 
     final dateStr = DateFormat('MMM d, h:mm a').format(event.timestamp);
@@ -652,17 +1229,42 @@ class _FinancePageState extends ConsumerState<FinancePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  event.merchantOrEntity.isNotEmpty ? event.merchantOrEntity : event.category,
-                  style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w800),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        event.merchantOrEntity.isNotEmpty ? event.merchantOrEntity : event.category,
+                        style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w800),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (event.source != 'manual')
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: KairoTheme.surfaceElevated,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Text(
+                          event.source.toUpperCase(),
+                          style: const TextStyle(color: KairoTheme.textMuted, fontSize: 7, fontFamily: 'monospace'),
+                        ),
+                      ),
+                  ],
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  "${event.category.toUpperCase()} • $dateStr",
+                  "$typeLabel • ${event.category.toUpperCase()} • $dateStr",
                   style: const TextStyle(color: KairoTheme.textMuted, fontSize: 9, fontFamily: 'monospace'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             "$sign${_currencyFormat.format(event.amount)}",
             style: TextStyle(
