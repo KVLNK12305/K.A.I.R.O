@@ -32,5 +32,11 @@ class FinancialEvent {
   String notes = '';
   bool isRecurring = false;
 
+  int? rawTransactionId;
+  @Index()
+  String? referenceNumber;
+  String source = 'manual';
+  String confidence = 'observed';
+
   FinancialEvent();
 }

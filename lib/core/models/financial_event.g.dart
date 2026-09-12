@@ -27,43 +27,63 @@ const FinancialEventSchema = CollectionSchema(
       name: r'category',
       type: IsarType.string,
     ),
-    r'currency': PropertySchema(
+    r'confidence': PropertySchema(
       id: 2,
+      name: r'confidence',
+      type: IsarType.string,
+    ),
+    r'currency': PropertySchema(
+      id: 3,
       name: r'currency',
       type: IsarType.string,
     ),
     r'destinationAccountId': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'destinationAccountId',
       type: IsarType.long,
     ),
     r'isRecurring': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isRecurring',
       type: IsarType.bool,
     ),
     r'merchantOrEntity': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'merchantOrEntity',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'notes',
       type: IsarType.string,
     ),
+    r'rawTransactionId': PropertySchema(
+      id: 8,
+      name: r'rawTransactionId',
+      type: IsarType.long,
+    ),
+    r'referenceNumber': PropertySchema(
+      id: 9,
+      name: r'referenceNumber',
+      type: IsarType.string,
+    ),
+    r'source': PropertySchema(
+      id: 10,
+      name: r'source',
+      type: IsarType.string,
+    ),
     r'sourceAccountId': PropertySchema(
-      id: 7,
+      id: 11,
       name: r'sourceAccountId',
       type: IsarType.long,
     ),
     r'timestamp': PropertySchema(
-      id: 8,
+      id: 12,
       name: r'timestamp',
       type: IsarType.dateTime,
     ),
     r'type': PropertySchema(
-      id: 9,
+      id: 13,
       name: r'type',
       type: IsarType.byte,
       enumMap: _FinancialEventtypeEnumValueMap,
@@ -100,6 +120,19 @@ const FinancialEventSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'referenceNumber': IndexSchema(
+      id: -1505394869653403563,
+      name: r'referenceNumber',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'referenceNumber',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {},
@@ -117,9 +150,17 @@ int _financialEventEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.category.length * 3;
+  bytesCount += 3 + object.confidence.length * 3;
   bytesCount += 3 + object.currency.length * 3;
   bytesCount += 3 + object.merchantOrEntity.length * 3;
   bytesCount += 3 + object.notes.length * 3;
+  {
+    final value = object.referenceNumber;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.source.length * 3;
   return bytesCount;
 }
 
@@ -131,14 +172,18 @@ void _financialEventSerialize(
 ) {
   writer.writeDouble(offsets[0], object.amount);
   writer.writeString(offsets[1], object.category);
-  writer.writeString(offsets[2], object.currency);
-  writer.writeLong(offsets[3], object.destinationAccountId);
-  writer.writeBool(offsets[4], object.isRecurring);
-  writer.writeString(offsets[5], object.merchantOrEntity);
-  writer.writeString(offsets[6], object.notes);
-  writer.writeLong(offsets[7], object.sourceAccountId);
-  writer.writeDateTime(offsets[8], object.timestamp);
-  writer.writeByte(offsets[9], object.type.index);
+  writer.writeString(offsets[2], object.confidence);
+  writer.writeString(offsets[3], object.currency);
+  writer.writeLong(offsets[4], object.destinationAccountId);
+  writer.writeBool(offsets[5], object.isRecurring);
+  writer.writeString(offsets[6], object.merchantOrEntity);
+  writer.writeString(offsets[7], object.notes);
+  writer.writeLong(offsets[8], object.rawTransactionId);
+  writer.writeString(offsets[9], object.referenceNumber);
+  writer.writeString(offsets[10], object.source);
+  writer.writeLong(offsets[11], object.sourceAccountId);
+  writer.writeDateTime(offsets[12], object.timestamp);
+  writer.writeByte(offsets[13], object.type.index);
 }
 
 FinancialEvent _financialEventDeserialize(
@@ -150,16 +195,20 @@ FinancialEvent _financialEventDeserialize(
   final object = FinancialEvent();
   object.amount = reader.readDouble(offsets[0]);
   object.category = reader.readString(offsets[1]);
-  object.currency = reader.readString(offsets[2]);
-  object.destinationAccountId = reader.readLongOrNull(offsets[3]);
+  object.confidence = reader.readString(offsets[2]);
+  object.currency = reader.readString(offsets[3]);
+  object.destinationAccountId = reader.readLongOrNull(offsets[4]);
   object.id = id;
-  object.isRecurring = reader.readBool(offsets[4]);
-  object.merchantOrEntity = reader.readString(offsets[5]);
-  object.notes = reader.readString(offsets[6]);
-  object.sourceAccountId = reader.readLongOrNull(offsets[7]);
-  object.timestamp = reader.readDateTime(offsets[8]);
+  object.isRecurring = reader.readBool(offsets[5]);
+  object.merchantOrEntity = reader.readString(offsets[6]);
+  object.notes = reader.readString(offsets[7]);
+  object.rawTransactionId = reader.readLongOrNull(offsets[8]);
+  object.referenceNumber = reader.readStringOrNull(offsets[9]);
+  object.source = reader.readString(offsets[10]);
+  object.sourceAccountId = reader.readLongOrNull(offsets[11]);
+  object.timestamp = reader.readDateTime(offsets[12]);
   object.type =
-      _FinancialEventtypeValueEnumMap[reader.readByteOrNull(offsets[9])] ??
+      _FinancialEventtypeValueEnumMap[reader.readByteOrNull(offsets[13])] ??
           FinancialEventType.inflow;
   return object;
 }
@@ -178,18 +227,26 @@ P _financialEventDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readLongOrNull(offset)) as P;
-    case 4:
-      return (reader.readBool(offset)) as P;
-    case 5:
       return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readLongOrNull(offset)) as P;
+    case 5:
+      return (reader.readBool(offset)) as P;
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 9:
+      return (reader.readStringOrNull(offset)) as P;
+    case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
+      return (reader.readLongOrNull(offset)) as P;
+    case 12:
+      return (reader.readDateTime(offset)) as P;
+    case 13:
       return (_FinancialEventtypeValueEnumMap[reader.readByteOrNull(offset)] ??
           FinancialEventType.inflow) as P;
     default:
@@ -448,6 +505,73 @@ extension FinancialEventQueryWhere
       }
     });
   }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterWhereClause>
+      referenceNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'referenceNumber',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterWhereClause>
+      referenceNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'referenceNumber',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterWhereClause>
+      referenceNumberEqualTo(String? referenceNumber) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'referenceNumber',
+        value: [referenceNumber],
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterWhereClause>
+      referenceNumberNotEqualTo(String? referenceNumber) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'referenceNumber',
+              lower: [],
+              upper: [referenceNumber],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'referenceNumber',
+              lower: [referenceNumber],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'referenceNumber',
+              lower: [referenceNumber],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'referenceNumber',
+              lower: [],
+              upper: [referenceNumber],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
 extension FinancialEventQueryFilter
@@ -649,6 +773,142 @@ extension FinancialEventQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'category',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'confidence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'confidence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'confidence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'confidence',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'confidence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'confidence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'confidence',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'confidence',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'confidence',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      confidenceIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'confidence',
         value: '',
       ));
     });
@@ -1202,6 +1462,370 @@ extension FinancialEventQueryFilter
   }
 
   QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      rawTransactionIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'rawTransactionId',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      rawTransactionIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'rawTransactionId',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      rawTransactionIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'rawTransactionId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      rawTransactionIdGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'rawTransactionId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      rawTransactionIdLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'rawTransactionId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      rawTransactionIdBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'rawTransactionId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'referenceNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'referenceNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'referenceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'referenceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'referenceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'referenceNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'referenceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'referenceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'referenceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'referenceNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'referenceNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      referenceNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'referenceNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'source',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'source',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'source',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'source',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'source',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'source',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'source',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'source',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'source',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
+      sourceIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'source',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterFilterCondition>
       sourceAccountIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1422,6 +2046,20 @@ extension FinancialEventQuerySortBy
     });
   }
 
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      sortByConfidence() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'confidence', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      sortByConfidenceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'confidence', Sort.desc);
+    });
+  }
+
   QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy> sortByCurrency() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currency', Sort.asc);
@@ -1490,6 +2128,47 @@ extension FinancialEventQuerySortBy
   }
 
   QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      sortByRawTransactionId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'rawTransactionId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      sortByRawTransactionIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'rawTransactionId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      sortByReferenceNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'referenceNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      sortByReferenceNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'referenceNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy> sortBySource() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'source', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      sortBySourceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'source', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
       sortBySourceAccountId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sourceAccountId', Sort.asc);
@@ -1554,6 +2233,20 @@ extension FinancialEventQuerySortThenBy
       thenByCategoryDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'category', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      thenByConfidence() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'confidence', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      thenByConfidenceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'confidence', Sort.desc);
     });
   }
 
@@ -1637,6 +2330,47 @@ extension FinancialEventQuerySortThenBy
   }
 
   QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      thenByRawTransactionId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'rawTransactionId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      thenByRawTransactionIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'rawTransactionId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      thenByReferenceNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'referenceNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      thenByReferenceNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'referenceNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy> thenBySource() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'source', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
+      thenBySourceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'source', Sort.desc);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QAfterSortBy>
       thenBySourceAccountId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sourceAccountId', Sort.asc);
@@ -1691,6 +2425,13 @@ extension FinancialEventQueryWhereDistinct
     });
   }
 
+  QueryBuilder<FinancialEvent, FinancialEvent, QDistinct> distinctByConfidence(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'confidence', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<FinancialEvent, FinancialEvent, QDistinct> distinctByCurrency(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1724,6 +2465,28 @@ extension FinancialEventQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'notes', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QDistinct>
+      distinctByRawTransactionId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'rawTransactionId');
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QDistinct>
+      distinctByReferenceNumber({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'referenceNumber',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<FinancialEvent, FinancialEvent, QDistinct> distinctBySource(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'source', caseSensitive: caseSensitive);
     });
   }
 
@@ -1768,6 +2531,12 @@ extension FinancialEventQueryProperty
     });
   }
 
+  QueryBuilder<FinancialEvent, String, QQueryOperations> confidenceProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'confidence');
+    });
+  }
+
   QueryBuilder<FinancialEvent, String, QQueryOperations> currencyProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'currency');
@@ -1797,6 +2566,26 @@ extension FinancialEventQueryProperty
   QueryBuilder<FinancialEvent, String, QQueryOperations> notesProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'notes');
+    });
+  }
+
+  QueryBuilder<FinancialEvent, int?, QQueryOperations>
+      rawTransactionIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'rawTransactionId');
+    });
+  }
+
+  QueryBuilder<FinancialEvent, String?, QQueryOperations>
+      referenceNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'referenceNumber');
+    });
+  }
+
+  QueryBuilder<FinancialEvent, String, QQueryOperations> sourceProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'source');
     });
   }
 
