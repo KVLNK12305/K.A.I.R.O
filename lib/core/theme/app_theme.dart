@@ -6,6 +6,9 @@ class AppTheme {
   static const Color pastelBlue = Color(0xFF8DC0FA);
   static const Color pastelGreen = Color(0xFFC7F3C6);
   static const Color pastelAmber = Color(0xFFFAD168);
+  static const Color pastelMint = Color(0xFFC7F3C6);
+  static const Color pastelRose = Color(0xFFF7C5DD);
+  static const Color pastelPurple = Color(0xFFD1C4E9);
   static const Color coralRed = Color(0xFFFF5232);
   static const Color inkBlack = Color(0xFF0F0F12);
   static const Color cardWhite = Color(0xFFFFFFFF);
@@ -69,7 +72,7 @@ class AppTheme {
         backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.3),
+        shadowColor: Colors.black.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)), // Fully rounded pill
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
         textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 0.5),
