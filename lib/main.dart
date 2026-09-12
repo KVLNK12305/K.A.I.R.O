@@ -25,6 +25,7 @@ import 'core/models/sleep_log.dart';
 import 'core/models/commitment.dart';
 import 'core/models/daily_plan.dart';
 import 'core/models/financial_event.dart';
+import 'core/models/raw_financial_transaction.dart';
 import 'core/models/account.dart';
 import 'core/models/report.dart';
 import 'core/models/weekly_roulette.dart';
@@ -37,6 +38,7 @@ import 'core/services/alarm_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/services/home_widget_sync_service.dart';
+import 'core/services/financial_ledger_service.dart';
 
 // Create a global instance of Isar so any screen can access it easily
 late Isar isar;
@@ -86,6 +88,7 @@ Future<void> main() async {
     CommitmentSchema,
     DailyPlanSchema,
     FinancialEventSchema,
+    RawFinancialTransactionSchema,
     AccountSchema,
     ReportSchema,
     WeeklyRouletteSchema,
@@ -121,6 +124,15 @@ Future<void> main() async {
   // 5. Sync home screen widgets
   HomeWidgetSyncService.syncAllWidgets().catchError((e) {
     debugPrint("Notice: Initial widget sync error: $e");
+  });
+
+  // 6. Ingest pending payment notifications and migrate legacy kairo_node files if present
+  final financeLedger = FinancialLedgerService(isar);
+  financeLedger.migrateKairoNodeIfPresent().then((_) {}).catchError((e) {
+    debugPrint("Notice: Kairo node expense migration warning: $e");
+  });
+  financeLedger.syncAndroidNotifications().then((_) {}).catchError((e) {
+    debugPrint("Notice: Android payment notification sync warning: $e");
   });
 
   runApp(const ProviderScope(child: MyApp()));
