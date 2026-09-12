@@ -1,454 +1,407 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'providers/wardrobe_provider.dart';
-import '../../core/theme/app_theme.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../core/theme/kairo_design_system.dart';
+import '../../core/models/clothing_item.dart';
+import '../../main.dart';
+import 'package:isar/isar.dart';
 
-class WardrobePage extends ConsumerStatefulWidget {
+class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
 
   @override
-  ConsumerState<WardrobePage> createState() => _WardrobePageState();
+  State<WardrobePage> createState() => _WardrobePageState();
 }
 
-class _WardrobePageState extends ConsumerState<WardrobePage> {
-  String _selectedCategory = "ALL";
+class _WardrobePageState extends State<WardrobePage> {
+  String _selectedCategory = 'All';
+  final List<String> _categories = ['All', 'Tops', 'Bottoms', 'Footwear', 'Outerwear'];
 
-  void _showAddDialog(BuildContext context, WidgetRef ref) {
+  void _showAddClothingModal(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final colorCtrl = TextEditingController();
+    String category = 'Tops';
+    String? imagePath;
+    final picker = ImagePicker();
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: KairoTheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-        side: BorderSide(color: AppTheme.border, width: 1),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(KairoTheme.radiusLg)),
+        side: BorderSide(color: KairoTheme.border),
       ),
-      builder: (ctx) => const _AddItemForm(),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: KairoTheme.xl,
+                right: KairoTheme.xl,
+                top: KairoTheme.xl,
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + KairoTheme.xl,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "INGEST CLOTHING ARMOR",
+                          style: TextStyle(
+                            color: KairoTheme.textPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'monospace',
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: KairoTheme.textMuted, size: 18),
+                          onPressed: () => Navigator.pop(ctx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: KairoTheme.md),
+                    TextField(
+                      controller: nameCtrl,
+                      style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: "ITEM NAME",
+                        labelStyle: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace'),
+                        hintText: "e.g. Heavyweight Obsidian Tee",
+                        hintStyle: const TextStyle(color: KairoTheme.textFaint),
+                        filled: true,
+                        fillColor: KairoTheme.surfaceElevated,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                      ),
+                    ),
+                    const SizedBox(height: KairoTheme.sm),
+                    TextField(
+                      controller: colorCtrl,
+                      style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: "PRIMARY COLOR",
+                        labelStyle: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace'),
+                        hintText: "e.g. Matte Black",
+                        hintStyle: const TextStyle(color: KairoTheme.textFaint),
+                        filled: true,
+                        fillColor: KairoTheme.surfaceElevated,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                      ),
+                    ),
+                    const SizedBox(height: KairoTheme.md),
+                    const Text("CATEGORY", style: TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                    const SizedBox(height: KairoTheme.xs),
+                    Wrap(
+                      spacing: 8,
+                      children: ['Tops', 'Bottoms', 'Footwear', 'Outerwear'].map((cat) {
+                        final isSel = category == cat;
+                        return ChoiceChip(
+                          label: Text(cat.toUpperCase(), style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: isSel ? Colors.black : KairoTheme.textSecondary)),
+                          selected: isSel,
+                          selectedColor: Colors.white,
+                          backgroundColor: KairoTheme.surfaceElevated,
+                          side: BorderSide(color: isSel ? Colors.white : KairoTheme.border),
+                          onSelected: (_) => setModalState(() => category = cat),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: KairoTheme.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final picked = await picker.pickImage(source: ImageSource.camera);
+                              if (picked != null) setModalState(() => imagePath = picked.path);
+                            },
+                            icon: const Icon(Icons.camera_alt_outlined, size: 16, color: Colors.white),
+                            label: const Text("CAMERA", style: TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'monospace')),
+                            style: OutlinedButton.styleFrom(side: const BorderSide(color: KairoTheme.border)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final picked = await picker.pickImage(source: ImageSource.gallery);
+                              if (picked != null) setModalState(() => imagePath = picked.path);
+                            },
+                            icon: const Icon(Icons.photo_library_outlined, size: 16, color: Colors.white),
+                            label: const Text("GALLERY", style: TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'monospace')),
+                            style: OutlinedButton.styleFrom(side: const BorderSide(color: KairoTheme.border)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (imagePath != null) ...[
+                      const SizedBox(height: 8),
+                      Text("Attached photo: ${imagePath!.split('/').last}", style: const TextStyle(color: KairoTheme.success, fontSize: 10, fontFamily: 'monospace')),
+                    ],
+                    const SizedBox(height: KairoTheme.lg),
+                    KairoButton(
+                      text: "COMMIT ARMOR TO WARDROBE",
+                      isPrimary: true,
+                      isFullWidth: true,
+                      onPressed: () async {
+                        if (nameCtrl.text.trim().isEmpty) return;
+                        final item = ClothingItem(
+                          name: nameCtrl.text.trim(),
+                          category: category,
+                          primaryColor: colorCtrl.text.trim().isEmpty ? 'Black' : colorCtrl.text.trim(),
+                          localImagePath: imagePath ?? '',
+                        );
+
+                        await isar.writeTxn(() async {
+                          await isar.clothingItems.put(item);
+                        });
+
+                        setState(() {});
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showOutfitRecommendation(BuildContext context, List<ClothingItem> items) {
+    final tops = items.where((i) => i.category == 'Tops').toList();
+    final bottoms = items.where((i) => i.category == 'Bottoms').toList();
+    final shoes = items.where((i) => i.category == 'Footwear').toList();
+
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
+
+    final top = tops.isNotEmpty ? tops[dayOfYear % tops.length] : null;
+    final bottom = bottoms.isNotEmpty ? bottoms[dayOfYear % bottoms.length] : null;
+    final shoe = shoes.isNotEmpty ? shoes[dayOfYear % shoes.length] : null;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: KairoTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(KairoTheme.radiusLg)),
+        side: BorderSide(color: KairoTheme.border),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(KairoTheme.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("ZERO-DECISION OUTFIT", style: TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+                  IconButton(icon: const Icon(Icons.close, color: KairoTheme.textMuted, size: 18), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text("Eliminate morning cognitive drain: Pre-selected daily capsule combination.", style: TextStyle(color: KairoTheme.textSecondary, fontSize: 11)),
+              const SizedBox(height: KairoTheme.lg),
+              _buildOutfitSlot("TOP", top?.name ?? "Any standard top", top?.primaryColor ?? "Black"),
+              const SizedBox(height: KairoTheme.sm),
+              _buildOutfitSlot("BOTTOM", bottom?.name ?? "Any standard trousers", bottom?.primaryColor ?? "Dark Slate"),
+              const SizedBox(height: KairoTheme.sm),
+              _buildOutfitSlot("FOOTWEAR", shoe?.name ?? "Standard daily trainers", shoe?.primaryColor ?? "Monochrome"),
+              const SizedBox(height: KairoTheme.xl),
+              KairoButton(text: "ACCEPT COMBINATION", isPrimary: true, isFullWidth: true, onPressed: () => Navigator.pop(ctx)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOutfitSlot(String slot, String name, String color) {
+    return Container(
+      padding: const EdgeInsets.all(KairoTheme.md),
+      decoration: BoxDecoration(
+        color: KairoTheme.surfaceElevated,
+        borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+        border: Border.all(color: KairoTheme.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(slot, style: const TextStyle(color: KairoTheme.recommended, fontSize: 10, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              "$name ($color)",
+              textAlign: TextAlign.end,
+              style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w800),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(wardrobeProvider);
-    final filteredItems = _selectedCategory == "ALL"
-        ? state.items
-        : state.items.where((item) => item.category.toUpperCase() == _selectedCategory.toUpperCase()).toList();
-
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: KairoTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Column(
-          children: [
-            Text(
-              "AESTHETIC ARMOR",
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 10,
-                letterSpacing: 2,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              "DIGITAL WARDROBE",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: KairoTheme.textPrimary, size: 18),
+          onPressed: () => Navigator.pop(context),
         ),
-      ),
-      body: Column(
-        children: [
-          // ─── CATEGORY FILTER PILLS ─────────────────────────────────────
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
-              children: ["ALL", "TOP", "BOTTOM", "SHOES", "OUTERWEAR"].map((cat) {
-                final isSelected = _selectedCategory == cat;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedCategory = cat),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.accent : Colors.black,
-                        border: Border.all(
-                          color: isSelected ? AppTheme.accent : AppTheme.border,
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        cat,
-                        style: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white70,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+        title: const Text(
+          "CAPSULE WARDROBE // ZERO DECISION",
+          style: TextStyle(
+            letterSpacing: 1.5,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'monospace',
+            color: KairoTheme.textPrimary,
           ),
-          const Divider(color: AppTheme.border, height: 1),
-          // ─── INVENTORY GRID ────────────────────────────────────────────
-          Expanded(
-            child: filteredItems.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.checkroom, size: 48, color: Colors.white24),
-                        const SizedBox(height: 16),
-                        Text(
-                          _selectedCategory == "ALL"
-                              ? "NO ARMOR cataloged yet.\nTap + to ingest garments."
-                              : "NO GARMENTS IN CATEGORY: $_selectedCategory",
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white38,
-                            fontSize: 12,
-                            letterSpacing: 1.5,
-                            height: 1.6,
+        ),
+        centerTitle: true,
+      ),
+      body: FutureBuilder<List<ClothingItem>>(
+        future: isar.clothingItems.where().sortByAddedAtDesc().findAll(),
+        builder: (ctx, snap) {
+          final allItems = snap.data ?? [];
+          final filteredItems = _selectedCategory == 'All'
+              ? allItems
+              : allItems.where((i) => i.category == _selectedCategory).toList();
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(KairoTheme.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Zero Decision Daily Outfit Button
+                KairoButton(
+                  text: "GENERATE ZERO-DECISION OUTFIT",
+                  icon: Icons.checkroom_rounded,
+                  isPrimary: true,
+                  isFullWidth: true,
+                  onPressed: () => _showOutfitRecommendation(context, allItems),
+                ),
+                const SizedBox(height: KairoTheme.md),
+
+                // 2. Ingest Item Action
+                KairoButton(
+                  text: "+ INGEST ARMOR ITEM",
+                  icon: Icons.add,
+                  isPrimary: false,
+                  isFullWidth: true,
+                  onPressed: () => _showAddClothingModal(context),
+                ),
+                const SizedBox(height: KairoTheme.lg),
+
+                // 3. Category Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _categories.map((cat) {
+                      final isSel = _selectedCategory == cat;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(
+                            cat.toUpperCase(),
+                            style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: isSel ? Colors.black : KairoTheme.textSecondary),
                           ),
+                          selected: isSel,
+                          selectedColor: Colors.white,
+                          backgroundColor: KairoTheme.surfaceElevated,
+                          side: BorderSide(color: isSel ? Colors.white : KairoTheme.border),
+                          onSelected: (_) => setState(() => _selectedCategory = cat),
                         ),
-                      ],
-                    ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: KairoTheme.lg),
+
+                // 4. Catalog Grid
+                if (filteredItems.isEmpty)
+                  const KairoEmptyState(
+                    title: "NO ITEMS IN CATALOG",
+                    description: "Catalog your essential clothing pieces to eliminate daily outfit decision fatigue.",
                   )
-                : GridView.builder(
-                    padding: const EdgeInsets.all(20),
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.75,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 0.9,
                     ),
                     itemCount: filteredItems.length,
-                    itemBuilder: (context, i) {
-                      final item = filteredItems[i];
-                      final file = File(item.localImagePath);
-                      final fileExists = file.existsSync();
+                    itemBuilder: (ctx, index) {
+                      final item = filteredItems[index];
+                      final hasImg = item.localImagePath.isNotEmpty && File(item.localImagePath).existsSync();
 
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: AppTheme.border, width: 1),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          fit: StackFit.expand,
+                      return KairoCard(
+                        padding: const EdgeInsets.all(KairoTheme.sm),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (fileExists)
-                              Image.file(file, fit: BoxFit.cover)
-                            else
-                              Container(
-                                color: Colors.black26,
-                                child: const Center(
-                                  child: Icon(Icons.broken_image, color: Colors.white24, size: 32),
-                                ),
-                              ),
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
+                            Expanded(
                               child: Container(
-                                padding: const EdgeInsets.all(10),
+                                width: double.infinity,
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.85),
-                                  border: const Border(top: BorderSide(color: AppTheme.border, width: 1)),
+                                  color: KairoTheme.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            item.category.toUpperCase(),
-                                            style: const TextStyle(
-                                              color: AppTheme.accent,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 1,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(
-                                            item.primaryColor.toUpperCase(),
-                                            style: const TextStyle(
-                                              color: Colors.white54,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      item.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                child: hasImg
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                                        child: Image.file(File(item.localImagePath), fit: BoxFit.cover),
+                                      )
+                                    : const Icon(Icons.checkroom_rounded, color: KairoTheme.textFaint, size: 36),
                               ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              item.name,
+                              style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.w800),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(item.category.toUpperCase(), style: const TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontFamily: 'monospace')),
+                                Text(item.primaryColor, style: const TextStyle(color: KairoTheme.textSecondary, fontSize: 8)),
+                              ],
                             ),
                           ],
                         ),
                       );
                     },
                   ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppTheme.accent,
-        foregroundColor: Colors.black,
-        onPressed: () => _showAddDialog(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text(
-          "CATALOG ITEM",
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 11),
-        ),
-      ),
-    );
-  }
-}
-
-class _AddItemForm extends ConsumerStatefulWidget {
-  const _AddItemForm();
-
-  @override
-  ConsumerState<_AddItemForm> createState() => _AddItemFormState();
-}
-
-class _AddItemFormState extends ConsumerState<_AddItemForm> {
-  final _nameCtrl = TextEditingController();
-  final _colorCtrl = TextEditingController();
-  String _category = "Top";
-  ImageSource _source = ImageSource.camera;
-
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _colorCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final categories = ["Top", "Bottom", "Shoes", "Outerwear"];
-
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        left: 24,
-        right: 24,
-        top: 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "CATALOG NEW ARMOR",
-                style: TextStyle(
-                  color: Colors.white,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 14,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white54, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _nameCtrl,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: InputDecoration(
-              labelText: "ITEM NAME",
-              hintText: "e.g. Heavyweight Black Hoodie",
-              labelStyle: const TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1),
-              hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
-              enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppTheme.border)),
-              focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppTheme.accent)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ],
             ),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _colorCtrl,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: InputDecoration(
-              labelText: "PRIMARY COLOR",
-              hintText: "e.g. Obsidian Black",
-              labelStyle: const TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1),
-              hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
-              enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppTheme.border)),
-              focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppTheme.accent)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            ),
-          ),
-          const SizedBox(height: 18),
-          const Text(
-            "CATEGORY",
-            style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: categories.map((cat) {
-              final isSel = _category == cat;
-              return InkWell(
-                onTap: () => setState(() => _category = cat),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isSel ? Colors.white : Colors.black,
-                    border: Border.all(color: isSel ? Colors.white : AppTheme.border),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    cat.toUpperCase(),
-                    style: TextStyle(
-                      color: isSel ? Colors.black : Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          const Text(
-            "IMAGE SOURCE",
-            style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => setState(() => _source = ImageSource.camera),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _source == ImageSource.camera ? AppTheme.accent.withValues(alpha: 0.15) : Colors.black,
-                      border: Border.all(color: _source == ImageSource.camera ? AppTheme.accent : AppTheme.border),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.camera_alt, size: 16, color: _source == ImageSource.camera ? AppTheme.accent : Colors.white54),
-                        const SizedBox(width: 8),
-                        Text(
-                          "CAMERA",
-                          style: TextStyle(
-                            color: _source == ImageSource.camera ? AppTheme.accent : Colors.white70,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: InkWell(
-                  onTap: () => setState(() => _source = ImageSource.gallery),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _source == ImageSource.gallery ? AppTheme.accent.withValues(alpha: 0.15) : Colors.black,
-                      border: Border.all(color: _source == ImageSource.gallery ? AppTheme.accent : AppTheme.border),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.photo_library, size: 16, color: _source == ImageSource.gallery ? AppTheme.accent : Colors.white54),
-                        const SizedBox(width: 8),
-                        Text(
-                          "GALLERY",
-                          style: TextStyle(
-                            color: _source == ImageSource.gallery ? AppTheme.accent : Colors.white70,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accent,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-            ),
-            onPressed: () {
-              if (_nameCtrl.text.trim().isEmpty || _colorCtrl.text.trim().isEmpty) return;
-              ref.read(wardrobeProvider.notifier).addClothingItem(
-                source: _source,
-                name: _nameCtrl.text.trim(),
-                category: _category,
-                primaryColor: _colorCtrl.text.trim(),
-              );
-              Navigator.pop(context);
-            },
-            child: const Text(
-              "CAPTURE & INGEST ITEM",
-              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
+          );
+        },
       ),
     );
   }
