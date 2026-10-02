@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import '../models/sleep_log.dart';
 import '../models/psychosomatic_scan.dart';
 import '../../main.dart';
+import 'home_widget_sync_service.dart';
 
 class SleepCorrelationReport {
   final double averageHoursSlept;
@@ -54,6 +55,9 @@ class SleepIntelligenceService {
     await isar.writeTxn(() async {
       await isar.sleepLogs.put(existing!);
     });
+
+    HomeWidgetSyncService.syncDailyAuditData();
+    HomeWidgetSyncService.syncEnergyArcData();
   }
 
   Future<SleepCorrelationReport> calculateCorrelation() async {

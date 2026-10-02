@@ -41,23 +41,19 @@ class TaskPulseWidgetProvider : AppWidgetProvider() {
                 val views = RemoteViews(context.packageName, R.layout.widget_task_pulse)
 
                 val completed = widgetData.getIntSafe("task_completed", 0)
-                val total = widgetData.getIntSafe("task_total", 0)
-
-                val p1Done = widgetData.getIntSafe("peak1_done", 0)
-                val p1Total = widgetData.getIntSafe("peak1_total", 0)
-                val p2Done = widgetData.getIntSafe("peak2_done", 0)
-                val p2Total = widgetData.getIntSafe("peak2_total", 0)
-                val recDone = widgetData.getIntSafe("recovery_done", 0)
-                val recTotal = widgetData.getIntSafe("recovery_total", 0)
-
+                val total = widgetData.getIntSafe("task_total", 2)
                 val pct = if (total > 0) (completed * 100 / total) else 0
 
-                views.setTextViewText(R.id.tv_task_summary, "$completed OF $total")
+                val p1Display = widgetData.getString("peak1_display", null) ?: "P1: NOT SET"
+                val p2Display = widgetData.getString("peak2_display", null) ?: "P2: NOT SET"
+                val focusDisplay = widgetData.getString("recovery_display", null) ?: "0.0h FOCUS"
+
+                views.setTextViewText(R.id.tv_task_summary, "$completed OF $total PEAKS")
                 views.setProgressBar(R.id.pb_task_progress, 100, pct, false)
 
-                views.setTextViewText(R.id.tv_peak1_count, "P1: $p1Done/$p1Total")
-                views.setTextViewText(R.id.tv_peak2_count, "P2: $p2Done/$p2Total")
-                views.setTextViewText(R.id.tv_recovery_count, "REC: $recDone/$recTotal")
+                views.setTextViewText(R.id.tv_peak1_count, p1Display)
+                views.setTextViewText(R.id.tv_peak2_count, p2Display)
+                views.setTextViewText(R.id.tv_recovery_count, focusDisplay)
 
                 // Tap to open app
                 val intent = Intent(context, MainActivity::class.java)

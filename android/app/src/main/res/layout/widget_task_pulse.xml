@@ -34,7 +34,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
-            android:text="0 OF 0"
+            android:text="0 OF 2 PEAKS"
             android:textColor="@color/widget_text_primary"
             android:textSize="12sp"
             android:textStyle="bold" />
@@ -53,55 +53,67 @@
         android:max="100"
         android:progress="0" />
 
-    <!-- Submetrics Breakdown -->
+    <!-- Submetrics Breakdown (Responsive 3-Column) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
             android:id="@+id/tv_peak1_count"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
             android:fontFamily="sans-serif-medium"
-            android:text="P1: 0/0"
+            android:text="P1: NOT SET"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textColor="@color/vibrant_orange"
             android:textSize="10sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:text="•"
             android:textColor="#444455"
             android:textSize="9sp" />
 
         <TextView
             android:id="@+id/tv_peak2_count"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
             android:fontFamily="sans-serif-medium"
-            android:text="P2: 0/0"
+            android:text="P2: NOT SET"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textColor="@color/vibrant_cyan"
             android:textSize="10sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:text="•"
             android:textColor="#444455"
             android:textSize="9sp" />
 
         <TextView
             android:id="@+id/tv_recovery_count"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
             android:fontFamily="sans-serif-medium"
-            android:text="REC: 0/0"
+            android:text="0.0h FOCUS"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textColor="@color/vibrant_purple"
             android:textSize="10sp" />
     </LinearLayout>

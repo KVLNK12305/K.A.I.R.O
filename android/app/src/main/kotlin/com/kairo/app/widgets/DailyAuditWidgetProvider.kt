@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.RemoteViews
@@ -13,6 +14,21 @@ import com.kairo.app.R
 import es.antonborri.home_widget.HomeWidgetPlugin
 
 class DailyAuditWidgetProvider : AppWidgetProvider() {
+
+    private fun SharedPreferences.getIntSafe(key: String, defaultValue: Int): Int {
+        return try {
+            getInt(key, defaultValue)
+        } catch (e: ClassCastException) {
+            try {
+                getLong(key, defaultValue.toLong()).toInt()
+            } catch (e2: Exception) {
+                defaultValue
+            }
+        } catch (e: Exception) {
+            defaultValue
+        }
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -24,9 +40,14 @@ class DailyAuditWidgetProvider : AppWidgetProvider() {
             try {
                 val views = RemoteViews(context.packageName, R.layout.widget_daily_audit)
 
-                val sleep = widgetData.getString("audit_sleep", "7.5h") ?: "7.5h"
-                val work = widgetData.getString("audit_work", "4.0h") ?: "4.0h"
-                val free = widgetData.getString("audit_free", "12.5h") ?: "12.5h"
+                val sleep = widgetData.getString("audit_sleep", "7.0h") ?: "7.0h"
+                val work = widgetData.getString("audit_work", "0.0h") ?: "0.0h"
+                val free = widgetData.getString("audit_free", "17.0h") ?: "17.0h"
+                val pct = widgetData.getIntSafe("audit_allocated_pct", 29)
+                val budgetLabel = widgetData.getString("audit_budget_label", "24H BUDGET") ?: "24H BUDGET"
+
+                views.setTextViewText(R.id.tv_audit_budget_label, budgetLabel)
+                views.setProgressBar(R.id.pb_audit_progress, 100, pct, false)
 
                 views.setTextViewText(R.id.tv_audit_sleep, "Sleep: $sleep")
                 views.setTextViewText(R.id.tv_audit_work, "Work: $work")

@@ -5,6 +5,7 @@ import 'package:isar/isar.dart';
 import '../../main.dart';
 import '../models/focus_session.dart';
 import 'wellbeing_service.dart';
+import 'home_widget_sync_service.dart';
 
 class FocusTimerState {
   final FocusSession? activeSession;
@@ -124,6 +125,11 @@ class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBi
     await isar.writeTxn(() async {
       await isar.focusSessions.put(session);
     });
+
+    // Update native Android home screen widgets
+    HomeWidgetSyncService.syncTaskPulseData();
+    HomeWidgetSyncService.syncDailyAuditData();
+    HomeWidgetSyncService.syncEnergyArcData();
 
     WellbeingService.setFocusMode(false);
     state = const FocusTimerState();
