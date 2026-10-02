@@ -47,17 +47,17 @@ class ParsedPaymentInfo {
 
 class PaymentNotificationParser {
   static final RegExp _amountRegex = RegExp(
-    r'(?:(?:Rs\.?|INR|₹)\s*([\d,]+(?:\.\d{1,2})?))|((?:[\d,]+(?:\.\d{1,2})?)\s*(?:Rs\.?|INR|₹))',
+    r'(?:(?:\b(?:Rs\.?|INR)|₹)\s*(\d[\d,]*(?:\.\d{1,2})?))|(?:\b(\d[\d,]*(?:\.\d{1,2})?)\s*(?:Rs\.?|INR|₹)\b)',
     caseSensitive: false,
   );
 
   static final RegExp _refRegex = RegExp(
-    r'(?:UPI\s*(?:Ref|Txn)?(?:\s*No)?|Ref(?:\s*No)?|UTR|Txn\s*(?:ID|Id|No))[\s:/-]*([A-Za-z0-9]{6,25})',
+    r'(?:UPI\s*(?:Ref|Txn)?(?:\s*No)?|Ref(?:\s*No)?|UTR|RRN|IMPS(?:\s*Ref)?|Txn\s*(?:ID|Id|No|Number)|UPI:)[\s:/-]*([A-Za-z0-9]{6,25})',
     caseSensitive: false,
   );
 
   static final RegExp _accountHintRegex = RegExp(
-    r'(?:A/C|Acct|Account|Card(?:\s*ending)?)\s*(?:no\.?)?\s*[*xX]*(\d{3,4})',
+    r'(?:A/?C|Acct|Account|Card(?:\s*ending(?:\s*in|\s*with)?)?)\s*(?:no\.?)?\s*[*xX\s-]*(\d{3,4})',
     caseSensitive: false,
   );
 
@@ -82,9 +82,9 @@ class PaymentNotificationParser {
 
     // 1. Check payment status
     final status = _detectStatus(combined);
+    final amount = _extractAmount(combined);
     if (status == ParsedPaymentStatus.failed) {
       // Return info marked as failed so ledger can safely record/ignore it
-      final amount = _extractAmount(combined);
       if (amount == null) return null;
       return ParsedPaymentInfo(
         amount: amount,
@@ -99,7 +99,6 @@ class PaymentNotificationParser {
     }
 
     // 2. Extract Amount
-    final amount = _extractAmount(combined);
     if (amount == null || amount <= 0) {
       return null; // Not a valid financial message
     }
@@ -160,21 +159,13 @@ class PaymentNotificationParser {
   ParsedPaymentDirection _detectDirection(String text) {
     final lower = text.toLowerCase();
 
-    // 1. Refunds
+    // 1. Refunds & Reversals
     if (lower.contains('refund') || lower.contains('cashback') || lower.contains('reversal')) {
       return ParsedPaymentDirection.refund;
     }
 
     // 2. Investments & Capital Allocations
-    if (lower.contains('invested') ||
-        lower.contains('investment') ||
-        lower.contains('mutual fund') ||
-        lower.contains('sip') ||
-        lower.contains('zerodha') ||
-        lower.contains('groww') ||
-        lower.contains('folio') ||
-        lower.contains('etf') ||
-        lower.contains('stocks')) {
+    if (RegExp(r'\b(invested|investment|mutual fund|sip|zerodha|groww|folio|etf|stocks|smallcase)\b', caseSensitive: false).hasMatch(lower)) {
       return ParsedPaymentDirection.investment;
     }
 
@@ -225,7 +216,7 @@ class PaymentNotificationParser {
     if (pkg.contains('paisa') || pkg.contains('upi') || pkg.contains('phonepe') || lower.contains('upi')) {
       return 'UPI';
     }
-    if (lower.contains('card') || lower.contains('visa') || lower.contains('mastercard')) {
+    if (lower.contains('card') || lower.contains('visa') || lower.contains('mastercard') || lower.contains('rupay')) {
       return 'CARD';
     }
     if (lower.contains('netbanking') || lower.contains('neft') || lower.contains('rtgs') || lower.contains('imps')) {
@@ -238,31 +229,57 @@ class PaymentNotificationParser {
   }
 
   String _extractRawMerchant(String title, String body) {
-    // Check "paid to X", "sent to X", "at X"
+    // 1. Check "spent on ... at <Merchant> on ..." (Common credit/debit card SMS)
+    final spentAtMatch = RegExp(r'(?:spent|used)\s+(?:on\s+.*?at|at)\s+([A-Za-z0-9\s&.,\-_]+?)(?:\s+(?:on|using|via|ref|avl|avl\s+lmt|bal|\.|$))', caseSensitive: false).firstMatch(body);
+    if (spentAtMatch != null) {
+      final m = spentAtMatch.group(1)?.trim();
+      if (m != null && m.length > 1 && !_isAmountString(m)) return m;
+    }
+
+    // 2. Check "Info: BIL*<Merchant>" or "Info: <Merchant>" (ICICI/Axis/HDFC format)
+    final infoMatch = RegExp(r'Info:\s*(?:BIL\*|VPS\*|POS\*)?([A-Za-z0-9\s&.,\-_]+?)(?:\s+(?:on|via|ref|bal|avbl|\.|$))', caseSensitive: false).firstMatch(body);
+    if (infoMatch != null) {
+      final m = infoMatch.group(1)?.trim();
+      if (m != null && m.length > 1 && !_isAmountString(m)) return m;
+    }
+
+    // 3. Check "to VPA <vpa>" (HDFC/SBI UPI format: "to VPA swiggy@hdfcbank")
+    final vpaMatch = RegExp(r'(?:to\s+VPA|VPA)\s+([A-Za-z0-9._-]+@[A-Za-z0-9]+)', caseSensitive: false).firstMatch(body);
+    if (vpaMatch != null) {
+      final vpa = vpaMatch.group(1)?.trim();
+      if (vpa != null && vpa.contains('@')) {
+        return vpa.split('@').first;
+      }
+    }
+
+    // 4. Check "via UPI: <ref>-<merchant>" (Axis format: "via UPI: 123456789012-ZOMATO")
+    final upiRefMerchantMatch = RegExp(r'via\s+UPI:\s*[A-Za-z0-9]+-([A-Za-z0-9\s&.,\-_]+?)(?:\s+(?:bal|ref|\.|$))', caseSensitive: false).firstMatch(body);
+    if (upiRefMerchantMatch != null) {
+      final m = upiRefMerchantMatch.group(1)?.trim();
+      if (m != null && m.length > 1 && !_isAmountString(m)) return m;
+    }
+
+    // 5. Check "paid to X", "sent to X", "to X"
     final paidMatch = _paidToRegex.firstMatch(body);
     if (paidMatch != null) {
       final m = paidMatch.group(1)?.trim();
-      if (m != null && m.length > 1 && !m.toLowerCase().startsWith('rs') && !m.startsWith('₹')) {
-        return m;
-      }
+      if (m != null && m.length > 1 && !_isAmountString(m)) return m;
     }
 
-    // Check "received from X", "from X"
+    // 6. Check "received from X", "from X", "by X"
     final recvMatch = _receivedFromRegex.firstMatch(body);
     if (recvMatch != null) {
       final m = recvMatch.group(1)?.trim();
-      if (m != null && m.length > 1 && !m.toLowerCase().startsWith('rs') && !m.startsWith('₹')) {
-        return m;
-      }
+      if (m != null && m.length > 1 && !_isAmountString(m)) return m;
     }
 
-    // If body mentions UPI/VPA like UPI/XYZFOOD/Ref
+    // 7. Check "UPI/<merchant>/"
     final upiSlashMatch = RegExp(r'UPI/([A-Za-z0-9_ -]+)/', caseSensitive: false).firstMatch(body);
     if (upiSlashMatch != null) {
       return upiSlashMatch.group(1)!.trim();
     }
 
-    // Fallback to title if title isn't a generic app name
+    // 8. Fallback to clean title if title isn't a generic app name
     final cleanedTitle = title.trim();
     final lowerTitle = cleanedTitle.toLowerCase();
     if (cleanedTitle.isNotEmpty &&
@@ -274,25 +291,54 @@ class PaymentNotificationParser {
         !lowerTitle.contains('paytm') &&
         !lowerTitle.contains('hdfc') &&
         !lowerTitle.contains('sbi') &&
-        !lowerTitle.contains('icici')) {
+        !lowerTitle.contains('icici') &&
+        !lowerTitle.contains('axis')) {
       return cleanedTitle;
     }
 
     return '';
   }
 
+  static bool _isAmountString(String str) {
+    final lower = str.toLowerCase().trim();
+    return lower.startsWith('rs') || lower.startsWith('inr') || lower.startsWith('₹') || RegExp(r'^[\d,.]+$').hasMatch(str);
+  }
+
   String _normalizeMerchant(String raw) {
     if (raw.isEmpty) return '';
 
     var clean = raw;
-    // Strip common noise prefixes & suffixes
-    clean = clean.replaceAll(RegExp(r'^(?:UPI/|PAYTM-|GPAY-|\*|\s)+', caseSensitive: false), '');
-    clean = clean.replaceAll(RegExp(r'(?:\.com|\.in|@okaxis|@okhdfcbank|@ibl|@ybl)$', caseSensitive: false), '');
-    clean = clean.replaceAll(RegExp(r'\s+Private\s+Limited|\s+Pvt\s+Ltd|\s+Ltd', caseSensitive: false), '');
-    clean = clean.replaceAll(RegExp(r'[-_]+'), ' ');
+    // Strip common banking noise prefixes
+    clean = clean.replaceAll(RegExp(r'^(?:UPI/|PAYTM-|GPAY-|BIL\*|VPS\*|POS\*|E-COM\*|POS/|NEFT-|IMPS-|\*|\s)+', caseSensitive: false), '');
+    // Strip VPA handles & domain extensions
+    clean = clean.replaceAll(RegExp(r'(?:\.com|\.in|@okaxis|@oksbi|@okhdfcbank|@ibl|@ybl|@icici|@paytm|@upi|@axl|@barodampay)$', caseSensitive: false), '');
+    clean = clean.replaceAll(RegExp(r'\s+(?:Private\s+Limited|Pvt\s+Ltd|Ltd|India|Bangalore|Mumbai|Delhi|Stores?|Online)\b', caseSensitive: false), '');
+    clean = clean.replaceAll(RegExp(r'[-_*/]+'), ' ');
     clean = clean.trim();
 
-    // Capitalize properly
+    // Specific well-known brand normalizations
+    final lower = clean.toLowerCase();
+    if (lower.contains('swiggy')) return 'Swiggy';
+    if (lower.contains('zomato')) return 'Zomato';
+    if (lower.contains('blinkit')) return 'Blinkit';
+    if (lower.contains('zepto')) return 'Zepto';
+    if (lower.contains('instamart')) return 'Instamart';
+    if (lower.contains('bigbasket')) return 'BigBasket';
+    if (lower.contains('uber')) return 'Uber';
+    if (lower.contains('ola')) return 'Ola';
+    if (lower.contains('rapido')) return 'Rapido';
+    if (lower.contains('netflix')) return 'Netflix';
+    if (lower.contains('spotify')) return 'Spotify';
+    if (lower.contains('amazon') || lower.contains('amzn')) return 'Amazon';
+    if (lower.contains('flipkart')) return 'Flipkart';
+    if (lower.contains('myntra')) return 'Myntra';
+    if (lower.contains('zara')) return 'Zara';
+    if (lower.contains('zerodha')) return 'Zerodha';
+    if (lower.contains('groww')) return 'Groww';
+    if (lower.contains('airtel')) return 'Airtel';
+    if (lower.contains('jio')) return 'Jio';
+    if (lower.contains('irctc')) return 'IRCTC';
+
     if (clean.length > 1) {
       final words = clean.split(' ').where((w) => w.isNotEmpty);
       clean = words.map((w) {
@@ -311,7 +357,7 @@ class PaymentNotificationParser {
 
     final combined = '$merchant $text'.toLowerCase();
 
-    if (combined.contains('salary') || combined.contains('payroll') || combined.contains('stipend')) {
+    if (combined.contains('salary') || combined.contains('payroll') || combined.contains('stipend') || combined.contains('bonus')) {
       return 'Salary';
     }
 
@@ -321,6 +367,10 @@ class PaymentNotificationParser {
         combined.contains('starbucks') ||
         combined.contains('kfc') ||
         combined.contains('domino') ||
+        combined.contains('subway') ||
+        combined.contains('burger') ||
+        combined.contains('pizza') ||
+        combined.contains('chaayos') ||
         combined.contains('restaurant') ||
         combined.contains('cafe') ||
         combined.contains('dining') ||
@@ -342,8 +392,11 @@ class PaymentNotificationParser {
         combined.contains('diesel') ||
         combined.contains('shell') ||
         combined.contains('indian oil') ||
+        combined.contains('iocl') ||
         combined.contains('hpcl') ||
         combined.contains('bpcl') ||
+        combined.contains('fastag') ||
+        combined.contains('toll') ||
         combined.contains('irctc') ||
         combined.contains('flight') ||
         combined.contains('airline')) {
@@ -358,6 +411,10 @@ class PaymentNotificationParser {
         combined.contains('apple') ||
         combined.contains('google storage') ||
         combined.contains('github') ||
+        combined.contains('chatgpt') ||
+        combined.contains('openai') ||
+        combined.contains('claude') ||
+        combined.contains('midjourney') ||
         combined.contains('aws') ||
         combined.contains('digitalocean')) {
       return 'Subscriptions';
@@ -366,8 +423,13 @@ class PaymentNotificationParser {
     if (combined.contains('amazon') ||
         combined.contains('flipkart') ||
         combined.contains('myntra') ||
+        combined.contains('ajio') ||
+        combined.contains('meesho') ||
+        combined.contains('nykaa') ||
         combined.contains('zara') ||
         combined.contains('h&m') ||
+        combined.contains('uniqlo') ||
+        combined.contains('decathlon') ||
         combined.contains('shopping')) {
       return 'Shopping';
     }
@@ -382,6 +444,30 @@ class PaymentNotificationParser {
         combined.contains('wifi') ||
         combined.contains('bill')) {
       return 'Bills';
+    }
+
+    if (combined.contains('cult') ||
+        combined.contains('gym') ||
+        combined.contains('fitness') ||
+        combined.contains('pharmacy') ||
+        combined.contains('apollo') ||
+        combined.contains('1mg') ||
+        combined.contains('pharmeasy') ||
+        combined.contains('medplus') ||
+        combined.contains('hospital') ||
+        combined.contains('clinic')) {
+      return 'Health';
+    }
+
+    if (combined.contains('bookmyshow') ||
+        combined.contains('pvr') ||
+        combined.contains('inox') ||
+        combined.contains('cinepolis') ||
+        combined.contains('movie') ||
+        combined.contains('cinema') ||
+        combined.contains('steam') ||
+        combined.contains('playstation')) {
+      return 'Entertainment';
     }
 
     if (direction == ParsedPaymentDirection.inflow) {

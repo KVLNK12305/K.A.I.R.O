@@ -263,12 +263,34 @@ class PaymentResolutionEngine {
 
   static String normalizeMerchant(String raw) {
     var m = raw.trim();
-    m = m.replaceAll(RegExp(r'^(?:UPI/|PAYTM-|GPAY-|\*|\s)+', caseSensitive: false), '');
+    m = m.replaceAll(RegExp(r'^(?:UPI/|PAYTM-|GPAY-|BIL\*|VPS\*|POS\*|E-COM\*|POS/|NEFT-|IMPS-|\*|\s)+', caseSensitive: false), '');
     m = m.replaceAll(RegExp(r'/[A-Za-z0-9]+$', caseSensitive: false), '');
-    m = m.replaceAll(RegExp(r'(?:\.com|\.in|@okaxis|@okhdfcbank|@ibl|@ybl)$', caseSensitive: false), '');
-    m = m.replaceAll(RegExp(r'\s+(?:Private\s+Limited|Pvt\s+Ltd|Ltd|India)\b', caseSensitive: false), '');
-    m = m.replaceAll(RegExp(r'[-_*]+'), ' ');
+    m = m.replaceAll(RegExp(r'(?:\.com|\.in|@okaxis|@oksbi|@okhdfcbank|@ibl|@ybl|@icici|@paytm|@upi|@axl|@barodampay)$', caseSensitive: false), '');
+    m = m.replaceAll(RegExp(r'\s+(?:Private\s+Limited|Pvt\s+Ltd|Ltd|India|Bangalore|Mumbai|Delhi|Stores?|Online)\b', caseSensitive: false), '');
+    m = m.replaceAll(RegExp(r'[-_*/]+'), ' ');
     m = m.trim();
+
+    final lower = m.toLowerCase();
+    if (lower.contains('swiggy')) return 'Swiggy';
+    if (lower.contains('zomato')) return 'Zomato';
+    if (lower.contains('blinkit')) return 'Blinkit';
+    if (lower.contains('zepto')) return 'Zepto';
+    if (lower.contains('instamart')) return 'Instamart';
+    if (lower.contains('bigbasket')) return 'BigBasket';
+    if (lower.contains('uber')) return 'Uber';
+    if (lower.contains('ola')) return 'Ola';
+    if (lower.contains('rapido')) return 'Rapido';
+    if (lower.contains('netflix')) return 'Netflix';
+    if (lower.contains('spotify')) return 'Spotify';
+    if (lower.contains('amazon') || lower.contains('amzn')) return 'Amazon';
+    if (lower.contains('flipkart')) return 'Flipkart';
+    if (lower.contains('myntra')) return 'Myntra';
+    if (lower.contains('zara')) return 'Zara';
+    if (lower.contains('zerodha')) return 'Zerodha';
+    if (lower.contains('groww')) return 'Groww';
+    if (lower.contains('airtel')) return 'Airtel';
+    if (lower.contains('jio')) return 'Jio';
+    if (lower.contains('irctc')) return 'IRCTC';
 
     if (m.length > 1) {
       final words = m.split(' ').where((w) => w.isNotEmpty);
@@ -289,12 +311,17 @@ class PaymentResolutionEngine {
         combined.contains('starbucks') ||
         combined.contains('kfc') ||
         combined.contains('domino') ||
+        combined.contains('subway') ||
+        combined.contains('burger') ||
+        combined.contains('pizza') ||
+        combined.contains('chaayos') ||
         combined.contains('blinkit') ||
         combined.contains('zepto') ||
         combined.contains('instamart') ||
         combined.contains('bigbasket') ||
         combined.contains('grocery') ||
         combined.contains('restaurant') ||
+        combined.contains('dining') ||
         combined.contains('cafe')) {
       return 'Food';
     }
@@ -305,8 +332,17 @@ class PaymentResolutionEngine {
         combined.contains('metro') ||
         combined.contains('petrol') ||
         combined.contains('fuel') ||
+        combined.contains('diesel') ||
         combined.contains('shell') ||
-        combined.contains('indian oil')) {
+        combined.contains('indian oil') ||
+        combined.contains('iocl') ||
+        combined.contains('hpcl') ||
+        combined.contains('bpcl') ||
+        combined.contains('fastag') ||
+        combined.contains('toll') ||
+        combined.contains('irctc') ||
+        combined.contains('flight') ||
+        combined.contains('airline')) {
       return 'Transport';
     }
 
@@ -317,26 +353,63 @@ class PaymentResolutionEngine {
         combined.contains('hotstar') ||
         combined.contains('apple') ||
         combined.contains('github') ||
-        combined.contains('aws')) {
+        combined.contains('chatgpt') ||
+        combined.contains('openai') ||
+        combined.contains('claude') ||
+        combined.contains('midjourney') ||
+        combined.contains('aws') ||
+        combined.contains('digitalocean')) {
       return 'Subscriptions';
     }
 
     if (combined.contains('amazon') ||
         combined.contains('flipkart') ||
         combined.contains('myntra') ||
+        combined.contains('ajio') ||
+        combined.contains('meesho') ||
+        combined.contains('nykaa') ||
         combined.contains('zara') ||
-        combined.contains('h&m')) {
+        combined.contains('h&m') ||
+        combined.contains('uniqlo') ||
+        combined.contains('decathlon') ||
+        combined.contains('shopping')) {
       return 'Shopping';
     }
 
     if (combined.contains('electricity') ||
+        combined.contains('bescom') ||
         combined.contains('water') ||
         combined.contains('gas') ||
         combined.contains('airtel') ||
         combined.contains('jio') ||
         combined.contains('wifi') ||
+        combined.contains('broadband') ||
         combined.contains('bill')) {
       return 'Bills';
+    }
+
+    if (combined.contains('cult') ||
+        combined.contains('gym') ||
+        combined.contains('fitness') ||
+        combined.contains('pharmacy') ||
+        combined.contains('apollo') ||
+        combined.contains('1mg') ||
+        combined.contains('pharmeasy') ||
+        combined.contains('medplus') ||
+        combined.contains('hospital') ||
+        combined.contains('clinic')) {
+      return 'Health';
+    }
+
+    if (combined.contains('bookmyshow') ||
+        combined.contains('pvr') ||
+        combined.contains('inox') ||
+        combined.contains('cinepolis') ||
+        combined.contains('movie') ||
+        combined.contains('cinema') ||
+        combined.contains('steam') ||
+        combined.contains('playstation')) {
+      return 'Entertainment';
     }
 
     return 'General';

@@ -300,6 +300,7 @@ class _FinancePageState extends ConsumerState<FinancePage> with WidgetsBindingOb
     ref.invalidate(availableMonthsProvider);
     ref.invalidate(financialOverviewProvider);
     ref.invalidate(recentFinancialEventsProvider);
+    ref.invalidate(accountsProvider);
   }
 
   void _showLogTransactionModal(BuildContext context, List<Account> accounts) {
@@ -505,6 +506,44 @@ class _FinancePageState extends ConsumerState<FinancePage> with WidgetsBindingOb
                       const SizedBox(height: KairoTheme.md),
                     ],
 
+                    // Quick Category Pills
+                    const Text(
+                      "CATEGORY QUICK PRESETS",
+                      style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.w800, fontFamily: 'monospace'),
+                    ),
+                    const SizedBox(height: 6),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: const [
+                          'Food', 'Transport', 'Subscriptions', 'Shopping', 'Bills', 'Health', 'Entertainment', 'Investments', 'Salary', 'General'
+                        ].map((cat) {
+                          final isSelected = categoryCtrl.text.toLowerCase() == cat.toLowerCase();
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: ActionChip(
+                              label: Text(
+                                cat,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'monospace',
+                                  color: isSelected ? Colors.white : KairoTheme.textMuted,
+                                ),
+                              ),
+                              backgroundColor: isSelected ? KairoTheme.borderActive : KairoTheme.surfaceElevated,
+                              side: BorderSide(color: isSelected ? Colors.white54 : KairoTheme.border),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                              onPressed: () {
+                                setModalState(() => categoryCtrl.text = cat);
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: KairoTheme.sm),
+
                     // Category & Merchant Row
                     Row(
                       children: [
@@ -613,12 +652,381 @@ class _FinancePageState extends ConsumerState<FinancePage> with WidgetsBindingOb
     );
   }
 
+  void _showTransactionDetailsModal(BuildContext context, FinancialEvent event, List<Account> accounts) {
+    final amountCtrl = TextEditingController(text: event.amount.toStringAsFixed(2));
+    final categoryCtrl = TextEditingController(text: event.category);
+    final merchantCtrl = TextEditingController(text: event.merchantOrEntity);
+    final notesCtrl = TextEditingController(text: event.notes);
+    FinancialEventType selectedType = event.type;
+    int? selectedSourceId = event.sourceAccountId;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: KairoTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(KairoTheme.radiusLg)),
+        side: BorderSide(color: KairoTheme.border, width: 1),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            final dateStr = DateFormat('MMM d, yyyy • h:mm a').format(event.timestamp);
+            return Padding(
+              padding: EdgeInsets.only(
+                left: KairoTheme.xl,
+                right: KairoTheme.xl,
+                top: KairoTheme.xl,
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + KairoTheme.xl,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "ADJUST CAPITAL EVENT",
+                          style: TextStyle(
+                            color: KairoTheme.textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'monospace',
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: KairoTheme.textMuted, size: 18),
+                          onPressed: () => Navigator.pop(ctx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace'),
+                    ),
+                    const SizedBox(height: KairoTheme.md),
+
+                    // Telemetry Metadata Strip
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: KairoTheme.surfaceElevated,
+                        borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                        border: Border.all(color: KairoTheme.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: KairoTheme.background,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: Text(
+                              event.source.toUpperCase(),
+                              style: const TextStyle(color: KairoTheme.textSecondary, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              event.referenceNumber != null && event.referenceNumber!.isNotEmpty
+                                  ? "REF: ${event.referenceNumber}"
+                                  : "CONFIDENCE: ${event.confidence.toUpperCase()}",
+                              style: const TextStyle(color: KairoTheme.textMuted, fontSize: 9, fontFamily: 'monospace'),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: KairoTheme.md),
+
+                    // Event Type Selector Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: FinancialEventType.values.map((type) {
+                          final isSelected = selectedType == type;
+                          String label = type.name.toUpperCase();
+                          Color activeColor = KairoTheme.recommended;
+                          if (type == FinancialEventType.inflow) activeColor = KairoTheme.success;
+                          if (type == FinancialEventType.investment) activeColor = KairoTheme.observed;
+                          if (type == FinancialEventType.transfer) activeColor = KairoTheme.inferred;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'monospace',
+                                  color: isSelected ? Colors.black : KairoTheme.textSecondary,
+                                ),
+                              ),
+                              selected: isSelected,
+                              selectedColor: activeColor,
+                              backgroundColor: KairoTheme.surfaceElevated,
+                              side: BorderSide(color: isSelected ? activeColor : KairoTheme.border),
+                              onSelected: (_) {
+                                setModalState(() => selectedType = type);
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: KairoTheme.md),
+
+                    // Amount Field
+                    TextField(
+                      controller: amountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: const TextStyle(
+                        color: KairoTheme.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'monospace',
+                      ),
+                      decoration: InputDecoration(
+                        prefixText: "₹ ",
+                        prefixStyle: const TextStyle(color: KairoTheme.textMuted, fontSize: 20, fontFamily: 'monospace'),
+                        labelText: "AMOUNT",
+                        labelStyle: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace'),
+                        filled: true,
+                        fillColor: KairoTheme.surfaceElevated,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.borderActive)),
+                      ),
+                    ),
+                    const SizedBox(height: KairoTheme.md),
+
+                    // Quick Category Pills
+                    const Text(
+                      "CATEGORY QUICK PRESETS",
+                      style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.w800, fontFamily: 'monospace'),
+                    ),
+                    const SizedBox(height: 6),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: const [
+                          'Food', 'Transport', 'Subscriptions', 'Shopping', 'Bills', 'Health', 'Entertainment', 'Investments', 'Salary', 'General'
+                        ].map((cat) {
+                          final isSelected = categoryCtrl.text.toLowerCase() == cat.toLowerCase();
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: ActionChip(
+                              label: Text(
+                                cat,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'monospace',
+                                  color: isSelected ? Colors.white : KairoTheme.textMuted,
+                                ),
+                              ),
+                              backgroundColor: isSelected ? KairoTheme.borderActive : KairoTheme.surfaceElevated,
+                              side: BorderSide(color: isSelected ? Colors.white54 : KairoTheme.border),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                              onPressed: () {
+                                setModalState(() => categoryCtrl.text = cat);
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: KairoTheme.sm),
+
+                    // Category & Merchant Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: categoryCtrl,
+                            style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13),
+                            decoration: InputDecoration(
+                              labelText: "CATEGORY",
+                              labelStyle: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace'),
+                              filled: true,
+                              fillColor: KairoTheme.surfaceElevated,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: KairoTheme.sm),
+                        Expanded(
+                          child: TextField(
+                            controller: merchantCtrl,
+                            style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13),
+                            decoration: InputDecoration(
+                              labelText: "ENTITY / MERCHANT",
+                              labelStyle: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace'),
+                              filled: true,
+                              fillColor: KairoTheme.surfaceElevated,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: KairoTheme.md),
+
+                    // Account Selector
+                    if (accounts.isNotEmpty) ...[
+                      const Text(
+                        "LINKED ACCOUNT",
+                        style: TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.w800, fontFamily: 'monospace'),
+                      ),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<int?>(
+                        initialValue: selectedSourceId,
+                        dropdownColor: KairoTheme.surfaceElevated,
+                        style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13, fontFamily: 'monospace'),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: KairoTheme.surfaceElevated,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                        ),
+                        items: [
+                          const DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text("Unlinked / External", style: TextStyle(color: KairoTheme.textMuted)),
+                          ),
+                          ...accounts.map((a) => DropdownMenuItem<int?>(
+                            value: a.id,
+                            child: Text("${a.name} (${_currencyFormat.format(a.currentBalance)})"),
+                          )),
+                        ],
+                        onChanged: (val) => setModalState(() => selectedSourceId = val),
+                      ),
+                      const SizedBox(height: KairoTheme.md),
+                    ],
+
+                    // Notes Field
+                    TextField(
+                      controller: notesCtrl,
+                      style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: "NOTES / MEMO",
+                        labelStyle: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontFamily: 'monospace'),
+                        filled: true,
+                        fillColor: KairoTheme.surfaceElevated,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm), borderSide: const BorderSide(color: KairoTheme.border)),
+                      ),
+                    ),
+                    const SizedBox(height: KairoTheme.xl),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: KairoTheme.warning,
+                              side: const BorderSide(color: KairoTheme.warning, width: 1),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KairoTheme.radiusSm)),
+                            ),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (dialogCtx) => AlertDialog(
+                                  backgroundColor: KairoTheme.surfaceElevated,
+                                  title: const Text("Delete Transaction?", style: TextStyle(color: KairoTheme.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+                                  content: const Text("This transaction will be removed from your canonical ledger and any account balances will be reconciled.", style: TextStyle(color: KairoTheme.textSecondary, fontSize: 12)),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(dialogCtx, false),
+                                      child: const Text("CANCEL", style: TextStyle(color: KairoTheme.textMuted)),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(dialogCtx, true),
+                                      child: const Text("DELETE", style: TextStyle(color: KairoTheme.warning, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                await ref.read(financialLedgerServiceProvider).deleteTransaction(event.id);
+                                _refreshAllProviders();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              }
+                            },
+                            child: const Text(
+                              "DELETE",
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.1, fontFamily: 'monospace'),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: KairoTheme.md),
+                        Expanded(
+                          flex: 2,
+                          child: KairoButton(
+                            text: "SAVE ADJUSTMENT",
+                            isPrimary: true,
+                            isFullWidth: true,
+                            onPressed: () async {
+                              final amt = double.tryParse(amountCtrl.text.trim());
+                              if (amt == null || amt <= 0) return;
+
+                              await ref.read(financialLedgerServiceProvider).updateTransaction(
+                                eventId: event.id,
+                                amount: amt,
+                                type: selectedType,
+                                category: categoryCtrl.text.trim().isEmpty ? 'General' : categoryCtrl.text.trim(),
+                                merchantOrEntity: merchantCtrl.text.trim(),
+                                sourceAccountId: selectedSourceId,
+                                notes: notesCtrl.text.trim(),
+                              );
+
+                              _refreshAllProviders();
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedMonth = ref.watch(selectedMonthProvider);
     final summaryAsync = ref.watch(monthlySummaryProvider(selectedMonth));
     final availableMonthsAsync = ref.watch(availableMonthsProvider);
     final accountsFuture = ref.watch(financialLedgerServiceProvider).getAccounts();
+    final accountsAsync = ref.watch(accountsProvider);
+    final accounts = accountsAsync.value ?? [];
 
     final monthDisplayStr = DateFormat('MMMM yyyy').format(selectedMonth).toUpperCase();
 
@@ -892,7 +1300,7 @@ class _FinancePageState extends ConsumerState<FinancePage> with WidgetsBindingOb
                         final event = summary.events[index];
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: KairoTheme.xl, vertical: 3),
-                          child: _buildTransactionTile(event),
+                          child: _buildTransactionTile(event, accounts),
                         );
                       },
                       childCount: summary.events.length,
@@ -1187,7 +1595,7 @@ class _FinancePageState extends ConsumerState<FinancePage> with WidgetsBindingOb
     );
   }
 
-  Widget _buildTransactionTile(FinancialEvent event) {
+  Widget _buildTransactionTile(FinancialEvent event, List<Account> accounts) {
     Color typeColor = KairoTheme.warning;
     String sign = "-";
     IconData icon = Icons.arrow_outward;
@@ -1213,6 +1621,7 @@ class _FinancePageState extends ConsumerState<FinancePage> with WidgetsBindingOb
     final dateStr = DateFormat('MMM d, h:mm a').format(event.timestamp);
 
     return KairoCard(
+      onTap: () => _showTransactionDetailsModal(context, event, accounts),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
@@ -1265,14 +1674,24 @@ class _FinancePageState extends ConsumerState<FinancePage> with WidgetsBindingOb
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            "$sign${_currencyFormat.format(event.amount)}",
-            style: TextStyle(
-              color: typeColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'monospace',
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "$sign${_currencyFormat.format(event.amount)}",
+                style: TextStyle(
+                  color: typeColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                "TAP TO EDIT",
+                style: TextStyle(color: KairoTheme.textFaint, fontSize: 7, fontFamily: 'monospace'),
+              ),
+            ],
           ),
         ],
       ),

@@ -107,6 +107,67 @@ void main() {
       expect(info.categoryHint, 'General');
     });
 
+    test('Parses Credit Card swipe SMS correctly', () {
+      final info = parser.parse(
+        packageName: 'com.google.android.apps.messaging',
+        title: 'HDFC Bank Alert',
+        body: 'Alert: Rs. 3,450.00 spent on your HDFC Bank Credit Card ending 4321 at ZARA on 29-SEP-26. Avl lmt: INR 85,000.',
+      );
+
+      expect(info, isNotNull);
+      expect(info!.amount, 3450.0);
+      expect(info.direction, ParsedPaymentDirection.outflow);
+      expect(info.merchantOrEntity, 'Zara');
+      expect(info.categoryHint, 'Shopping');
+      expect(info.sourceAccountHint, 'XX4321');
+    });
+
+    test('Parses ICICI Bank Info BIL format correctly', () {
+      final info = parser.parse(
+        packageName: 'com.google.android.apps.messaging',
+        title: 'ICICI Bank Alert',
+        body: 'Acct XX1234 debited with INR 649.00 on 29-Sep-26. Info: BIL*NETFLIX. Avbl Bal: INR 45,000.',
+      );
+
+      expect(info, isNotNull);
+      expect(info!.amount, 649.0);
+      expect(info.direction, ParsedPaymentDirection.outflow);
+      expect(info.merchantOrEntity, 'Netflix');
+      expect(info.categoryHint, 'Subscriptions');
+      expect(info.sourceAccountHint, 'XX1234');
+    });
+
+    test('Parses Axis Bank UPI ref-merchant format correctly', () {
+      final info = parser.parse(
+        packageName: 'com.google.android.apps.messaging',
+        title: 'Axis Bank Alert',
+        body: 'INR 420.00 debited from Axis Bank A/c no. XX9988 on 29-09-26 via UPI: 123456789012-ZOMATO. Bal: INR 8,500.00.',
+      );
+
+      expect(info, isNotNull);
+      expect(info!.amount, 420.0);
+      expect(info.direction, ParsedPaymentDirection.outflow);
+      expect(info.merchantOrEntity, 'Zomato');
+      expect(info.categoryHint, 'Food');
+      expect(info.sourceAccountHint, 'XX9988');
+    });
+
+    test('Parses HDFC to VPA format correctly', () {
+      final info = parser.parse(
+        packageName: 'com.google.android.apps.messaging',
+        title: 'HDFC Bank',
+        body: 'Dear Customer, INR 380.00 debited from A/C **5678 on 28-SEP-26 to VPA swiggy@hdfcbank (UPI Ref No 987654321098). Avail Bal: INR 12,345.67.',
+      );
+
+      expect(info, isNotNull);
+      expect(info!.amount, 380.0);
+      expect(info.direction, ParsedPaymentDirection.outflow);
+      expect(info.merchantOrEntity, 'Swiggy');
+      expect(info.categoryHint, 'Food');
+      expect(info.sourceAccountHint, 'XX5678');
+      expect(info.referenceNumber, '987654321098');
+    });
+
     test('Rejects invalid notifications without financial data', () {
       final info = parser.parse(
         packageName: 'com.whatsapp',

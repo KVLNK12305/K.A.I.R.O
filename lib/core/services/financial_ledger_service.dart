@@ -158,6 +158,108 @@ class FinancialLedgerService {
     return event;
   }
 
+  /// Updates an existing financial event and reconciles affected account balances.
+  Future<void> updateTransaction({
+    required int eventId,
+    double? amount,
+    FinancialEventType? type,
+    String? category,
+    String? merchantOrEntity,
+    int? sourceAccountId,
+    String? notes,
+    DateTime? timestamp,
+  }) async {
+    final event = await isar.financialEvents.get(eventId);
+    if (event == null) return;
+
+    await isar.writeTxn(() async {
+      // 1. Revert previous account balance adjustments if amount or type or account changed
+      final prevAmount = event.amount;
+      final prevType = event.type;
+      final prevSourceId = event.sourceAccountId;
+
+      final newAmount = amount ?? prevAmount;
+      final newType = type ?? prevType;
+      final newSourceId = sourceAccountId ?? prevSourceId;
+
+      if (prevSourceId != null) {
+        final prevAccount = await isar.accounts.get(prevSourceId);
+        if (prevAccount != null) {
+          if (prevType == FinancialEventType.outflow ||
+              prevType == FinancialEventType.transfer ||
+              prevType == FinancialEventType.investment) {
+            prevAccount.currentBalance += prevAmount;
+          } else if (prevType == FinancialEventType.inflow) {
+            prevAccount.currentBalance -= prevAmount;
+          }
+          await isar.accounts.put(prevAccount);
+        }
+      }
+
+      // 2. Apply new account balance adjustments
+      if (newSourceId != null) {
+        final newAccount = await isar.accounts.get(newSourceId);
+        if (newAccount != null) {
+          if (newType == FinancialEventType.outflow ||
+              newType == FinancialEventType.transfer ||
+              newType == FinancialEventType.investment) {
+            newAccount.currentBalance -= newAmount;
+          } else if (newType == FinancialEventType.inflow) {
+            newAccount.currentBalance += newAmount;
+          }
+          await isar.accounts.put(newAccount);
+        }
+      }
+
+      // 3. Update the event fields
+      if (amount != null) event.amount = amount;
+      if (type != null) event.type = type;
+      if (category != null) event.category = category;
+      if (merchantOrEntity != null) event.merchantOrEntity = merchantOrEntity;
+      if (sourceAccountId != null) event.sourceAccountId = sourceAccountId;
+      if (notes != null) event.notes = notes;
+      if (timestamp != null) event.timestamp = timestamp;
+
+      await isar.financialEvents.put(event);
+    });
+  }
+
+  /// Deletes a financial event and safely reverts any account balance adjustments.
+  Future<void> deleteTransaction(int eventId) async {
+    final event = await isar.financialEvents.get(eventId);
+    if (event == null) return;
+
+    await isar.writeTxn(() async {
+      // Revert source account balance
+      if (event.sourceAccountId != null) {
+        final account = await isar.accounts.get(event.sourceAccountId!);
+        if (account != null) {
+          if (event.type == FinancialEventType.outflow ||
+              event.type == FinancialEventType.transfer ||
+              event.type == FinancialEventType.investment) {
+            account.currentBalance += event.amount;
+          } else if (event.type == FinancialEventType.inflow) {
+            account.currentBalance -= event.amount;
+          }
+          await isar.accounts.put(account);
+        }
+      }
+
+      // Revert destination account balance if transfer/investment
+      if (event.destinationAccountId != null &&
+          (event.type == FinancialEventType.transfer || event.type == FinancialEventType.investment)) {
+        final dest = await isar.accounts.get(event.destinationAccountId!);
+        if (dest != null) {
+          dest.currentBalance -= event.amount;
+          await isar.accounts.put(dest);
+        }
+      }
+
+      // Delete the event
+      await isar.financialEvents.delete(eventId);
+    });
+  }
+
   /// Deterministic Monthly Aggregation strictly separating consumption spending,
   /// capital allocations (investments), inter-account transfers, and inflows.
   Future<MonthlyFinancialSummary> getMonthlySummary(int year, int month) async {
@@ -351,4 +453,9 @@ final monthlySummaryProvider = FutureProvider.family<MonthlyFinancialSummary, Da
 final availableMonthsProvider = FutureProvider<List<DateTime>>((ref) async {
   final service = ref.watch(financialLedgerServiceProvider);
   return await service.getAvailableMonths();
+});
+
+final accountsProvider = FutureProvider<List<Account>>((ref) async {
+  final service = ref.watch(financialLedgerServiceProvider);
+  return await service.getAccounts();
 });
