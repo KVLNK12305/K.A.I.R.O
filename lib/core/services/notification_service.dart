@@ -41,7 +41,7 @@ class NotificationService {
       await androidPlugin?.requestExactAlarmsPermission();
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@drawable/ic_notification');
     const initSettings = InitializationSettings(android: androidSettings);
 
     await _notifications.initialize(
@@ -192,7 +192,7 @@ class NotificationService {
         channelDescription: 'Situational habit and executive decision reminders',
         importance: Importance.max,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
         largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         color: Color(0xFF1CB0F6),
       ),
@@ -234,7 +234,7 @@ class NotificationService {
         channelDescription: 'Updates on your 21-day neurobiological rewiring streak',
         importance: Importance.max,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
         largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         color: Color(0xFFE53935),
       ),
@@ -259,7 +259,7 @@ class NotificationService {
         channelDescription: 'Instant system alerts and notifications',
         importance: Importance.max,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
         largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       ),
     );
@@ -276,7 +276,7 @@ class NotificationService {
         channelDescription: 'Dynamic alarm suggestions based on Google Calendar schedule',
         importance: Importance.max,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
         largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         color: Color(0xFFFFA000),
       ),
@@ -302,7 +302,7 @@ class NotificationService {
         channelDescription: 'Automated accountability alerts when Liar goals or Crucibles fail',
         importance: Importance.max,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_notification',
         largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         color: Color(0xFFFF0000),
       ),
