@@ -39,6 +39,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/services/home_widget_sync_service.dart';
 import 'core/services/financial_ledger_service.dart';
+import 'core/services/accountability_service.dart';
 
 // Create a global instance of Isar so any screen can access it easily
 late Isar isar;
@@ -50,7 +51,6 @@ Future<void> main() async {
   // Initialize notifications and habit streak tracking
   try {
     await NotificationService().init();
-    await NotificationService().scheduleDailyNotifications();
     await StreakService().initOrCheckStreak();
 
     final prefs = await SharedPreferences.getInstance();
@@ -126,7 +126,13 @@ Future<void> main() async {
     debugPrint("Notice: Initial widget sync error: $e");
   });
 
-  // 6. Ingest pending payment notifications and migrate legacy kairo_node files if present
+  // 6. Run accountability checks (LiarGoal breaches + execution rate alerts)
+  AccountabilityService(isar).runAccountabilityChecks().catchError((e) {
+    debugPrint("Notice: Accountability check error: $e");
+    return <String>[];
+  });
+
+  // 7. Ingest pending payment notifications and migrate legacy kairo_node files if present
   final financeLedger = FinancialLedgerService(isar);
   financeLedger.migrateKairoNodeIfPresent().then((_) {}).catchError((e) {
     debugPrint("Notice: Kairo node expense migration warning: $e");
