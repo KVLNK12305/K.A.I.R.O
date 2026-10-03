@@ -6,6 +6,9 @@ import '../../core/models/commitment.dart';
 import '../../core/models/idea.dart';
 import '../../core/models/decision_log.dart';
 import '../../core/services/order_service.dart';
+import '../../Nav/smooth_page_route.dart';
+import '../projects/projects_page.dart';
+import '../needs/needs_page.dart';
 import '../../main.dart';
 import 'package:isar/isar.dart';
 
@@ -396,11 +399,27 @@ class _OrderPageState extends ConsumerState<OrderPage> with SingleTickerProvider
                       ),
                     ),
                     const SizedBox(width: KairoTheme.sm),
-                    KairoButton(
-                      text: "FORGE",
-                      icon: Icons.add,
-                      isPrimary: true,
-                      onPressed: () => _showNewCommitmentModal(context),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: "Projects & Architecture DNA",
+                          icon: const Icon(Icons.hub_outlined, color: KairoTheme.textSecondary, size: 20),
+                          onPressed: () => Navigator.push(context, SmoothPageRoute(page: const ProjectsPage())),
+                        ),
+                        IconButton(
+                          tooltip: "Needs Decision Matrix",
+                          icon: const Icon(Icons.inventory_2_outlined, color: KairoTheme.textSecondary, size: 20),
+                          onPressed: () => Navigator.push(context, SmoothPageRoute(page: const NeedsPage())),
+                        ),
+                        const SizedBox(width: 4),
+                        KairoButton(
+                          text: "FORGE",
+                          icon: Icons.add,
+                          isPrimary: true,
+                          onPressed: () => _showNewCommitmentModal(context),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -443,7 +462,12 @@ class _OrderPageState extends ConsumerState<OrderPage> with SingleTickerProvider
                         const SizedBox(height: KairoTheme.md),
                         Row(
                           children: [
-                            _buildStatTag("WIP PROJECTS", "${diag.activeProjectsCount} / 3", diag.activeProjectsCount > 3 ? KairoTheme.recommended : KairoTheme.textPrimary),
+                            _buildStatTag(
+                              "WIP PROJECTS",
+                              "${diag.activeProjectsCount} / 3",
+                              diag.activeProjectsCount > 3 ? KairoTheme.recommended : KairoTheme.textPrimary,
+                              onTap: () => Navigator.push(context, SmoothPageRoute(page: const ProjectsPage())),
+                            ),
                             const SizedBox(width: KairoTheme.lg),
                             _buildStatTag("COMMITMENTS", "${diag.openCommitmentsCount}", KairoTheme.textPrimary),
                             const SizedBox(width: KairoTheme.lg),
@@ -494,8 +518,8 @@ class _OrderPageState extends ConsumerState<OrderPage> with SingleTickerProvider
     );
   }
 
-  Widget _buildStatTag(String label, String value, Color valColor) {
-    return Column(
+  Widget _buildStatTag(String label, String value, Color valColor, {VoidCallback? onTap}) {
+    final col = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(color: KairoTheme.textMuted, fontSize: 8, fontWeight: FontWeight.w800, fontFamily: 'monospace')),
@@ -503,6 +527,10 @@ class _OrderPageState extends ConsumerState<OrderPage> with SingleTickerProvider
         Text(value, style: TextStyle(color: valColor, fontSize: 13, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
       ],
     );
+    if (onTap != null) {
+      return InkWell(onTap: onTap, child: col);
+    }
+    return col;
   }
 
   Widget _buildCommitmentsTab() {
