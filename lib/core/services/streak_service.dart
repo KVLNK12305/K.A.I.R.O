@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'home_widget_sync_service.dart';
+import 'notification_service.dart';
 
 class StreakService {
   static final StreakService _instance = StreakService._internal();
@@ -56,7 +57,12 @@ class StreakService {
     await prefs.setBool(_keyStreakBroken, false);
     HomeWidgetSyncService.syncStreakData();
 
-    return getDayNumberSync(prefs);
+    final day = getDayNumberSync(prefs);
+
+    // Fire streak progress notification
+    NotificationService().show21DayStreakNotification(day);
+
+    return day;
   }
 
   Future<int> getDayNumber() async {
