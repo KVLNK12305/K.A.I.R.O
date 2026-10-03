@@ -74,9 +74,15 @@ class NotificationService {
     await _scheduleSlots(slots);
   }
 
-  /// Evaluates user's live database state and generates customized, non-generic reminders
+  /// Evaluates user's live database state and generates customized, non-generic reminders.
+  /// Cancels previously scheduled static slots before rescheduling to prevent ghost notifications.
   Future<void> scheduleContextualNotifications(Isar isar) async {
     if (!_initialized) await init();
+
+    // Cancel stale daily static notifications (IDs 1-3) so they don't ghost alongside contextual ones
+    for (final id in [1, 2, 3]) {
+      await _notifications.cancel(id);
+    }
 
     final now = DateTime.now();
     final List<Map<String, dynamic>> customizedSlots = [];
@@ -250,7 +256,9 @@ class NotificationService {
     );
   }
 
-  Future<void> showInstantNotification(String title, String body, {int id = 999}) async {
+  Future<void> showInstantNotification(String title, String body, {int? id}) async {
+    // Use time-based hash if no explicit ID provided to prevent silent overwrites on rapid calls
+    id ??= DateTime.now().millisecondsSinceEpoch % 100000;
     if (!_initialized) await init();
     const details = NotificationDetails(
       android: AndroidNotificationDetails(
