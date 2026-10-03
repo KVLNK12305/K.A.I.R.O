@@ -12,6 +12,8 @@ import '../../core/providers/wakatime_provider.dart';
 import '../../core/providers/github_provider.dart';
 import '../wardrobe/wardrobe_page.dart';
 import '../workout/workout_page.dart';
+import '../projects/projects_page.dart';
+import '../needs/needs_page.dart';
 import '../../Nav/smooth_page_route.dart';
 import '../../main.dart';
 
@@ -32,6 +34,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _wakatimeKeyCtrl = TextEditingController();
   final _githubTokenCtrl = TextEditingController();
   final _groqApiKeyCtrl = TextEditingController();
+  final _msTodoTokenCtrl = TextEditingController();
 
   bool _isInit = false;
   bool _hasUsagePerm = false;
@@ -54,6 +57,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         _wakatimeKeyCtrl.text = prefs.getString('wakatime_key') ?? '';
         _githubTokenCtrl.text = prefs.getString('github_token') ?? '';
         _groqApiKeyCtrl.text = prefs.getString('groq_api_key') ?? '';
+        _msTodoTokenCtrl.text = prefs.getString('ms_todo_token') ?? '';
       });
     }
     final usage = await WellbeingService.checkUsagePermission();
@@ -87,6 +91,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     _wakatimeKeyCtrl.dispose();
     _githubTokenCtrl.dispose();
     _groqApiKeyCtrl.dispose();
+    _msTodoTokenCtrl.dispose();
     super.dispose();
   }
 
@@ -146,6 +151,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Groq AI API Key Saved.'),
+          backgroundColor: KairoTheme.surfaceElevated,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveMsTodoToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('ms_todo_token', _msTodoTokenCtrl.text.trim());
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Microsoft To Do Token Saved.'),
           backgroundColor: KairoTheme.surfaceElevated,
           behavior: SnackBarBehavior.floating,
         ),
@@ -520,6 +539,62 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       ),
                     ],
                   ),
+                  const KairoDivider(margin: EdgeInsets.symmetric(vertical: KairoTheme.md)),
+
+                  // Microsoft To Do Integration
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "MICROSOFT TO DO (NEEDS INBOX)",
+                              style: TextStyle(
+                                color: KairoTheme.textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'monospace',
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          KairoStatus(label: "K.A.I.R.O. — NEEDS", type: KairoStatusType.observed),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        "Optional external capture inbox. Ingests items from dedicated 'K.A.I.R.O. — NEEDS' list into Needs. Zero automatic tasks created.",
+                        style: TextStyle(color: KairoTheme.textMuted, fontSize: 10, height: 1.3),
+                      ),
+                      const SizedBox(height: KairoTheme.xs),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _msTodoTokenCtrl,
+                              obscureText: true,
+                              style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+                              decoration: InputDecoration(
+                                hintText: "Bearer token or Graph PAT...",
+                                hintStyle: const TextStyle(color: KairoTheme.textFaint),
+                                filled: true,
+                                fillColor: KairoTheme.surfaceElevated,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                                  borderSide: const BorderSide(color: KairoTheme.border),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: KairoTheme.sm),
+                          KairoButton(text: "SAVE", onPressed: _saveMsTodoToken),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -535,10 +610,34 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Secondary cognitive-load reducers and physical capacity trackers.",
+                    "Secondary cognitive-load reducers, architectural control plane, and decision systems.",
                     style: TextStyle(color: KairoTheme.textSecondary, fontSize: 12, height: 1.4),
                   ),
                   const SizedBox(height: KairoTheme.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: KairoButton(
+                          text: "PROJECTS & DNA",
+                          icon: Icons.hub_outlined,
+                          onPressed: () {
+                            Navigator.push(context, SmoothPageRoute(page: const ProjectsPage()));
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: KairoTheme.sm),
+                      Expanded(
+                        child: KairoButton(
+                          text: "NEEDS MATRIX",
+                          icon: Icons.inventory_2_outlined,
+                          onPressed: () {
+                            Navigator.push(context, SmoothPageRoute(page: const NeedsPage()));
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: KairoTheme.sm),
                   Row(
                     children: [
                       Expanded(

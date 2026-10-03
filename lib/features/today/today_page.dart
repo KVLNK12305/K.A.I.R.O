@@ -9,6 +9,7 @@ import '../../core/services/wellbeing_service.dart';
 import '../../core/providers/wakatime_provider.dart';
 import '../profile/profile_page.dart';
 import '../workout/workout_page.dart';
+import '../needs/needs_page.dart';
 import 'widgets/daily_shloka_modal.dart';
 import '../../Nav/smooth_page_route.dart';
 
@@ -354,6 +355,14 @@ class _TodayPageState extends ConsumerState<TodayPage> {
                               ),
                             ),
                           IconButton(
+                            tooltip: "Needs Decision Matrix",
+                            icon: const Icon(Icons.inventory_2_outlined, color: KairoTheme.textSecondary, size: 20),
+                            onPressed: () {
+                              Navigator.push(context, SmoothPageRoute(page: const NeedsPage()));
+                            },
+                          ),
+                          IconButton(
+                            tooltip: "Operator Profile & Settings",
                             icon: const Icon(Icons.person_outline_rounded, color: KairoTheme.textSecondary, size: 20),
                             onPressed: () {
                               Navigator.push(context, SmoothPageRoute(page: const ProfilePage()));
