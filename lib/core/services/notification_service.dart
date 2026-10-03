@@ -79,8 +79,9 @@ class NotificationService {
   Future<void> scheduleContextualNotifications(Isar isar) async {
     if (!_initialized) await init();
 
-    // Cancel stale daily static notifications (IDs 1-3) so they don't ghost alongside contextual ones
-    for (final id in [1, 2, 3]) {
+    // Cancel stale daily static notifications (IDs 1-3) and contextual slots (IDs 10-13)
+    // so old slots don't ghost when state changes between app launches
+    for (final id in [1, 2, 3, 10, 11, 12, 13]) {
       await _notifications.cancel(id);
     }
 
