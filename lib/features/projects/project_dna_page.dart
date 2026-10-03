@@ -7,6 +7,7 @@ import '../../core/models/task.dart';
 import '../../core/models/architecture_drift.dart';
 import '../../core/models/architecture_artifact.dart';
 import '../../core/providers/project_dna_provider.dart';
+import '../../core/providers/github_provider.dart';
 import 'widgets/mermaid_viewer.dart';
 import 'widgets/architecture_drift_card.dart';
 import '../../main.dart';
@@ -82,6 +83,7 @@ class _ProjectDnaPageState extends ConsumerState<ProjectDnaPage> with SingleTick
     Client[Client App] --> API[Backend API]
     API --> DB[(Database)]''',
     );
+    bool isCommittingToGitHub = false;
 
     showModalBottomSheet(
       context: context,
@@ -124,7 +126,7 @@ class _ProjectDnaPageState extends ConsumerState<ProjectDnaPage> with SingleTick
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      "Directly paste or edit Mermaid diagram code without needing a .mmd file.",
+                      "Directly paste or edit Mermaid diagram code. Save locally or commit back to GitHub.",
                       style: TextStyle(color: KairoTheme.textMuted, fontSize: 10),
                     ),
                     const SizedBox(height: KairoTheme.md),
@@ -180,45 +182,113 @@ class _ProjectDnaPageState extends ConsumerState<ProjectDnaPage> with SingleTick
                       ),
                     ),
                     const SizedBox(height: KairoTheme.lg),
-                    KairoButton(
-                      text: existing == null ? "INGEST MERMAID SNIPPET" : "UPDATE MERMAID SNIPPET",
-                      isPrimary: true,
-                      isFullWidth: true,
-                      onPressed: () async {
-                        if (snippetCtrl.text.trim().isEmpty) return;
+                    Row(
+                      children: [
+                        Expanded(
+                          child: KairoButton(
+                            text: existing == null ? "INGEST LOCALLY" : "UPDATE LOCALLY",
+                            isPrimary: true,
+                            isFullWidth: true,
+                            onPressed: () async {
+                              if (snippetCtrl.text.trim().isEmpty) return;
 
-                        await ref.read(mermaidIngestionServiceProvider).ingestArtifact(
-                          projectId: _project.id,
-                          projectTitle: _project.title,
-                          architectureType: selectedType,
-                          sourcePath: pathCtrl.text.trim().isEmpty ? 'inline/snippet' : pathCtrl.text.trim(),
-                          rawMermaid: snippetCtrl.text.trim(),
-                        );
+                              await ref.read(mermaidIngestionServiceProvider).ingestArtifact(
+                                projectId: _project.id,
+                                projectTitle: _project.title,
+                                architectureType: selectedType,
+                                sourcePath: pathCtrl.text.trim().isEmpty ? 'inline/snippet' : pathCtrl.text.trim(),
+                                rawMermaid: snippetCtrl.text.trim(),
+                              );
 
-                        // Trigger drift evaluation
-                        await ref.read(architectureDriftServiceProvider).detectDrift(project: _project);
+                              await ref.read(architectureDriftServiceProvider).detectDrift(project: _project);
+                              ref.invalidate(projectArtifactsProvider(_project.id));
+                              ref.invalidate(projectDriftsProvider(_project.id));
 
-                        ref.invalidate(projectArtifactsProvider(_project.id));
-                        ref.invalidate(projectDriftsProvider(_project.id));
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Mermaid diagram snippet ingested successfully."),
+                                    backgroundColor: KairoTheme.surfaceElevated,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                        if (_project.repository != null && _project.repository!.contains('/')) ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: isCommittingToGitHub
+                                ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: KairoTheme.textPrimary)))
+                                : KairoButton(
+                                    text: "COMMIT TO GH",
+                                    icon: Icons.cloud_upload_outlined,
+                                    isFullWidth: true,
+                                    onPressed: () async {
+                                      if (snippetCtrl.text.trim().isEmpty) return;
+                                      setModalState(() => isCommittingToGitHub = true);
 
-                        if (ctx.mounted) Navigator.pop(ctx);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Mermaid diagram snippet ingested successfully."),
-                              backgroundColor: KairoTheme.surfaceElevated,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      },
+                                      try {
+                                        final targetPath = pathCtrl.text.trim().startsWith('inline') || pathCtrl.text.trim().isEmpty
+                                            ? '.kairo/architecture/$selectedType.mmd'
+                                            : pathCtrl.text.trim();
+
+                                        await ref.read(githubServiceProvider).commitFileContent(
+                                          repo: _project.repository!,
+                                          branch: _project.branch,
+                                          path: targetPath,
+                                          content: snippetCtrl.text.trim(),
+                                          commitMessage: "docs(architecture): update $selectedType mermaid diagram via K.A.I.R.O.",
+                                        );
+
+                                        // Also ingest locally
+                                        await ref.read(mermaidIngestionServiceProvider).ingestArtifact(
+                                          projectId: _project.id,
+                                          projectTitle: _project.title,
+                                          architectureType: selectedType,
+                                          sourcePath: targetPath,
+                                          rawMermaid: snippetCtrl.text.trim(),
+                                        );
+
+                                        await ref.read(architectureDriftServiceProvider).detectDrift(project: _project);
+                                        ref.invalidate(projectArtifactsProvider(_project.id));
+                                        ref.invalidate(projectDriftsProvider(_project.id));
+
+                                        if (ctx.mounted) Navigator.pop(ctx);
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text("Pushed $targetPath to ${_project.repository}"),
+                                              backgroundColor: KairoTheme.surfaceElevated,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      } catch (err) {
+                                        setModalState(() => isCommittingToGitHub = false);
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text("GitHub Push failed: $err"),
+                                              backgroundColor: KairoTheme.warning,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
               ),
             );
-          },
-        );
+          },        );
       },
     );
   }
