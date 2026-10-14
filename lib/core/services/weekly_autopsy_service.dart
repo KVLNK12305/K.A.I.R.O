@@ -21,7 +21,7 @@ class WeeklyAutopsyService {
   }
 
   Future<WeeklyAutopsy> generateOrUpdateWeeklyAutopsy({
-    double wakatimeHours = 0.0,
+    double focusHours = 0.0,
     int githubPrs = 0,
     double burnRate = 0.0,
   }) async {
@@ -61,7 +61,7 @@ You are the K.A.I.R.O. Weekly Autopsy Engine. Review this user's quantitative pe
 - Composite Power Score: ${powerScore.toStringAsFixed(1)} / 100
 - Peak Task Execution Rate: ${(peakRate * 100).toStringAsFixed(1)}% (${peakStats.completed} of ${peakStats.committed} committed Peaks completed)
 - Average Body/Mind Stress Score: ${avgStress.toStringAsFixed(1)}%
-- Deep Work (WakaTime): ${wakatimeHours.toStringAsFixed(1)} hours
+- Deep Work (Focus Engine sessions): ${focusHours.toStringAsFixed(1)} hours
 - GitHub PRs Logged: $githubPrs
 - Financial Burn Rate: \$${burnRate.toStringAsFixed(2)}
 - Habit Streak Day: $streakDay of 21
@@ -110,7 +110,6 @@ Do not include markdown code block formatting (like ```json), output raw JSON on
       ..powerScore = powerScore
       ..averageStressScore = avgStress
       ..peakExecutionRate = peakRate
-      ..wakatimeTotalHours = wakatimeHours
       ..githubPrCount = githubPrs
       ..financeBurnRate = burnRate
       ..aiVerdict = verdict

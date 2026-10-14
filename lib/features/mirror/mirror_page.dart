@@ -501,7 +501,7 @@ class _MirrorPageState extends ConsumerState<MirrorPage> {
 
       final autopsyService = WeeklyAutopsyService(isar);
       final weeklyAutopsy = await autopsyService.generateOrUpdateWeeklyAutopsy(
-        wakatimeHours: ledger.observedFocusHours,
+        focusHours: ledger.observedFocusHours,
         githubPrs: 0,
         burnRate: 0.0,
       );
