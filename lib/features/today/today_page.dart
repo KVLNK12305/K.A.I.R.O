@@ -4,6 +4,12 @@ import 'package:intl/intl.dart';
 import '../../core/theme/kairo_design_system.dart';
 import '../../core/models/daily_plan.dart';
 import '../../core/models/task.dart';
+import '../../core/models/sleep_log.dart';
+import '../../core/services/focus_timer_service.dart';
+import '../../core/services/sleep_intelligence_service.dart';
+import '../../core/services/time_audit_service.dart';
+import '../../core/services/ledger_service.dart';
+import '../../main.dart';
 import '../../core/services/daily_plan_service.dart';
 import '../../core/services/financial_ledger_service.dart';
 import '../../core/services/wellbeing_service.dart';
@@ -251,21 +257,130 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     );
   }
 
-  Future<void> _startFocusMode(String peakTitle) async {
+  Future<void> _startFocusMode({required String peakTitle, required String peakId, required int minutes}) async {
+    final timer = ref.read(focusTimerProvider);
+    if (timer.isRunning) {
+      _showSnack("A focus session is already running. End it first.");
+      return;
+    }
     final hasDnd = await WellbeingService.checkDndPermission();
-    if (hasDnd) {
-      await WellbeingService.setFocusMode(true);
-      setState(() => _dndActive = true);
+    ref.read(focusTimerProvider.notifier).startSession(
+          peakTitle,
+          peakTaskId: peakId,
+          durationMinutes: minutes > 0 ? minutes : 90,
+        );
+    if (hasDnd && mounted) setState(() => _dndActive = true);
+    _showSnack(hasDnd
+        ? "Focus started (DND on) • $peakTitle"
+        : "Focus started • $peakTitle (grant DND access in Profile to silence notifications)");
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: KairoTheme.surfaceElevated,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _endFocusSession() async {
+    final session = await ref.read(focusTimerProvider.notifier).completeSession();
+    if (session != null) {
+      ref.invalidate(weeklyLedgerProvider);
+      _showSnack("Logged ${session.actualDurationMinutes}m of focus • ${session.title}");
     }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("DND Active • Focused on: $peakTitle"),
-          backgroundColor: KairoTheme.surfaceElevated,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+  }
+
+  Future<void> _showLogSleepSheet(SleepLog? existing) async {
+    final baseline = await TimeAuditService().getSleepBaseline();
+    if (!mounted) return;
+    double hours = existing?.hoursSlept ?? baseline;
+    int quality = existing?.qualityRating ?? 3;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: KairoTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(KairoTheme.radiusLg)),
+        side: BorderSide(color: KairoTheme.border, width: 1),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: const EdgeInsets.all(KairoTheme.xl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "LOG LAST NIGHT'S SLEEP",
+                    style: TextStyle(
+                      color: KairoTheme.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  const SizedBox(height: KairoTheme.lg),
+                  Text(
+                    "HOURS: ${hours.toStringAsFixed(2)}h",
+                    style: const TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontWeight: FontWeight.w800, fontFamily: 'monospace'),
+                  ),
+                  Slider(
+                    value: hours.clamp(3.0, 12.0),
+                    min: 3,
+                    max: 12,
+                    divisions: 36,
+                    activeColor: KairoTheme.observed,
+                    onChanged: (v) => setSheetState(() => hours = v),
+                  ),
+                  const SizedBox(height: KairoTheme.sm),
+                  const Text(
+                    "QUALITY",
+                    style: TextStyle(color: KairoTheme.textMuted, fontSize: 10, fontWeight: FontWeight.w800, fontFamily: 'monospace'),
+                  ),
+                  const SizedBox(height: KairoTheme.xs),
+                  Row(
+                    children: [
+                      for (int q = 1; q <= 5; q++)
+                        Padding(
+                          padding: const EdgeInsets.only(right: KairoTheme.sm),
+                          child: ChoiceChip(
+                            label: Text("$q"),
+                            selected: quality == q,
+                            onSelected: (_) => setSheetState(() => quality = q),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: KairoTheme.lg),
+                  KairoButton(
+                    text: "SAVE SLEEP LOG",
+                    isPrimary: true,
+                    isFullWidth: true,
+                    onPressed: () async {
+                      await SleepIntelligenceService(isar).logSleep(
+                        date: DateTime.now(),
+                        hours: hours,
+                        quality: quality,
+                      );
+                      ref.invalidate(todaySleepLogProvider);
+                      ref.invalidate(weeklyLedgerProvider);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -274,6 +389,9 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     final dateStr = DateFormat('EEEE, MMMM d').format(now).toUpperCase();
     final planAsync = ref.watch(todayPlanProvider);
     final openTasks = ref.watch(openTasksProvider).valueOrNull ?? const <Task>[];
+    final focusState = ref.watch(focusTimerProvider);
+    final sleepAsync = ref.watch(todaySleepLogProvider);
+    final focusMinutesAsync = ref.watch(todayFocusMinutesProvider);
     final financeAsync = ref.watch(financialOverviewProvider);
     final wakatimeAsync = ref.watch(wakatimeProvider);
 
@@ -286,6 +404,8 @@ class _TodayPageState extends ConsumerState<TodayPage> {
           onRefresh: () async {
             ref.invalidate(todayPlanProvider);
             ref.invalidate(openTasksProvider);
+            ref.invalidate(todaySleepLogProvider);
+            ref.invalidate(todayFocusMinutesProvider);
             ref.invalidate(financialOverviewProvider);
             ref.invalidate(wakatimeProvider);
             await _loadTelemetry();
@@ -467,7 +587,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
                                   await ref.read(dailyPlanServiceProvider).togglePeak(peakNumber: 1);
                                   ref.invalidate(todayPlanProvider);
                                 },
-                                onStartFocus: () => _startFocusMode(plan.peak1Title),
+                                onStartFocus: () => _startFocusMode(peakTitle: plan.peak1Title, peakId: 'peak1', minutes: plan.peak1DurationMinutes),
                               ),
                               const SizedBox(height: KairoTheme.sm),
                               _buildPeakCard(
@@ -480,7 +600,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
                                   await ref.read(dailyPlanServiceProvider).togglePeak(peakNumber: 2);
                                   ref.invalidate(todayPlanProvider);
                                 },
-                                onStartFocus: () => _startFocusMode(plan.peak2Title),
+                                onStartFocus: () => _startFocusMode(peakTitle: plan.peak2Title, peakId: 'peak2', minutes: plan.peak2DurationMinutes),
                               ),
                             ],
                           ),
@@ -490,6 +610,15 @@ class _TodayPageState extends ConsumerState<TodayPage> {
                   },
                 ),
               ),
+
+              // SECTION: ACTIVE FOCUS SESSION
+              if (focusState.activeSession != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(KairoTheme.xl, KairoTheme.md, KairoTheme.xl, 0),
+                    child: _buildActiveFocusCard(focusState),
+                  ),
+                ),
 
               // SECTION: COMMITTED TASKS (promoted from Needs / Project DNA drift)
               if (openTasks.isNotEmpty)
@@ -704,6 +833,40 @@ class _TodayPageState extends ConsumerState<TodayPage> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: KairoTheme.sm),
+                          Row(
+                            children: [
+                              // Last night's sleep (tap to log / edit)
+                              Expanded(
+                                child: KairoCard(
+                                  padding: const EdgeInsets.all(KairoTheme.md),
+                                  onTap: () => _showLogSleepSheet(sleepAsync.valueOrNull),
+                                  child: _buildMetricBody(
+                                    "SLEEP",
+                                    sleepAsync.valueOrNull != null
+                                        ? "${sleepAsync.value!.hoursSlept.toStringAsFixed(1)}h"
+                                        : "[UNLOGGED]",
+                                    sleepAsync.valueOrNull != null
+                                        ? "Quality ${sleepAsync.value!.qualityRating}/5 • tap to edit"
+                                        : "Tap to log last night",
+                                    sleepAsync.valueOrNull != null ? KairoTheme.textPrimary : KairoTheme.textMuted,
+                                    status: "MANUAL",
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: KairoTheme.sm),
+                              // Focus Engine minutes today
+                              Expanded(
+                                child: _buildMetricCard(
+                                  "FOCUS ENGINE",
+                                  "${((focusMinutesAsync.valueOrNull ?? 0) / 60).toStringAsFixed(1)}h",
+                                  "Logged today",
+                                  KairoTheme.observed,
+                                  status: "OBSERVED",
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -899,6 +1062,59 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     );
   }
 
+  Widget _buildActiveFocusCard(FocusTimerState focus) {
+    final session = focus.activeSession!;
+    final mm = (focus.secondsRemaining ~/ 60).toString().padLeft(2, '0');
+    final ss = (focus.secondsRemaining % 60).toString().padLeft(2, '0');
+    final timer = ref.read(focusTimerProvider.notifier);
+
+    return KairoCard(
+      borderColor: KairoTheme.observed.withValues(alpha: 0.5),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  focus.isPaused ? "FOCUS PAUSED" : "FOCUS ACTIVE",
+                  style: const TextStyle(
+                    color: KairoTheme.observed,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'monospace',
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  session.title,
+                  style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "$mm:$ss remaining • ${focus.distractionCount} app exits",
+                  style: const TextStyle(color: KairoTheme.textMuted, fontSize: 11, fontFamily: 'monospace'),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: focus.isPaused ? "Resume" : "Pause",
+            icon: Icon(focus.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded, color: KairoTheme.textSecondary),
+            onPressed: focus.isPaused ? timer.resumeSession : timer.pauseSession,
+          ),
+          IconButton(
+            tooltip: "End and log session",
+            icon: const Icon(Icons.stop_rounded, color: KairoTheme.textSecondary),
+            onPressed: _endFocusSession,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTaskRow(Task task) {
     final slotLabel = switch (task.energySlot) {
       EnergySlot.peak1 => "PEAK 1",
@@ -1077,10 +1293,15 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     );
   }
 
-  Widget _buildMetricCard(String label, String value, String sub, Color valColor) {
+  Widget _buildMetricCard(String label, String value, String sub, Color valColor, {String status = "LEDGER"}) {
     return KairoCard(
       padding: const EdgeInsets.all(KairoTheme.md),
-      child: Column(
+      child: _buildMetricBody(label, value, sub, valColor, status: status),
+    );
+  }
+
+  Widget _buildMetricBody(String label, String value, String sub, Color valColor, {String status = "LEDGER"}) {
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -1099,7 +1320,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
                 ),
               ),
               const SizedBox(width: 4),
-              const KairoStatus(label: "LEDGER", type: KairoStatusType.observed),
+              KairoStatus(label: status, type: KairoStatusType.observed),
             ],
           ),
           const SizedBox(height: KairoTheme.sm),
@@ -1119,7 +1340,6 @@ class _TodayPageState extends ConsumerState<TodayPage> {
           const SizedBox(height: 2),
           Text(sub, style: const TextStyle(color: KairoTheme.textMuted, fontSize: 10), overflow: TextOverflow.ellipsis),
         ],
-      ),
     );
   }
 }

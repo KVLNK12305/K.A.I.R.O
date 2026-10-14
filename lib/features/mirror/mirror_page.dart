@@ -158,6 +158,7 @@ class _MirrorPageState extends ConsumerState<MirrorPage> {
     final sleepPct = (breakdown.sleepHours / total).clamp(0.0, 1.0);
     final maintPct = (breakdown.maintenanceHours / total).clamp(0.0, 1.0);
     final calPct = (breakdown.calendarHours / total).clamp(0.0, 1.0);
+    final commitPct = (breakdown.commitmentHours / total).clamp(0.0, 1.0);
     final focusPct = (breakdown.observedFocusHours / total).clamp(0.0, 1.0);
     final unobsPct = (breakdown.unobservedHours / total).clamp(0.0, 1.0);
 
@@ -217,6 +218,11 @@ class _MirrorPageState extends ConsumerState<MirrorPage> {
                       flex: (calPct * 1000).toInt(),
                       child: Container(color: KairoTheme.recommended),
                     ),
+                  if (commitPct > 0)
+                    Expanded(
+                      flex: (commitPct * 1000).toInt(),
+                      child: Container(color: const Color(0xFF8E24AA)),
+                    ),
                   if (focusPct > 0)
                     Expanded(
                       flex: (focusPct * 1000).toInt(),
@@ -241,6 +247,7 @@ class _MirrorPageState extends ConsumerState<MirrorPage> {
               _buildLegendPill("Sleep", "${breakdown.sleepHours.toStringAsFixed(1)}h", const Color(0xFF3F51B5)),
               _buildLegendPill("Maintenance", "${breakdown.maintenanceHours.toStringAsFixed(1)}h", const Color(0xFF546E7A)),
               _buildLegendPill("Calendar", "${breakdown.calendarHours.toStringAsFixed(1)}h", KairoTheme.recommended),
+              _buildLegendPill("Commitments", "${breakdown.commitmentHours.toStringAsFixed(1)}h", const Color(0xFF8E24AA)),
               _buildLegendPill("Focus Work", "${breakdown.observedFocusHours.toStringAsFixed(1)}h", KairoTheme.observed),
               _buildLegendPill("Unobserved", "${breakdown.unobservedHours.toStringAsFixed(1)}h", KairoTheme.textMuted),
             ],
@@ -254,7 +261,7 @@ class _MirrorPageState extends ConsumerState<MirrorPage> {
                 child: _buildAllocationColumn(
                   label: "BIOLOGICAL FLOOR",
                   value: "${(breakdown.sleepHours + breakdown.maintenanceHours).toStringAsFixed(0)}h",
-                  subtitle: "Fixed baseline",
+                  subtitle: breakdown.sleepIsObserved ? "Logged sleep avg" : "Sleep baseline",
                   accentColor: KairoTheme.textPrimary,
                 ),
               ),

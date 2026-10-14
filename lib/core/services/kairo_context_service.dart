@@ -130,7 +130,7 @@ class KairoContextService {
     final isStreakBroken = await StreakService().isStreakBroken();
 
     // 2. Time Audit
-    final audit = timeAudit ?? await TimeAuditService().calculateWeeklyAudit([]);
+    final audit = timeAudit ?? await TimeAuditService().calculateWeeklyAudit();
 
     // 3. Crucible State
     final crucible = await isar.crucibleStates.get(1);

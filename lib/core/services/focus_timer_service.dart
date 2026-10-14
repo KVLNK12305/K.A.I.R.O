@@ -42,6 +42,9 @@ class FocusTimerState {
 class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBindingObserver {
   final Isar isar;
   Timer? _timer;
+  // Wall-clock deadline, so time spent with the app suspended still counts down.
+  // Null while paused.
+  DateTime? _endsAt;
 
   FocusTimerController(this.isar) : super(const FocusTimerState()) {
     WidgetsBinding.instance.addObserver(this);
@@ -56,6 +59,10 @@ class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBi
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _timer != null) {
+      _onTick(_timer!);
+      return;
+    }
     if (this.state.isRunning && !this.state.isPaused && (state == AppLifecycleState.paused || state == AppLifecycleState.inactive)) {
       // App went to background during active focus session -> increment distraction count
       this.state = this.state.copyWith(distractionCount: this.state.distractionCount + 1);
@@ -78,35 +85,43 @@ class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBi
       isPaused: false,
       distractionCount: 0,
     );
+    _endsAt = DateTime.now().add(Duration(minutes: durationMinutes));
 
     WellbeingService.setFocusMode(true);
     _timer = Timer.periodic(const Duration(seconds: 1), _onTick);
   }
 
   void _onTick(Timer timer) {
-    if (!state.isRunning || state.isPaused) return;
+    final endsAt = _endsAt;
+    if (!state.isRunning || state.isPaused || endsAt == null) return;
 
-    if (state.secondsRemaining <= 1) {
+    final remaining = endsAt.difference(DateTime.now()).inSeconds;
+    if (remaining <= 0) {
+      state = state.copyWith(secondsRemaining: 0);
       completeSession();
     } else {
-      state = state.copyWith(secondsRemaining: state.secondsRemaining - 1);
+      state = state.copyWith(secondsRemaining: remaining);
     }
   }
 
   void pauseSession() {
-    if (state.isRunning) {
+    if (state.isRunning && !state.isPaused) {
+      _endsAt = null;
       state = state.copyWith(isPaused: true);
     }
   }
 
   void resumeSession() {
     if (state.isRunning && state.isPaused) {
+      _endsAt = DateTime.now().add(Duration(seconds: state.secondsRemaining));
       state = state.copyWith(isPaused: false);
     }
   }
 
   Future<FocusSession?> completeSession() async {
     _timer?.cancel();
+    _timer = null;
+    _endsAt = null;
     final session = state.activeSession;
     if (session == null) {
       state = const FocusTimerState();
@@ -120,7 +135,7 @@ class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBi
     session.endTime = DateTime.now();
     session.actualDurationMinutes = actualMinutes > 0 ? actualMinutes : 1;
     session.distractionCount = state.distractionCount;
-    session.completed = state.secondsRemaining <= 1;
+    session.completed = state.secondsRemaining <= 0;
 
     await isar.writeTxn(() async {
       await isar.focusSessions.put(session);
@@ -138,6 +153,8 @@ class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBi
 
   void cancelSession() {
     _timer?.cancel();
+    _timer = null;
+    _endsAt = null;
     WellbeingService.setFocusMode(false);
     state = const FocusTimerState();
   }
@@ -145,6 +162,13 @@ class FocusTimerController extends StateNotifier<FocusTimerState> with WidgetsBi
 
 final focusTimerProvider = StateNotifierProvider<FocusTimerController, FocusTimerState>((ref) {
   return FocusTimerController(isar);
+});
+
+/// Minutes of focus logged today; recomputes whenever a session starts or ends.
+final todayFocusMinutesProvider = FutureProvider.autoDispose<int>((ref) async {
+  ref.watch(focusTimerProvider.select((s) => s.isRunning));
+  final sessions = await FocusService(isar).getTodaySessions();
+  return sessions.fold<int>(0, (sum, s) => sum + s.actualDurationMinutes);
 });
 
 class FocusService {

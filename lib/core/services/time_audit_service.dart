@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'google_api_service.dart';
+import 'ledger_service.dart';
+import '../../main.dart';
 
 class UrgentOverride {
   final String title;
@@ -204,64 +205,13 @@ class TimeAuditService {
     await prefs.setStringList(_keyCustomBlocks, blocks.map((b) => jsonEncode(b.toJson())).toList());
   }
 
-  Future<TimeAuditResult> calculateWeeklyAudit(List<calendar.Event> weeklyEvents) async {
-    final prefs = await SharedPreferences.getInstance();
-    await _autoResetIfNewWeek(prefs);
-
-    final sleepPerNight = prefs.getDouble(_keySleepHours) ?? 7.0;
-    final sleepHours = sleepPerNight * 7.0;
-
-    double calendarHours = 0.0;
-    double peakWorkHours = 0.0;
-
-    for (final event in weeklyEvents) {
-      // Exclude all-day events (no dateTime)
-      if (event.start?.dateTime == null || event.end?.dateTime == null) {
-        continue;
-      }
-
-      final start = event.start!.dateTime!.toLocal();
-      final end = event.end!.dateTime!.toLocal();
-      final durationHours = end.difference(start).inMinutes / 60.0;
-      if (durationHours <= 0) continue;
-
-      final title = event.summary ?? '';
-      
-      // Check if this is a K.A.I.R.O ritual or Peak block
-      final isKairoEvent = title.startsWith('🔥') ||
-          title.startsWith('⚡') ||
-          title.startsWith('🧘') ||
-          title.startsWith('🔪') ||
-          title.startsWith('K.A.I.R.O') ||
-          title.contains('PEAK 1:') ||
-          title.contains('PEAK 2:');
-
-      if (isKairoEvent) {
-        peakWorkHours += durationHours;
-      } else {
-        calendarHours += durationHours;
-      }
-    }
-
+  /// Weekly audit derived from [LedgerService], so the AI context sees the same
+  /// numbers as the TIME tab.
+  Future<TimeAuditResult> calculateWeeklyAudit() async {
+    final ledger = await LedgerService(isar).calculateWeeklyBreakdown();
     final urgentList = await getUrgentOverrides();
-    double urgentHours = 0.0;
-    for (final u in urgentList) {
-      urgentHours += u.hours;
-    }
-
     final customList = await getCustomRecurringBlocks();
-    double customHours = 0.0;
-    for (final c in customList) {
-      customHours += c.hoursPerWeek;
-    }
-
-    // Default estimate if user hasn't synced rituals to calendar yet: assume at least 3.5h/day of peak work for 5 days = 17.5h
-    if (peakWorkHours == 0.0 && weeklyEvents.isNotEmpty) {
-      peakWorkHours = 17.5;
-    }
-
-    double freeHours = 168.0 - (sleepHours + calendarHours + urgentHours + peakWorkHours + customHours);
-    if (freeHours < 0) freeHours = 0.0;
+    final freeHours = ledger.unobservedHours;
 
     String assessment;
     if (freeHours > 50) {
@@ -275,11 +225,11 @@ class TimeAuditService {
     }
 
     return TimeAuditResult(
-      sleepHours: sleepHours,
-      calendarHours: calendarHours,
-      urgentHours: urgentHours,
-      peakWorkHours: peakWorkHours,
-      customRecurringHours: customHours,
+      sleepHours: ledger.sleepHours,
+      calendarHours: ledger.calendarHours,
+      urgentHours: ledger.urgentHours,
+      peakWorkHours: ledger.observedFocusHours,
+      customRecurringHours: ledger.recurringHours,
       freeHours: freeHours,
       brutalAssessment: assessment,
       urgentOverrides: urgentList,

@@ -76,4 +76,18 @@ class WellbeingService {
       return 0.0;
     }
   }
+
+  /// Total screen time in hours from [start] until now (e.g. the current week).
+  static Future<double> getScreenTimeSince(DateTime start) async {
+    try {
+      final double hours = await _channel.invokeMethod('getScreenTimeSince', {
+            'startMillis': start.millisecondsSinceEpoch,
+          }) ??
+          0.0;
+      return hours;
+    } catch (e) {
+      debugPrint('Error fetching screen time range: $e');
+      return 0.0;
+    }
+  }
 }

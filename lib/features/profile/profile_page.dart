@@ -8,6 +8,9 @@ import 'providers/profile_provider.dart';
 import '../../core/theme/kairo_design_system.dart';
 import '../../core/services/wellbeing_service.dart';
 import '../../core/services/backup_export_service.dart';
+import '../../core/services/time_audit_service.dart';
+import '../../core/services/ledger_service.dart';
+import '../../core/services/home_widget_sync_service.dart';
 import '../../core/providers/wakatime_provider.dart';
 import '../../core/providers/github_provider.dart';
 import '../wardrobe/wardrobe_page.dart';
@@ -34,6 +37,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _wakatimeKeyCtrl = TextEditingController();
   final _githubTokenCtrl = TextEditingController();
   final _groqApiKeyCtrl = TextEditingController();
+  final _sleepBaselineCtrl = TextEditingController();
   final _msTodoTokenCtrl = TextEditingController();
 
   bool _isInit = false;
@@ -60,6 +64,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         _msTodoTokenCtrl.text = prefs.getString('ms_todo_token') ?? '';
       });
     }
+    final sleepBaseline = await TimeAuditService().getSleepBaseline();
+    if (mounted) _sleepBaselineCtrl.text = sleepBaseline.toStringAsFixed(1);
     final usage = await WellbeingService.checkUsagePermission();
     final dnd = await WellbeingService.checkDndPermission();
     if (mounted) {
@@ -92,6 +98,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     _githubTokenCtrl.dispose();
     _groqApiKeyCtrl.dispose();
     _msTodoTokenCtrl.dispose();
+    _sleepBaselineCtrl.dispose();
     super.dispose();
   }
 
@@ -151,6 +158,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Groq AI API Key Saved.'),
+          backgroundColor: KairoTheme.surfaceElevated,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveSleepBaseline() async {
+    final hours = double.tryParse(_sleepBaselineCtrl.text.trim());
+    final valid = hours != null && hours >= 3 && hours <= 12;
+    if (valid) {
+      await TimeAuditService().setSleepBaseline(hours);
+      ref.invalidate(weeklyLedgerProvider);
+      HomeWidgetSyncService.syncAllWidgets();
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(valid ? 'Sleep baseline set to ${hours.toStringAsFixed(1)}h/night.' : 'Enter hours between 3 and 12.'),
           backgroundColor: KairoTheme.surfaceElevated,
           behavior: SnackBarBehavior.floating,
         ),
@@ -479,6 +505,53 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           ),
                           const SizedBox(width: KairoTheme.sm),
                           KairoButton(text: "SAVE", onPressed: _saveGitHubToken),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const KairoDivider(margin: EdgeInsets.symmetric(vertical: KairoTheme.md)),
+
+                  // Sleep Baseline
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "SLEEP BASELINE (H / NIGHT)",
+                        style: TextStyle(
+                          color: KairoTheme.textPrimary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        "Used by the 168h ledger and widgets on nights you haven't logged sleep.",
+                        style: TextStyle(color: KairoTheme.textMuted, fontSize: 10, height: 1.3),
+                      ),
+                      const SizedBox(height: KairoTheme.xs),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _sleepBaselineCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              style: const TextStyle(color: KairoTheme.textPrimary, fontSize: 12, fontFamily: 'monospace'),
+                              decoration: InputDecoration(
+                                hintText: "7.0",
+                                hintStyle: const TextStyle(color: KairoTheme.textFaint),
+                                filled: true,
+                                fillColor: KairoTheme.surfaceElevated,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(KairoTheme.radiusSm),
+                                  borderSide: const BorderSide(color: KairoTheme.border),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: KairoTheme.sm),
+                          KairoButton(text: "SAVE", onPressed: _saveSleepBaseline),
                         ],
                       ),
                     ],

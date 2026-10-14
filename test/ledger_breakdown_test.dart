@@ -32,5 +32,29 @@ void main() {
 
       expect(overload.capacityPercent, 100.0);
     });
+
+    test('Recurring blocks and urgent overrides count toward allocation', () {
+      const breakdown = LedgerBreakdown(
+        sleepHours: 49.0,
+        maintenanceHours: 14.0,
+        calendarHours: 10.0,
+        recurringHours: 26.0,
+        urgentHours: 3.0,
+        observedFocusHours: 12.0,
+        screenTimeHours: 30.0,
+        unobservedHours: 54.0,
+      );
+
+      expect(breakdown.commitmentHours, 29.0);
+      // Screen time overlaps other buckets and is never part of the allocation
+      expect(breakdown.allocatedHours, 49.0 + 14.0 + 10.0 + 29.0 + 12.0);
+      expect(breakdown.allocatedHours + breakdown.unobservedHours, 168.0);
+    });
+
+    test('K.A.I.R.O.-generated calendar blocks are excluded from calendar hours', () {
+      expect(LedgerService.isKairoEvent('⚡ PEAK 1: Ship ledger'), isTrue);
+      expect(LedgerService.isKairoEvent('K.A.I.R.O Morning Ritual'), isTrue);
+      expect(LedgerService.isKairoEvent('Team standup'), isFalse);
+    });
   });
 }

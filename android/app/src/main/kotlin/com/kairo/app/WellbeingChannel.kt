@@ -95,6 +95,30 @@ class WellbeingChannel(private val context: Context, flutterEngine: FlutterEngin
                         result.error("ERROR", "Failed to fetch screen time: ${e.message}", null)
                     }
                 }
+                "getScreenTimeSince" -> {
+                    try {
+                        val startTime = (call.argument<Number>("startMillis") ?: 0L).toLong()
+                        val endTime = System.currentTimeMillis()
+
+                        val stats = usageStatsManager.queryUsageStats(
+                            UsageStatsManager.INTERVAL_DAILY,
+                            startTime,
+                            endTime
+                        )
+
+                        var totalForegroundTime = 0L
+                        if (stats != null) {
+                            for (usageStats in stats) {
+                                totalForegroundTime += usageStats.totalTimeInForeground
+                            }
+                        }
+
+                        val hours = totalForegroundTime.toDouble() / (1000.0 * 60.0 * 60.0)
+                        result.success(hours)
+                    } catch (e: Exception) {
+                        result.error("ERROR", "Failed to fetch screen time: ${e.message}", null)
+                    }
+                }
                 else -> {
                     result.notImplemented()
                 }
