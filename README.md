@@ -35,6 +35,8 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run --release
 ```
 
+The Groq API key is entered at runtime in **Profile → Settings**. For local development you can instead copy `.env.example` to `.env` and run `flutter run --dart-define-from-file=.env` — values passed this way are compiled into the binary, so never do this for a build you distribute.
+
 ---
 
 > *"Ascension requires introspection. Overcoming is mandatory."*

@@ -6,7 +6,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:isar/isar.dart';
-import '../models/task.dart';
+import '../models/daily_plan.dart';
 import '../models/decision_log.dart';
 import '../models/psychosomatic_scan.dart';
 import '../models/liar_goal.dart';
@@ -112,28 +112,22 @@ class NotificationService {
       debugPrint("Notice: Contextual decision query failed: $e");
     }
 
-    // 2. Check for Incomplete Peak Tasks today
+    // 2. Check for an incomplete Peak 1 in today's DailyPlan
     try {
-      final tasks = await isar.tasks
-          .where()
-          .filter()
-          .isCompletedEqualTo(false)
-          .and()
-          .energySlotEqualTo(EnergySlot.peak1)
-          .findAll();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final plan = await isar.dailyPlans.filter().dateEqualTo(todayStart).findFirst();
 
-      if (tasks.isNotEmpty) {
-        final peakTask = tasks.first;
+      if (plan != null && plan.peak1Title.trim().isNotEmpty && !plan.peak1Completed) {
         customizedSlots.add({
           'id': 11,
           'hour': 14,
           'min': 45,
           'title': 'K.A.I.R.O — ⚡ Peak 1 Momentum',
-          'body': 'Circadian drop ahead: Priority "${peakTask.title}" is still unfinished.',
+          'body': 'Circadian drop ahead: Priority "${plan.peak1Title.trim()}" is still unfinished.',
         });
       }
     } catch (e) {
-      debugPrint("Notice: Contextual task query failed: $e");
+      debugPrint("Notice: Contextual peak query failed: $e");
     }
 
     // 3. Check Psychosomatic Nervous System Load

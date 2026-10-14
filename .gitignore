@@ -106,6 +106,7 @@ app.*.map.json
 # Environment files
 .env
 .env.*
+!.env.example
 
 # Lock files (keep pubspec.lock)
 *.lock

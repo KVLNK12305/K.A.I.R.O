@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/kairo_design_system.dart';
 import '../../core/models/daily_plan.dart';
+import '../../core/models/task.dart';
 import '../../core/services/daily_plan_service.dart';
 import '../../core/services/financial_ledger_service.dart';
 import '../../core/services/wellbeing_service.dart';
@@ -272,6 +273,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
     final now = DateTime.now();
     final dateStr = DateFormat('EEEE, MMMM d').format(now).toUpperCase();
     final planAsync = ref.watch(todayPlanProvider);
+    final openTasks = ref.watch(openTasksProvider).valueOrNull ?? const <Task>[];
     final financeAsync = ref.watch(financialOverviewProvider);
     final wakatimeAsync = ref.watch(wakatimeProvider);
 
@@ -283,6 +285,7 @@ class _TodayPageState extends ConsumerState<TodayPage> {
           backgroundColor: KairoTheme.surfaceElevated,
           onRefresh: () async {
             ref.invalidate(todayPlanProvider);
+            ref.invalidate(openTasksProvider);
             ref.invalidate(financialOverviewProvider);
             ref.invalidate(wakatimeProvider);
             await _loadTelemetry();
@@ -358,7 +361,8 @@ class _TodayPageState extends ConsumerState<TodayPage> {
                             tooltip: "Needs Decision Matrix",
                             icon: const Icon(Icons.inventory_2_outlined, color: KairoTheme.textSecondary, size: 20),
                             onPressed: () {
-                              Navigator.push(context, SmoothPageRoute(page: const NeedsPage()));
+                              Navigator.push(context, SmoothPageRoute(page: const NeedsPage()))
+                                  .then((_) => ref.invalidate(openTasksProvider));
                             },
                           ),
                           IconButton(
@@ -486,6 +490,31 @@ class _TodayPageState extends ConsumerState<TodayPage> {
                   },
                 ),
               ),
+
+              // SECTION: COMMITTED TASKS (promoted from Needs / Project DNA drift)
+              if (openTasks.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      KairoSectionHeader(
+                        title: "COMMITTED TASKS",
+                        trailing: KairoStatus(label: "${openTasks.length} OPEN", type: KairoStatusType.muted),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: KairoTheme.xl),
+                        child: Column(
+                          children: [
+                            for (final task in openTasks) ...[
+                              _buildTaskRow(task),
+                              const SizedBox(height: KairoTheme.sm),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               // SECTION: OBSERVED REALITY TELEMETRY
               SliverToBoxAdapter(
@@ -866,6 +895,75 @@ class _TodayPageState extends ConsumerState<TodayPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTaskRow(Task task) {
+    final slotLabel = switch (task.energySlot) {
+      EnergySlot.peak1 => "PEAK 1",
+      EnergySlot.peak2 => "PEAK 2",
+      EnergySlot.recovery => "RECOVERY",
+      EnergySlot.unassigned => null,
+    };
+
+    return KairoCard(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  style: const TextStyle(
+                    color: KairoTheme.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (task.category.isNotEmpty || slotLabel != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    [if (slotLabel != null) slotLabel, if (task.category.isNotEmpty) task.category.toUpperCase()].join("  //  "),
+                    style: const TextStyle(
+                      color: KairoTheme.textMuted,
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: "Mark complete",
+            icon: const Icon(Icons.radio_button_unchecked_rounded, color: KairoTheme.textMuted, size: 20),
+            onPressed: () async {
+              await ref.read(dailyPlanServiceProvider).setTaskCompleted(task.id, true);
+              ref.invalidate(openTasksProvider);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Completed: ${task.title}"),
+                  backgroundColor: KairoTheme.surfaceElevated,
+                  behavior: SnackBarBehavior.floating,
+                  action: SnackBarAction(
+                    label: "UNDO",
+                    onPressed: () async {
+                      await ref.read(dailyPlanServiceProvider).setTaskCompleted(task.id, false);
+                      ref.invalidate(openTasksProvider);
+                    },
+                  ),
+                ),
+              );
+            },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
       ),
     );
   }

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:isar/isar.dart';
 import '../models/weekly_autopsy.dart';
-import '../models/task.dart';
 import '../models/psychosomatic_scan.dart';
 import 'ai_service.dart';
+import 'daily_plan_service.dart';
 import 'streak_service.dart';
 
 class WeeklyAutopsyService {
@@ -43,19 +43,9 @@ class WeeklyAutopsyService {
       avgStress = sum / scans.length;
     }
 
-    // 2. Peak Tasks Execution Rate
-    final allTasks = await isar.tasks.where().findAll();
-    final weeklyPeakTasks = allTasks.where((t) =>
-        (t.energySlot == EnergySlot.peak1 || t.energySlot == EnergySlot.peak2) &&
-        t.createdAt.isAfter(weekStartDate)).toList();
-    
-    double peakRate = 0.0;
-    if (weeklyPeakTasks.isNotEmpty) {
-      final completed = weeklyPeakTasks.where((t) => t.isCompleted).length;
-      peakRate = completed / weeklyPeakTasks.length;
-    } else {
-      peakRate = 0.5; // Neutral baseline if no tasks tracked
-    }
+    // 2. Peak Execution Rate (committed DailyPlan Peaks)
+    final peakStats = await DailyPlanService(isar).getPeakExecutionSince(weekStartDate);
+    final peakRate = peakStats.rate ?? 0.5; // Neutral baseline if no peaks committed
 
     // 3. Power Score Calculation
     final streakDay = await StreakService().getDayNumber();
@@ -69,7 +59,7 @@ You are the K.A.I.R.O. Weekly Autopsy Engine. Review this user's quantitative pe
 
 === 7-DAY METRICS ===
 - Composite Power Score: ${powerScore.toStringAsFixed(1)} / 100
-- Peak Task Execution Rate: ${(peakRate * 100).toStringAsFixed(1)}% (${weeklyPeakTasks.where((t) => t.isCompleted).length} of ${weeklyPeakTasks.length} tasks completed)
+- Peak Task Execution Rate: ${(peakRate * 100).toStringAsFixed(1)}% (${peakStats.completed} of ${peakStats.committed} committed Peaks completed)
 - Average Body/Mind Stress Score: ${avgStress.toStringAsFixed(1)}%
 - Deep Work (WakaTime): ${wakatimeHours.toStringAsFixed(1)} hours
 - GitHub PRs Logged: $githubPrs
@@ -154,16 +144,7 @@ Do not include markdown code block formatting (like ```json), output raw JSON on
       avgStress = sum / scans.length;
     }
 
-    final allTasks = await isar.tasks.where().findAll();
-    final midWeekPeakTasks = allTasks.where((t) =>
-        (t.energySlot == EnergySlot.peak1 || t.energySlot == EnergySlot.peak2) &&
-        t.createdAt.isAfter(weekStart)).toList();
-
-    double peakRate = 0.5;
-    if (midWeekPeakTasks.isNotEmpty) {
-      final completed = midWeekPeakTasks.where((t) => t.isCompleted).length;
-      peakRate = completed / midWeekPeakTasks.length;
-    }
+    final peakRate = (await DailyPlanService(isar).getPeakExecutionSince(weekStart)).rate ?? 0.5;
 
     final streakDay = await StreakService().getDayNumber();
     final habitFactor = (streakDay / 21.0).clamp(0.0, 1.0);

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:isar/isar.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'Nav/splash_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'core/models/task.dart';
@@ -73,13 +72,6 @@ Future<void> main() async {
     }
   } catch (e) {
     debugPrint("Notice: Notification/Streak init warning: $e");
-  }
-
-  // Load environment variables (gracefully handle missing .env in release/device builds)
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint("Notice: .env file not loaded ($e). Falling back to SharedPreferences / environment defaults.");
   }
 
   // 2. Find a safe, secure folder on your phone to save the database file

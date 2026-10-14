@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
-import '../models/task.dart';
 import '../models/liar_goal.dart';
+import 'daily_plan_service.dart';
 import 'notification_service.dart';
 
 class AccountabilityService {
@@ -14,29 +14,24 @@ class AccountabilityService {
     final observations = <String>[];
     final notifier = NotificationService();
 
-    // 1. Check weekly execution rate across Peak Tasks
+    // 1. Check weekly execution rate across committed DailyPlan Peaks
     try {
       final now = DateTime.now();
-      final sevenDaysAgo = now.subtract(const Duration(days: 7));
-      final recentTasks = await isar.tasks
-          .filter()
-          .createdAtGreaterThan(sevenDaysAgo)
-          .findAll();
+      final sevenDaysAgo = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 7));
+      final stats = await DailyPlanService(isar).getPeakExecutionSince(sevenDaysAgo);
 
-      if (recentTasks.length >= 5) {
-        final completedCount = recentTasks.where((t) => t.isCompleted).length;
-        final executionRate = completedCount / recentTasks.length;
-        if (executionRate < 0.30) {
-          final msg = 'Weekly Peak completion rate is ${(executionRate * 100).toStringAsFixed(0)}%. Systemic underperformance detected.';
-          observations.add(msg);
-          await notifier.showInstantNotification(
-            '📉 Execution Deficit',
-            msg,
-          );
-        }
+      final executionRate = stats.rate;
+      if (stats.committed >= 5 && executionRate != null && executionRate < 0.30) {
+        final msg = 'Weekly Peak completion rate is ${(executionRate * 100).toStringAsFixed(0)}% '
+            '(${stats.completed} of ${stats.committed} committed Peaks).';
+        observations.add(msg);
+        await notifier.showInstantNotification(
+          '📉 Execution Deficit',
+          msg,
+        );
       }
     } catch (e) {
-      debugPrint('Notice: Accountability task check failed: $e');
+      debugPrint('Notice: Accountability peak check failed: $e');
     }
 
     // 2. Check for LiarGoal breaches (flat lead metrics or disconnected lever)

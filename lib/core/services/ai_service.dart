@@ -1,25 +1,29 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AiService {
+  // Dev-only fallbacks via `--dart-define-from-file=.env`. Anything passed this way is
+  // compiled into the binary, so release builds should rely on the key entered in Profile.
+  static const String _devApiKey = String.fromEnvironment('GROQ_API_KEY');
+  static const String _model = String.fromEnvironment('MODEL', defaultValue: 'llama-3.3-70b-versatile');
+
   Future<String> _getApiKey() async {
     final prefs = await SharedPreferences.getInstance();
     final prefKey = prefs.getString('groq_api_key')?.trim() ?? '';
     if (prefKey.isNotEmpty) return prefKey;
-    return dotenv.env['GROQ_API_KEY']?.trim() ?? '';
+    return _devApiKey.trim();
   }
 
   Future<String> chat(List<Map<String, dynamic>> messages) async {
     final apiKey = await _getApiKey();
     if (apiKey.isEmpty) {
-      throw AiServiceException('Groq API Key not configured. Configure your key in Profile Settings or add GROQ_API_KEY to your .env file.');
+      throw AiServiceException('Groq API Key not configured. Configure your key in Profile Settings.');
     }
 
-    String model = dotenv.env['MODEL'] ?? 'llama-3.3-70b-versatile';
+    String model = _model;
 
     // Auto-detect vision payload
     for (final msg in messages) {

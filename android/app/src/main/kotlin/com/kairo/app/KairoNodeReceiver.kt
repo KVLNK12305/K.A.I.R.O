@@ -14,7 +14,11 @@ class KairoNodeReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == "com.kairo.app.ACTION_LOG_EXPENSE") {
             val amount = intent.getDoubleExtra("amount", 0.0)
-            val category = intent.getStringExtra("category") ?: "expense"
+            // Strip CSV delimiters so a free-text category can't shift the amount column
+            val category = (intent.getStringExtra("category") ?: "expense")
+                .replace(Regex("[,\\r\\n]"), " ")
+                .trim()
+                .ifEmpty { "expense" }
             
             if (amount > 0) {
                 try {
@@ -27,11 +31,11 @@ class KairoNodeReceiver : BroadcastReceiver() {
                     }
                     
                     val dateStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
-                    writer.append("\$dateStr,\$category,\$amount\n")
+                    writer.append("$dateStr,$category,$amount\n")
                     writer.flush()
                     writer.close()
                     
-                    Log.d("KairoNode", "Logged expense to node file: \$amount")
+                    Log.d("KairoNode", "Logged expense to node file: $amount")
                 } catch (e: Exception) {
                     Log.e("KairoNode", "Error logging expense", e)
                 }
